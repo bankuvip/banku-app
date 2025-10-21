@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}My Deals - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-university me-2"></i>My Deals
+                </h1>
+                <a href="{{ url_for('deals.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create New Deal
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <form method="GET" class="row g-3 align-items-end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All Status</option>
+                                <option value="pending" {{ 'selected' if status_filter == 'pending' else '' }}>Pending</option>
+                                <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' else '' }}>In Progress</option>
+                                <option value="completed" {{ 'selected' if status_filter == 'completed' else '' }}>Completed</option>
+                                <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' else '' }}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-filter me-1 text-dark"></i><span class="text-dark">Filter</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Deals List -->
+    <div class="row">
+        {% for deal in deals.items %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm deal-card status-{{ deal.status }} h-100">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-start justify-content-between mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ deal.title }}</h5>
+                                    <p class="text-muted mb-0 small">Deal #{{ deal.id }} • Created {{ deal.created_at.strftime('%b %d, %Y at %I:%M %p') }}</p>
+                                </div>
+                                <span class="badge bg-{{ 'warning' if deal.status == 'pending' else 'info' if deal.status == 'in_progress' else 'success' if deal.status == 'completed' else 'danger' }} fs-6 px-3 py-2">
+                                    {{ deal.status.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                            
+                            <p class="text-muted mb-3">{{ deal.description[:150] }}{% if deal.description|length > 150 %}...{% endif %}</p>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-dollar-sign text-success me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Total Amount</small>
+                                            <strong class="text-success">${{ "%.2f"|format(deal.total_amount) }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-tie text-primary me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Provider</small>
+                                            <small class="text-dark">{{ deal.provider.first_name }} {{ deal.provider.last_name }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user text-info me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Consumer</small>
+                                            <small class="text-dark">{{ deal.consumer.first_name }} {{ deal.consumer.last_name }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if deal.connector %}
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-handshake me-1"></i>
+                                    Connector: {{ deal.connector.first_name }} {{ deal.connector.last_name }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('deals.detail', deal_id=deal.id) }}" class="btn btn-primary btn-sm" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if deal.status == 'pending' %}
+                                <button class="btn btn-outline-success btn-sm" onclick="updateDealStatus({{ deal.id }}, 'in_progress')" title="Start Deal">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                {% elif deal.status == 'in_progress' %}
+                                <button class="btn btn-outline-success btn-sm" onclick="updateDealStatus({{ deal.id }}, 'completed')" title="Complete Deal">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-danger btn-sm" onclick="updateDealStatus({{ deal.id }}, 'cancelled')" title="Cancel Deal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-university text-muted fs-1 mb-3"></i>
+                <h4 class="text-muted">No deals yet</h4>
+                <p class="text-muted">Create your first deal to start connecting with others.</p>
+                <a href="{{ url_for('deals.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create Your First Deal
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if deals.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Deals pagination">
+                <ul class="pagination justify-content-center">
+                    {% if deals.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('deals.index', page=deals.prev_num, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in deals.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != deals.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('deals.index', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if deals.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('deals.index', page=deals.next_num, status=status_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.deal-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.deal-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.deal-card.status-pending {
+    border-left: 4px solid #ffc107;
+}
+
+.deal-card.status-in_progress {
+    border-left: 4px solid #0dcaf0;
+}
+
+.deal-card.status-completed {
+    border-left: 4px solid #198754;
+}
+
+.deal-card.status-cancelled {
+    border-left: 4px solid #dc3545;
+}
+
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+function updateDealStatus(dealId, status) {
+    if (!confirm(`Are you sure you want to ${status.replace('_', ' ')} this deal?`)) {
+        return;
+    }
+    
+    fetch(`/deals/${dealId}/update-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showAlert('success', data.message);
+            // Reload page to update status
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to update deal status');
+    });
+}
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => alert.remove(), 5000);
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

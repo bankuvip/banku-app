@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Analytics - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line me-2"></i>Advanced Analytics Dashboard</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportData()">
+                        <i class="fas fa-download me-2"></i>Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Real-time Metrics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title" id="activeUsers">-</h4>
+                                    <p class="card-text">Active Users (5min)</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title" id="systemHealth">-</h4>
+                                    <p class="card-text">System Health</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-heartbeat fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title" id="responseTime">-</h4>
+                                    <p class="card-text">Avg Response Time</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-tachometer-alt fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title" id="errorRate">-</h4>
+                                    <p class="card-text">Error Rate</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">User Activity Over Time</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="activityChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Top Events</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="topEvents">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">System Performance</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="performanceChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Button Click Analytics</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="buttonChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A/B Testing Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">A/B Tests</h5>
+                            <button class="btn btn-primary btn-sm" onclick="createABTest()">
+                                <i class="fas fa-plus me-2"></i>Create Test
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="abTestsTable">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Logs -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent Errors</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Type</th>
+                                            <th>Message</th>
+                                            <th>User</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="errorLogsTable">
+                                        <!-- Will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- A/B Test Creation Modal -->
+<div class="modal fade" id="createABTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create A/B Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createABTestForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="testName" class="form-label">Test Name</label>
+                                <input type="text" class="form-control" id="testName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="testType" class="form-label">Test Type</label>
+                                <select class="form-select" id="testType" required>
+                                    <option value="button_variant">Button Variant</option>
+                                    <option value="page_layout">Page Layout</option>
+                                    <option value="content">Content</option>
+                                    <option value="color_scheme">Color Scheme</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="testDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="testDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="targetMetric" class="form-label">Target Metric</label>
+                        <select class="form-select" id="targetMetric" required>
+                            <option value="conversion_rate">Conversion Rate</option>
+                            <option value="click_rate">Click Rate</option>
+                            <option value="completion_rate">Completion Rate</option>
+                            <option value="engagement_time">Engagement Time</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Variants</label>
+                        <div id="variantsContainer">
+                            <div class="variant-item mb-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" placeholder="Variant A" value="A" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" placeholder="Configuration" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" placeholder="Traffic %" value="50" min="0" max="100" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="variant-item mb-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" placeholder="Variant B" value="B" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" placeholder="Configuration" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" placeholder="Traffic %" value="50" min="0" max="100" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addVariant()">
+                            <i class="fas fa-plus me-1"></i>Add Variant
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveABTest()">Create Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let activityChart, performanceChart, buttonChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadRealTimeData();
+    loadABTests();
+    loadErrorLogs();
+    
+    // Refresh data every 30 seconds
+    setInterval(loadRealTimeData, 30000);
+});
+
+function initializeCharts() {
+    // Activity Chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Page Views',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Button Clicks',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Performance Chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(performanceCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['CPU', 'Memory', 'Disk'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    
+    // Button Chart
+    const buttonCtx = document.getElementById('buttonChart').getContext('2d');
+    buttonChart = new Chart(buttonCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Clicks',
+                data: [],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+async function loadRealTimeData() {
+    try {
+        const response = await fetch('/admin/analytics/realtime');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('activeUsers').textContent = data.active_users || 0;
+            document.getElementById('systemHealth').textContent = data.health_score + '%';
+            document.getElementById('responseTime').textContent = data.response_time + 'ms';
+            document.getElementById('errorRate').textContent = data.error_rate + '%';
+            
+            // Update performance chart
+            performanceChart.data.datasets[0].data = [
+                data.cpu_usage || 0,
+                data.memory_usage || 0,
+                data.disk_usage || 0
+            ];
+            performanceChart.update();
+        }
+    } catch (error) {
+        console.error('Failed to load real-time data:', error);
+    }
+}
+
+async function loadABTests() {
+    try {
+        const response = await fetch('/admin/analytics/ab-tests');
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('abTestsTable');
+            container.innerHTML = '';
+            
+            if (data.tests.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No A/B tests found</p>';
+                return;
+            }
+            
+            data.tests.forEach(test => {
+                const testCard = document.createElement('div');
+                testCard.className = 'card mb-3';
+                testCard.innerHTML = `
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-1">${test.name}</h6>
+                                <small class="text-muted">${test.test_type}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="badge bg-${test.status === 'active' ? 'success' : 'secondary'}">${test.status}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Target: ${test.target_metric}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">${test.assignments || 0} users</small>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="viewTestResults(${test.id})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-${test.status === 'active' ? 'warning' : 'success'}" 
+                                            onclick="toggleTest(${test.id}, '${test.status}')">
+                                        <i class="fas fa-${test.status === 'active' ? 'pause' : 'play'}"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(testCard);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load A/B tests:', error);
+    }
+}
+
+async function loadErrorLogs() {
+    try {
+        const response = await fetch('/admin/analytics/errors');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('errorLogsTable');
+            tbody.innerHTML = '';
+            
+            data.errors.forEach(error => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(error.occurred_at).toLocaleString()}</td>
+                    <td><span class="badge bg-danger">${error.error_type}</span></td>
+                    <td>${error.error_message.substring(0, 50)}...</td>
+                    <td>${error.user_id || 'Anonymous'}</td>
+                    <td><span class="badge bg-${error.status === 'resolved' ? 'success' : 'warning'}">${error.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewErrorDetails(${error.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load error logs:', error);
+    }
+}
+
+function createABTest() {
+    new bootstrap.Modal(document.getElementById('createABTestModal')).show();
+}
+
+function addVariant() {
+    const container = document.getElementById('variantsContainer');
+    const variantCount = container.children.length;
+    const variantLetter = String.fromCharCode(65 + variantCount); // A, B, C, etc.
+    
+    const variantDiv = document.createElement('div');
+    variantDiv.className = 'variant-item mb-2';
+    variantDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Variant ${variantLetter}" value="${variantLetter}" readonly>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Configuration" required>
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control" placeholder="Traffic %" min="0" max="100" required>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeVariant(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(variantDiv);
+}
+
+function removeVariant(button) {
+    button.closest('.variant-item').remove();
+}
+
+async function saveABTest() {
+    const form = document.getElementById('createABTestForm');
+    const formData = new FormData(form);
+    
+    const variants = {};
+    const trafficSplit = {};
+    
+    document.querySelectorAll('.variant-item').forEach((item, index) => {
+        const inputs = item.querySelectorAll('input');
+        const variant = inputs[0].value;
+        const config = inputs[1].value;
+        const traffic = parseInt(inputs[2].value);
+        
+        variants[variant] = config;
+        trafficSplit[variant] = traffic;
+    });
+    
+    const testData = {
+        name: formData.get('testName'),
+        description: formData.get('testDescription'),
+        test_type: formData.get('testType'),
+        target_metric: formData.get('targetMetric'),
+        variants: variants,
+        traffic_split: trafficSplit
+    };
+    
+    try {
+        const response = await fetch('/admin/analytics/ab-tests/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(testData)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('createABTestModal')).hide();
+            loadABTests();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Failed to create A/B test:', error);
+        alert('Failed to create A/B test');
+    }
+}
+
+function refreshData() {
+    loadRealTimeData();
+    loadABTests();
+    loadErrorLogs();
+}
+
+function exportData() {
+    // Implementation for data export
+    alert('Export functionality will be implemented');
+}
+
+function viewTestResults(testId) {
+    // Implementation for viewing test results
+    alert('Test results view will be implemented');
+}
+
+function toggleTest(testId, currentStatus) {
+    // Implementation for toggling test status
+    alert('Test toggle functionality will be implemented');
+}
+
+function viewErrorDetails(errorId) {
+    // Implementation for viewing error details
+    alert('Error details view will be implemented');
+}
+</script>
+{% endblock %}

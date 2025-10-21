@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Create Step Block - {{ flow.name }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>Create Step Block
+                </h1>
+                <a href="{{ url_for('admin.chatbot_step_blocks', flow_id=flow.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Step Blocks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Step Block Information</h5>
+                </div>
+                <div class="card-body">
+                    <form id="stepBlockForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="stepName" class="form-label">Step Name *</label>
+                                    <input type="text" class="form-control" id="stepName" name="name" required 
+                                           placeholder="e.g., Personal Information, Preferences, Contact Details">
+                                    <div class="form-text">Give this step a clear, descriptive name</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="stepDescription" class="form-label">Step Description</label>
+                                    <textarea class="form-control" id="stepDescription" name="description" rows="3" 
+                                              placeholder="Describe what this step covers (optional)"></textarea>
+                                    <div class="form-text">Help users understand what they'll be asked in this step</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="completionMessage" class="form-label">Completion Message</label>
+                                    <textarea class="form-control" id="completionMessage" name="completion_message" rows="2" 
+                                              placeholder="e.g., Great! Now let's learn about your preferences..."></textarea>
+                                    <div class="form-text">Message shown when this step is completed (optional)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Step Settings</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="isRequired" name="is_required" checked>
+                                                <label class="form-check-label" for="isRequired">
+                                                    Required Step
+                                                </label>
+                                            </div>
+                                            <div class="form-text">Users must complete this step to continue</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="nextStepCondition" class="form-label">Next Step Logic</label>
+                                            <select class="form-select" id="nextStepCondition" name="next_step_condition_type">
+                                                <option value="sequential">Go to next step</option>
+                                                <option value="conditional">Based on answers</option>
+                                                <option value="skip">Skip to specific step</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3" id="conditionalLogic" style="display: none;">
+                                            <label class="form-label">Conditional Logic</label>
+                                            <div class="form-text small">
+                                                <strong>Example:</strong><br>
+                                                If "Age" = "Under 18" → Skip to "Parental Consent"<br>
+                                                If "Age" = "18+" → Go to "Preferences"
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Step Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="stepPreview" class="step-preview">
+                                            <div class="step-preview-header">
+                                                <div class="step-number">1</div>
+                                                <div class="step-info">
+                                                    <h6 id="previewName">Step Name</h6>
+                                                    <p id="previewDescription" class="text-muted small">Step description will appear here</p>
+                                                </div>
+                                            </div>
+                                            <div class="step-preview-content">
+                                                <div class="text-center text-muted py-3">
+                                                    <i class="fas fa-question-circle fa-2x mb-2"></i>
+                                                    <p class="mb-0">Questions will be added here</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('admin.chatbot_step_blocks', flow_id=flow.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Step Block
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-preview {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.step-preview-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.step-preview .step-number {
+    width: 30px;
+    height: 30px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.step-preview .step-info h6 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.step-preview-content {
+    padding: 15px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('stepName');
+    const descriptionInput = document.getElementById('stepDescription');
+    const previewName = document.getElementById('previewName');
+    const previewDescription = document.getElementById('previewDescription');
+    const nextStepCondition = document.getElementById('nextStepCondition');
+    const conditionalLogic = document.getElementById('conditionalLogic');
+    
+    // Update preview in real-time
+    nameInput.addEventListener('input', function() {
+        previewName.textContent = this.value || 'Step Name';
+    });
+    
+    descriptionInput.addEventListener('input', function() {
+        previewDescription.textContent = this.value || 'Step description will appear here';
+    });
+    
+    // Show/hide conditional logic
+    nextStepCondition.addEventListener('change', function() {
+        if (this.value === 'conditional') {
+            conditionalLogic.style.display = 'block';
+        } else {
+            conditionalLogic.style.display = 'none';
+        }
+    });
+    
+    // Form submission
+    document.getElementById('stepBlockForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            completion_message: formData.get('completion_message'),
+            is_required: formData.get('is_required') === 'on',
+            next_step_condition: {
+                type: formData.get('next_step_condition_type'),
+                rules: [] // Would be populated based on conditional logic
+            }
+        };
+        
+        fetch('/admin/chatbots/{{ flow.id }}/step-blocks/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/admin/chatbots/{{ flow.id }}/step-blocks';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the step block.');
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
+

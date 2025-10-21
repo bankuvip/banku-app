@@ -1,0 +1,757 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - BankU{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+    .personality-trait {
+        transition: all 0.3s ease;
+    }
+    .personality-trait:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            {% if user.avatar %}
+                                <img src="{{ url_for('static', filename='uploads/' + user.avatar) }}" 
+                                     alt="Profile Photo" class="rounded-circle me-3" 
+                                     style="width: 50px; height: 50px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-muted" style="font-size: 1.5rem;"></i>
+                                </div>
+                            {% endif %}
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-user me-2"></i>My Profile
+                            </h4>
+                        </div>
+                        <a href="{{ url_for('auth.settings') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">First Name</label>
+                            <p>{{ user.first_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Last Name</label>
+                            <p>{{ user.last_name }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Username</label>
+                            <p>{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <p>{{ user.email }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if user.phone %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Phone</label>
+                            <p>{{ user.phone }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Location</label>
+                            <p>{{ user.location or 'Not specified' }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.bio %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Bio</label>
+                        <p>{{ user.bio }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Account Status</label>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                {{ 'Active' if user.is_active else 'Inactive' }}
+                            </span>
+                            <span class="badge bg-{{ 'success' if user.is_verified else 'warning' }}">
+                                {{ 'Verified' if user.is_verified else 'Unverified' }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Member Since</label>
+                        <p>{{ user.created_at.strftime('%B %d, %Y') }}</p>
+                    </div>
+                    
+                    {% if user.last_login %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Last Login</label>
+                        <p>{{ user.last_login.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Account Summary Section -->
+    <div class="row mt-4">
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Account Summary
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#summaryCollapse" aria-expanded="false" aria-controls="summaryCollapse">
+                            <i class="fas fa-chevron-down" id="summaryChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="summaryCollapse">
+                    <div class="card-body">
+                        <!-- Item Counts -->
+                        <div class="row text-center mb-4">
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-box text-primary fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.products }}</h4>
+                                    <p class="text-muted mb-0">Products</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-cogs text-success fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.services }}</h4>
+                                    <p class="text-muted mb-0">Services</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-star text-info fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.experiences }}</h4>
+                                    <p class="text-muted mb-0">Experiences</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-bullseye text-warning fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.opportunities }}</h4>
+                                    <p class="text-muted mb-0">Opportunities</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-calendar-alt text-danger fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.events }}</h4>
+                                    <p class="text-muted mb-0">Events</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-eye text-dark fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.observations }}</h4>
+                                    <p class="text-muted mb-0">Observations</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-compass text-purple fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.hidden_gems }}</h4>
+                                    <p class="text-muted mb-0">Hidden Gems</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-chart-line text-warning fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.funders + item_counts.funding }}</h4>
+                                    <p class="text-muted mb-0">Funders</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-brain text-warning fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.knowledge }}</h4>
+                                    <p class="text-muted mb-0">Knowledge</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-lightbulb text-info fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.ideas }}</h4>
+                                    <p class="text-muted mb-0">Ideas</p>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2 mb-3">
+                                <div class="p-3">
+                                    <i class="fas fa-database text-purple fs-2 mb-2"></i>
+                                    <h4 class="mb-1">{{ item_counts.information }}</h4>
+                                    <p class="text-muted mb-0">Information</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Personality Classification -->
+                        <div class="border-top pt-4">
+                            <h6 class="mb-3">
+                                <i class="fas fa-user-tag me-2"></i>Your Personality Profile
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-primary">
+                                            <i class="fas fa-industry me-1"></i>Producer
+                                        </span>
+                                        <span class="badge bg-primary">{{ personality_percentages.producer }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ personality_percentages.producer }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-success">
+                                            <i class="fas fa-tools me-1"></i>Skiller
+                                        </span>
+                                        <span class="badge bg-success">{{ personality_percentages.skiller }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ personality_percentages.skiller }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-info">
+                                            <i class="fas fa-star me-1"></i>Experiencer
+                                        </span>
+                                        <span class="badge bg-info">{{ personality_percentages.experiencer }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ personality_percentages.experiencer }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-warning">
+                                            <i class="fas fa-bullseye me-1"></i>Opportunist
+                                        </span>
+                                        <span class="badge bg-warning">{{ personality_percentages.opportunist }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ personality_percentages.opportunist }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-danger">
+                                            <i class="fas fa-calendar-alt me-1"></i>Organizer
+                                        </span>
+                                        <span class="badge bg-danger">{{ personality_percentages.organizer }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ personality_percentages.organizer }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-dark">
+                                            <i class="fas fa-eye me-1"></i>Observer
+                                        </span>
+                                        <span class="badge bg-dark">{{ personality_percentages.observer }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-dark" role="progressbar" style="width: {{ personality_percentages.observer }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-purple">
+                                            <i class="fas fa-compass me-1"></i>Explorer
+                                        </span>
+                                        <span class="badge bg-purple">{{ personality_percentages.explorer }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-purple" role="progressbar" style="width: {{ personality_percentages.explorer }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-warning">
+                                            <i class="fas fa-chart-line me-1"></i>Investor
+                                        </span>
+                                        <span class="badge bg-warning">{{ personality_percentages.investor }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ personality_percentages.investor }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-purple">
+                                            <i class="fas fa-user-tie me-1"></i>Consultant
+                                        </span>
+                                        <span class="badge bg-purple">{{ personality_percentages.consultant }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-purple" role="progressbar" style="width: {{ personality_percentages.consultant }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-info">
+                                            <i class="fas fa-lightbulb me-1"></i>Thinker
+                                        </span>
+                                        <span class="badge bg-info">{{ personality_percentages.thinker }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ personality_percentages.thinker }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 col-lg-4 mb-3 personality-trait">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-secondary">
+                                            <i class="fas fa-graduation-cap me-1"></i>Learner
+                                        </span>
+                                        <span class="badge bg-secondary">{{ personality_percentages.learner }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ personality_percentages.learner }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Personality Description -->
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Your Profile:</strong> 
+                                    {% set dominant_traits = [] %}
+                                    {% for trait, percentage in personality_percentages.items() %}
+                                        {% if percentage > 0 %}
+                                            {% set _ = dominant_traits.append(trait + ' (' + percentage|string + '%)') %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if dominant_traits %}
+                                        You are {{ dominant_traits|join(', ') }}.
+                                    {% else %}
+                                        Start adding items to discover your personality profile!
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- My Items Sections -->
+    <div class="row mt-4">
+        <!-- My Information -->
+        {% if user_information %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-database text-purple me-2"></i>My Information
+                            <span class="badge bg-secondary ms-2">{{ user_information|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#informationCollapse" aria-expanded="false" aria-controls="informationCollapse">
+                            <i class="fas fa-chevron-down" id="informationChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="informationCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for info in user_information %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">{{ info.title }}</h6>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('dashboard.edit_info', info_id=info.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteInfo({{ info.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ info.description[:100] }}{% if info.description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-secondary">{{ info.category.title() }}</span>
+                                        <span class="badge bg-{{ 'success' if info.priority == 'high' else 'warning' if info.priority == 'medium' else 'info' }}">{{ info.priority.title() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- My Ideas -->
+        {% if user_items.get('idea') %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-lightbulb text-info me-2"></i>My Ideas
+                            <span class="badge bg-secondary ms-2">{{ user_items.get('idea', [])|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#ideasCollapse" aria-expanded="false" aria-controls="ideasCollapse">
+                            <i class="fas fa-chevron-down" id="ideasChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="ideasCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in user_items.get('idea', []) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                            <h6 class="mb-0 text-primary">{{ item.title }}</h6>
+                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('profiles.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if item.is_verified else 'warning' }}">{{ 'Verified' if item.is_verified else 'Pending' }}</span>
+                                        <small class="text-muted">{{ item.created_at.strftime('%m/%d/%Y') }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- My Products -->
+        {% if user_items.get('product') %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-box text-primary me-2"></i>My Products
+                            <span class="badge bg-secondary ms-2">{{ user_items.get('product', [])|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#productsCollapse" aria-expanded="false" aria-controls="productsCollapse">
+                            <i class="fas fa-chevron-down" id="productsChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="productsCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in user_items.get('product', []) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                            <h6 class="mb-0 text-primary">{{ item.title }}</h6>
+                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('profiles.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if item.is_verified else 'warning' }}">{{ 'Verified' if item.is_verified else 'Pending' }}</span>
+                                        {% if item.price %}<span class="fw-bold">${{ "%.2f"|format(item.price) }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- My Services -->
+        {% if user_items.get('service') %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs text-success me-2"></i>My Services
+                            <span class="badge bg-secondary ms-2">{{ user_items.get('service', [])|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#servicesCollapse" aria-expanded="false" aria-controls="servicesCollapse">
+                            <i class="fas fa-chevron-down" id="servicesChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="servicesCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in user_items.get('service', []) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                            <h6 class="mb-0 text-primary">{{ item.title }}</h6>
+                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('profiles.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if item.is_verified else 'warning' }}">{{ 'Verified' if item.is_verified else 'Pending' }}</span>
+                                        {% if item.price %}<span class="fw-bold">${{ "%.2f"|format(item.price) }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- My Knowledge -->
+        {% if user_items.get('knowledge') %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-brain text-warning me-2"></i>My Knowledge
+                            <span class="badge bg-secondary ms-2">{{ user_items.get('knowledge', [])|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#knowledgeCollapse" aria-expanded="false" aria-controls="knowledgeCollapse">
+                            <i class="fas fa-chevron-down" id="knowledgeChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="knowledgeCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in user_items.get('knowledge', []) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                            <h6 class="mb-0 text-primary">{{ item.title }}</h6>
+                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('profiles.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if item.is_verified else 'warning' }}">{{ 'Verified' if item.is_verified else 'Pending' }}</span>
+                                        <small class="text-muted">{{ item.created_at.strftime('%m/%d/%Y') }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- My Funds -->
+        {% if user_items.get('funding') %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-dollar-sign text-success me-2"></i>My Funds
+                            <span class="badge bg-secondary ms-2">{{ user_items.get('funding', [])|length }}</span>
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#fundsCollapse" aria-expanded="false" aria-controls="fundsCollapse">
+                            <i class="fas fa-chevron-down" id="fundsChevron"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="fundsCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for item in user_items.get('funding', []) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                            <h6 class="mb-0 text-primary">{{ item.title }}</h6>
+                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('profiles.edit_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ item.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if item.is_verified else 'warning' }}">{{ 'Verified' if item.is_verified else 'Pending' }}</span>
+                                        {% if item.price %}<span class="fw-bold">${{ "%.2f"|format(item.price) }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteItem(itemId) {
+    if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+        fetch(`/profiles/item/${itemId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+                'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting item');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the item');
+        });
+    }
+}
+
+function deleteInfo(infoId) {
+    if (confirm('Are you sure you want to delete this information? This action cannot be undone.')) {
+        fetch(`/dashboard/delete-info/${infoId}`, {
+        method: 'POST',
+        headers: {
+            
+                'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting information');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the information');
+        });
+    }
+}
+
+// Handle chevron rotation for collapsible sections
+document.addEventListener('DOMContentLoaded', function() {
+    // List of all collapsible sections
+    const sections = [
+        'summaryCollapse', 'informationCollapse', 'ideasCollapse', 
+        'productsCollapse', 'servicesCollapse', 'knowledgeCollapse', 'fundsCollapse'
+    ];
+    
+    sections.forEach(sectionId => {
+        const collapseElement = document.getElementById(sectionId);
+        const chevronElement = document.getElementById(sectionId.replace('Collapse', 'Chevron'));
+        
+        if (collapseElement && chevronElement) {
+            collapseElement.addEventListener('show.bs.collapse', function() {
+                chevronElement.style.transform = 'rotate(180deg)';
+            });
+            
+            collapseElement.addEventListener('hide.bs.collapse', function() {
+                chevronElement.style.transform = 'rotate(0deg)';
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-4">
+                <i class="fas fa-cog me-2"></i>Admin Dashboard
+            </h1>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users text-primary fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_users }}</h3>
+                    <p class="card-text text-muted">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-building text-success fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_organizations }}</h3>
+                    <p class="card-text text-muted">Total Organizations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-university text-warning fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_deals }}</h3>
+                    <p class="card-text text-muted">Total Deals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign text-info fs-1 mb-2"></i>
+                    <h3 class="card-title">${{ "%.2f"|format(stats.total_earnings) }}</h3>
+                    <p class="card-text text-muted">Total Earnings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Email Verification Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle text-success fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.verified_users }}</h3>
+                    <p class="card-text text-muted">Verified Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle text-warning fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.unverified_users }}</h3>
+                    <p class="card-text text-muted">Unverified Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bank Statistics - Expandable -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleSection('bank-stats')">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-university me-2"></i>Bank Statistics
+                    </h5>
+                    <i class="fas fa-chevron-down" id="bank-stats-icon"></i>
+                </div>
+                <div class="card-body collapse" id="bank-stats">
+                    <!-- Dynamic Banks Display -->
+                    <div class="row text-center">
+                        {% for bank_key, bank_data in bank_stats.items() %}
+                        <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-3">
+                            <div class="p-3">
+                                <i class="{{ bank_data.icon }} fs-2 mb-2" style="color: {{ bank_data.color }};"></i>
+                                <h4 class="mb-1">{{ bank_data.count }}</h4>
+                                <p class="text-muted mb-0">{{ bank_data.name.replace('Bank of ', '').replace('Bank Of ', '') }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12 text-center">
+                            <a href="{{ url_for('admin.banks_management') }}" class="btn btn-primary me-2">
+                                <i class="fas fa-cog me-2"></i>Manage Banks & Add Missing Banks
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Users - Expandable -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleSection('recent-users')">
+                    <h5 class="card-title mb-0">Recent Users</h5>
+                    <i class="fas fa-chevron-down" id="recent-users-icon"></i>
+                </div>
+                <div class="card-body collapse" id="recent-users">
+                    {% if recent_users %}
+                        {% for user in recent_users %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h6>
+                                <p class="text-muted small mb-1">{{ user.email }}</p>
+                                <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ user.created_at.strftime('%m/%d/%Y') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No users yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Deals - Expandable -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleSection('recent-deals')">
+                    <h5 class="card-title mb-0">Recent Deals</h5>
+                    <i class="fas fa-chevron-down" id="recent-deals-icon"></i>
+                </div>
+                <div class="card-body collapse" id="recent-deals">
+                    {% if recent_deals %}
+                        {% for deal in recent_deals %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ deal.title }}</h6>
+                                <p class="text-muted small mb-1">{{ deal.description[:50] }}...</p>
+                                <span class="badge bg-{{ 'warning' if deal.status == 'pending' else 'info' if deal.status == 'in_progress' else 'success' if deal.status == 'completed' else 'danger' }}">
+                                    {{ deal.status.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">${{ "%.2f"|format(deal.total_amount) }}</div>
+                                <div class="small text-muted">{{ deal.created_at.strftime('%m/%d/%Y') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No deals yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions - Reorganized -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Manage Users -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-users me-2"></i>Manage Users
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.role_management') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-shield-alt me-2"></i>Role & Permissions
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Manage Deals -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-warning mb-3">
+                                <i class="fas fa-university me-2"></i>Manage Deals
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.deals') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-university me-2"></i>Manage Deals
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.verifications') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-check-circle me-2"></i>Verifications
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Manage Content -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-info mb-3">
+                                <i class="fas fa-edit me-2"></i>Manage Content
+                            </h6>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.dynamic_buttons') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-mouse-pointer me-2"></i>Manage Dashboard Buttons
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.dynamic_item_types') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-tags me-2"></i>Manage Item Types
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.items_management') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-box me-2"></i>Manage Items
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('chatbot.index') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-robot me-2"></i>Chatbots
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.chatbots') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-cog me-2"></i>Manage Chatbots
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.cms_dashboard') }}" class="btn btn-outline-dark w-100">
+                                <i class="fas fa-edit me-2"></i>Content Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('data_collectors.index') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-database me-2"></i>Data Collectors
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.data_collectors') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-cog me-2"></i>Manage Data Collectors
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.banks_management') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-university me-2"></i>Bank Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.profile_types_management') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-tag me-2"></i>Manage Profile Types
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.profiles_management') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-users me-2"></i>Manage Profiles
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.organization_types_management') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-building me-2"></i>Manage Organization Types
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.organizations_management') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-sitemap me-2"></i>Manage Organizations
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('scoring_admin.scoring_management') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-chart-line me-2"></i>Scoring System
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Analytics & Monitoring -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-chart-line me-2"></i>Analytics & Monitoring
+                            </h6>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Smart Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.dynamic_data_mappings') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-database me-2"></i>Data Mappings
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.dynamic_completions') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-history me-2"></i>Completions
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.advanced_analytics') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-chart-line me-2"></i>Advanced Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.analytics') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Basic Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.analytics_events') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-list me-2"></i>Event Logs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.interaction_analytics') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-mouse-pointer me-2"></i>Interaction Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            <a href="{{ url_for('admin.wallet_management') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-wallet me-2"></i>Wallet Management
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Reports -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-danger mb-3">
+                                <i class="fas fa-chart-pie me-2"></i>Reports
+                            </h6>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.comprehensive_reports') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-chart-pie me-2"></i>Comprehensive Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.overview_report') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Overview Report
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.user_activity_report') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-users me-2"></i>User Activity
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('health_page') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-heartbeat me-2"></i>System Health
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Management -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-comment-dots me-2"></i>Feedback Management
+                            </h6>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('feedback.admin_feedback') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-comment-dots me-2"></i>View Feedback
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + '-icon');
+    
+    if (section.classList.contains('show')) {
+        section.classList.remove('show');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        section.classList.add('show');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    }
+}
+
+// Initialize sections as collapsed
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = ['bank-stats', 'recent-users', 'recent-deals'];
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        const icon = document.getElementById(sectionId + '-icon');
+        section.classList.remove('show');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}{{ flow.name }} - Responses - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-comments me-2"></i>{{ flow.name }} - Responses
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.view_chatbot', flow_id=flow.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Flow
+                    </a>
+                    <a href="{{ url_for('admin.chatbot_analytics', flow_id=flow.id) }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-comments text-primary fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ responses.total }}</h3>
+                    <p class="card-text text-muted">Total Responses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle text-success fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ responses.items|selectattr('completed', 'equalto', true)|list|length }}</h3>
+                    <p class="card-text text-muted">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock text-warning fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ responses.items|selectattr('completed', 'equalto', false)|list|length }}</h3>
+                    <p class="card-text text-muted">Incomplete</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-percentage text-info fs-1 mb-2"></i>
+                    <h3 class="card-title">
+                        {% if responses.total > 0 %}
+                            {{ "%.1f"|format((responses.items|selectattr('completed', 'equalto', true)|list|length / responses.total * 100)) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </h3>
+                    <p class="card-text text-muted">Completion Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Responses List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Response History</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if responses.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Session ID</th>
+                                        <th>User</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Completed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for response in responses.items %}
+                                    <tr>
+                                        <td>
+                                            <code class="small">{{ response.session_id[:8] }}...</code>
+                                        </td>
+                                        <td>
+                                            {% if response.user %}
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-user-circle text-muted me-2"></i>
+                                                    <span>{{ response.user.first_name }} {{ response.user.last_name }}</span>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">Anonymous</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if response.completed %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Incomplete</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ response.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if response.completed_at %}
+                                                <small class="text-muted">{{ response.completed_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="viewResponse({{ response.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if responses.pages > 1 %}
+                        <div class="card-footer bg-white border-top">
+                            <nav aria-label="Response pagination">
+                                <ul class="pagination pagination-sm justify-content-center mb-0">
+                                    {% if responses.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ responses.prev_num }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in responses.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != responses.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if responses.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ responses.next_num }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-comments text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No Responses Yet</h5>
+                            <p class="text-muted">No one has filled out this chatbot flow yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Response Details Modal -->
+<div class="modal fade" id="responseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Response Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="responseDetails">
+                <!-- Response details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewResponse(responseId) {
+    // This would typically make an AJAX call to get response details
+    // For now, we'll show a placeholder
+    document.getElementById('responseDetails').innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p class="mt-2">Loading response details...</p>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('responseModal')).show();
+    
+    // In a real implementation, you would fetch the response details here
+    // fetch('/admin/chatbots/{{ flow.id }}/responses/' + responseId)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         // Display the response details
+    //     });
+}
+</script>
+{% endblock %}
+
+
+
+

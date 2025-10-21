@@ -1,0 +1,121 @@
+====================================================================
+SIMPLE COMMANDS TO STOP BANKU APP
+====================================================================
+
+Since the Python script won't work due to hosting locks, 
+run these commands DIRECTLY in your SSH terminal:
+
+--------------------------------------------------------------------
+METHOD 1: Kill Python Processes (RECOMMENDED)
+--------------------------------------------------------------------
+
+# Find the processes
+ps aux | grep -E '(app.py|main.py)' | grep -v grep
+
+# Kill them (replace XXXX with actual PID numbers from above)
+kill -9 XXXX
+
+# Example:
+# If you see: user 12345 ... python app.py
+# Run: kill -9 12345
+
+
+--------------------------------------------------------------------
+METHOD 2: Kill All Python (Nuclear Option)
+--------------------------------------------------------------------
+
+# WARNING: This kills ALL Python processes
+pkill -9 python
+pkill -9 python3
+
+
+--------------------------------------------------------------------
+METHOD 3: Passenger Restart (For Namecheap/cPanel)
+--------------------------------------------------------------------
+
+# Create restart trigger file
+mkdir -p tmp
+touch tmp/restart.txt
+
+# This tells Passenger to restart the app
+# Wait 10 seconds, then check if app stopped
+
+
+--------------------------------------------------------------------
+METHOD 4: Remove Lock and Restart
+--------------------------------------------------------------------
+
+# Remove lock files
+rm -f /tmp/*.lock
+rm -f tmp/pids/*
+
+# Create restart trigger
+touch tmp/restart.txt
+
+
+--------------------------------------------------------------------
+METHOD 5: Through Control Panel (EASIEST!)
+--------------------------------------------------------------------
+
+1. Login to your cPanel
+2. Go to "Setup Python App" or "Application Manager"
+3. Find banku.vip application
+4. Click "RESTART" button (not STOP!)
+   
+   Why Restart? It forces a stop+start, bypassing the lock issue
+
+
+--------------------------------------------------------------------
+VERIFY IT STOPPED
+--------------------------------------------------------------------
+
+# Run this command
+ps aux | grep python | grep -v grep
+
+# If it shows NOTHING → App is stopped ✓
+# If it shows processes → Kill them with: kill -9 <PID>
+
+
+--------------------------------------------------------------------
+AFTER STOPPING - START THE APP
+--------------------------------------------------------------------
+
+1. Start through control panel, OR
+2. Run: python main.py
+
+Then immediately verify the fix worked:
+
+python quick_timeout_check.py
+
+You should see:
+✓ Pool Usage: 0-20% (not 80%+)
+✓ Sleeping Connections: < 60 seconds (not 1212s!)
+
+
+====================================================================
+COPY-PASTE THESE COMMANDS (in order):
+====================================================================
+
+# 1. Kill processes
+pkill -9 -f "python.*app.py"
+pkill -9 -f "python.*main.py"
+
+# 2. Remove locks
+rm -f /tmp/*.lock
+find . -name "*.lock" -delete
+
+# 3. Trigger restart
+mkdir -p tmp
+touch tmp/restart.txt
+
+# 4. Wait 10 seconds
+sleep 10
+
+# 5. Verify stopped
+ps aux | grep python | grep -v grep
+
+====================================================================
+
+The lock error means your HOSTING PANEL has the app locked.
+Use the commands above to force-kill the processes anyway!
+

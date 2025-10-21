@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Overview Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-pie me-2"></i>Overview Report</h2>
+                <div>
+                    <select class="form-select d-inline-block w-auto me-2" id="dateRange" onchange="loadReportData()">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="365">Last year</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadReportData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="total-users">--</h4>
+                            <p class="card-text">Total Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="total-deals">--</h4>
+                            <p class="card-text">Total Deals</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-university fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="total-revenue">--</h4>
+                            <p class="card-text">Total Revenue</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="active-users">--</h4>
+                            <p class="card-text">Active Users (24h)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>User Growth</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>User Distribution by Role</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tachometer-alt me-2"></i>Performance Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div id="performance-metrics">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Trends</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="errorTrendsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-table me-2"></i>Report Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Current Value</th>
+                                    <th>Previous Period</th>
+                                    <th>Change</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let userGrowthChart, userDistributionChart, errorTrendsChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadReportData();
+});
+
+function loadReportData() {
+    const days = document.getElementById('dateRange').value;
+    
+    fetch(`/admin/reports/overview/data?days=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateOverviewDisplay(data);
+            } else {
+                console.error('Error loading report data:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading report data:', error);
+        });
+}
+
+function updateOverviewDisplay(data) {
+    // Update key metrics
+    document.getElementById('total-users').textContent = data.total_users || 0;
+    document.getElementById('total-deals').textContent = data.total_deals || 0;
+    document.getElementById('total-revenue').textContent = '$' + (data.total_revenue || 0).toLocaleString();
+    document.getElementById('active-users').textContent = data.active_users || 0;
+    
+    // Update charts
+    updateUserGrowthChart(data.user_growth || []);
+    updateUserDistributionChart(data.user_distribution || {});
+    updateErrorTrendsChart(data.error_trends || []);
+    updatePerformanceMetrics(data.performance_metrics || []);
+    updateSummaryTable(data);
+}
+
+function updateUserGrowthChart(userGrowth) {
+    const labels = userGrowth.map(item => item.date);
+    const counts = userGrowth.map(item => item.count);
+    
+    if (userGrowthChart) {
+        userGrowthChart.destroy();
+    }
+    
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+    userGrowthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Users',
+                data: counts,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updateUserDistributionChart(userDistribution) {
+    const labels = Object.keys(userDistribution);
+    const data = Object.values(userDistribution);
+    
+    if (userDistributionChart) {
+        userDistributionChart.destroy();
+    }
+    
+    const ctx = document.getElementById('userDistributionChart').getContext('2d');
+    userDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)',
+                    'rgba(255, 159, 64, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function updateErrorTrendsChart(errorTrends) {
+    const labels = errorTrends.map(item => item.date);
+    const counts = errorTrends.map(item => item.count);
+    
+    if (errorTrendsChart) {
+        errorTrendsChart.destroy();
+    }
+    
+    const ctx = document.getElementById('errorTrendsChart').getContext('2d');
+    errorTrendsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Errors',
+                data: counts,
+                backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updatePerformanceMetrics(metrics) {
+    const container = document.getElementById('performance-metrics');
+    
+    if (metrics.length === 0) {
+        container.innerHTML = '<p class="text-muted">No performance data available</p>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    metrics.forEach(metric => {
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">${metric.metric}</span>
+                    <span class="badge bg-primary">${metric.value.toFixed(2)}</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function updateSummaryTable(data) {
+    const tbody = document.getElementById('summary-table');
+    
+    const metrics = [
+        {
+            name: 'Total Users',
+            current: data.total_users || 0,
+            previous: (data.total_users || 0) - (data.user_growth?.length || 0),
+            change: (data.user_growth?.length || 0),
+            trend: 'up'
+        },
+        {
+            name: 'Total Deals',
+            current: data.total_deals || 0,
+            previous: (data.total_deals || 0) - 5, // Mock previous
+            change: 5,
+            trend: 'up'
+        },
+        {
+            name: 'Total Revenue',
+            current: data.total_revenue || 0,
+            previous: (data.total_revenue || 0) - 1000, // Mock previous
+            change: 1000,
+            trend: 'up'
+        },
+        {
+            name: 'Active Users',
+            current: data.active_users || 0,
+            previous: (data.active_users || 0) - 2, // Mock previous
+            change: 2,
+            trend: 'up'
+        }
+    ];
+    
+    tbody.innerHTML = '';
+    metrics.forEach(metric => {
+        const changePercent = metric.previous > 0 ? ((metric.change / metric.previous) * 100).toFixed(1) : 0;
+        const trendIcon = metric.trend === 'up' ? 'fa-arrow-up text-success' : 'fa-arrow-down text-danger';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${metric.name}</td>
+            <td>${metric.current.toLocaleString()}</td>
+            <td>${metric.previous.toLocaleString()}</td>
+            <td>${metric.change > 0 ? '+' : ''}${metric.change.toLocaleString()}</td>
+            <td><i class="fas ${trendIcon}"></i> ${changePercent}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+</script>
+{% endblock %}

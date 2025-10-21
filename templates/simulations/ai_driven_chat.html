@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}AI-Driven Product Form Simulation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <h4 class="mb-0"><i class="fas fa-brain me-2"></i>AI-Driven Product Form Simulation</h4>
+                    <p class="mb-0 mt-2">Intelligent conversation that adapts to your responses</p>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <!-- Progress Indicator -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">AI Analysis Progress</span>
+                            <span class="text-muted" id="ai-progress-text">Gathering Information...</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-gradient" role="progressbar" id="ai-progress-bar" style="width: 0%; background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted" id="ai-status">AI is analyzing your responses to determine the best questions to ask...</small>
+                        </div>
+                    </div>
+
+                    <!-- Chat Interface -->
+                    <div class="chat-container" style="height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+                        <div class="chat-messages" id="ai-chat-messages">
+                            <!-- Messages will be added here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="mt-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="ai-user-input" placeholder="Tell me about your product..." disabled>
+                            <button class="btn btn-primary" id="ai-send-btn" disabled>
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-outline-secondary btn-sm" id="ai-restart-btn">
+                                <i class="fas fa-redo"></i> Restart AI Chat
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" id="ai-suggest-btn" style="display: none;">
+                                <i class="fas fa-lightbulb"></i> Get AI Suggestions
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Analysis Panel -->
+                    <div class="mt-4" id="ai-analysis-panel" style="display: none;">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>AI Analysis</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="ai-analysis-content"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Summary -->
+                    <div class="mt-4" id="ai-summary-section" style="display: none;">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>AI-Generated Product Profile</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="ai-form-summary"></div>
+                                <div class="mt-3">
+                                    <button class="btn btn-success" id="ai-export-btn">
+                                        <i class="fas fa-download"></i> Export AI Profile
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="ai-new-chat-btn">
+                                        <i class="fas fa-comments"></i> Start New AI Chat
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    margin-bottom: 15px;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.message-ai {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.message-user {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+}
+
+.message-bubble {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.ai-bubble {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    margin-left: 10px;
+}
+
+.user-bubble {
+    background: #e9ecef;
+    color: #333;
+    margin-right: 10px;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.ai-avatar {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.user-avatar {
+    background: #6c757d;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #667eea;
+    margin: 0 2px;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.ai-suggestion {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-suggestion:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateX(5px);
+}
+
+.ai-thinking {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin: 5px 0;
+    display: inline-block;
+}
+
+.analysis-item {
+    padding: 10px;
+    margin: 5px 0;
+    border-left: 4px solid #17a2b8;
+    background: #f8f9fa;
+    border-radius: 0 8px 8px 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.ai-pulse {
+    animation: pulse 2s infinite;
+}
+</style>
+
+<script>
+class AIDrivenChat {
+    constructor() {
+        this.conversationData = {};
+        this.analysisComplete = false;
+        this.requiredFields = [
+            'title', 'category', 'description', 'creator', 'condition', 'pricing', 'location'
+        ];
+        this.collectedFields = new Set();
+        this.conversationCount = 0;
+        this.maxConversations = 15;
+        
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.startAIChat();
+    }
+
+    bindEvents() {
+        document.getElementById('ai-send-btn').addEventListener('click', () => this.handleSubmit());
+        document.getElementById('ai-user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleSubmit();
+        });
+        document.getElementById('ai-restart-btn').addEventListener('click', () => this.restart());
+        document.getElementById('ai-new-chat-btn').addEventListener('click', () => this.restart());
+        document.getElementById('ai-suggest-btn').addEventListener('click', () => this.getAISuggestions());
+    }
+
+    startAIChat() {
+        this.addAIMessage("Hello! I'm an AI assistant that will help you create a comprehensive product profile through natural conversation. Tell me about the product you'd like to create, and I'll ask intelligent follow-up questions to gather all the necessary information.");
+        
+        setTimeout(() => {
+            this.enableInput();
+        }, 1000);
+    }
+
+    addAIMessage(text, suggestions = null) {
+        const messagesContainer = document.getElementById('ai-chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-ai';
+        
+        let suggestionsHtml = '';
+        if (suggestions && suggestions.length > 0) {
+            suggestionsHtml = '<div class="mt-2">';
+            suggestions.forEach(suggestion => {
+                suggestionsHtml += `<div class="ai-suggestion" data-suggestion="${suggestion}">💡 ${suggestion}</div>`;
+            });
+            suggestionsHtml += '</div>';
+            
+            // Add click handlers for suggestions
+            setTimeout(() => {
+                document.querySelectorAll('.ai-suggestion').forEach(suggestion => {
+                    suggestion.addEventListener('click', (e) => {
+                        const suggestionText = e.target.getAttribute('data-suggestion');
+                        document.getElementById('ai-user-input').value = suggestionText;
+                        this.handleSubmit();
+                    });
+                });
+            }, 100);
+        }
+        
+        messageDiv.innerHTML = `
+            <div class="message-avatar ai-avatar">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="message-bubble ai-bubble">
+                ${text}
+                ${suggestionsHtml}
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+
+    addUserMessage(text) {
+        const messagesContainer = document.getElementById('ai-chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-user';
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble user-bubble">
+                ${text}
+            </div>
+            <div class="message-avatar user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+
+    addAIThinking(text) {
+        const messagesContainer = document.getElementById('ai-chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-ai';
+        
+        messageDiv.innerHTML = `
+            <div class="message-avatar ai-avatar ai-pulse">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="message-bubble ai-bubble">
+                <div class="ai-thinking">🤔 ${text}</div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+
+    handleSubmit() {
+        const userInput = document.getElementById('ai-user-input');
+        const value = userInput.value.trim();
+        
+        if (!value) return;
+        
+        this.addUserMessage(value);
+        this.conversationData[`response_${this.conversationCount}`] = value;
+        this.conversationCount++;
+        
+        // Clear input and disable
+        userInput.value = '';
+        this.disableInput();
+        
+        // AI processing
+        this.processAIResponse(value);
+    }
+
+    processAIResponse(userResponse) {
+        this.addAIThinking("Analyzing your response...");
+        
+        setTimeout(() => {
+            this.hideThinking();
+            this.analyzeAndRespond(userResponse);
+        }, 1500 + Math.random() * 1000);
+    }
+
+    hideThinking() {
+        const thinkingElements = document.querySelectorAll('.ai-thinking');
+        thinkingElements.forEach(el => el.remove());
+    }
+
+    analyzeAndRespond(userResponse) {
+        const analysis = this.analyzeResponse(userResponse);
+        this.updateProgress();
+        
+        if (analysis.complete) {
+            this.showFinalSummary();
+        } else {
+            const suggestions = this.generateSuggestions(analysis);
+            this.addAIMessage(analysis.response, suggestions);
+            this.enableInput();
+        }
+    }
+
+    analyzeResponse(response) {
+        const lowerResponse = response.toLowerCase();
+        let analysis = {
+            complete: false,
+            response: "",
+            extractedData: {}
+        };
+
+        // Extract product information using AI-like analysis
+        if (lowerResponse.includes('product') || lowerResponse.includes('item') || lowerResponse.includes('thing')) {
+            if (!this.collectedFields.has('title')) {
+                analysis.response = "Great! I can see you're working on a product. What would you like to call it? What's the name or title of this product?";
+                analysis.extractedData.category = 'product';
+            }
+        }
+
+        if (lowerResponse.includes('app') || lowerResponse.includes('software') || lowerResponse.includes('digital')) {
+            analysis.extractedData.category = 'digital';
+            analysis.extractedData.subcategory = 'software';
+        }
+
+        if (lowerResponse.includes('book') || lowerResponse.includes('course') || lowerResponse.includes('guide')) {
+            analysis.extractedData.category = 'knowledge';
+            analysis.extractedData.subcategory = 'educational';
+        }
+
+        if (lowerResponse.includes('physical') || lowerResponse.includes('tangible') || lowerResponse.includes('object')) {
+            analysis.extractedData.category = 'physical';
+        }
+
+        // Extract title
+        if (lowerResponse.includes('call') || lowerResponse.includes('name') || lowerResponse.includes('title')) {
+            const titleMatch = response.match(/(?:call|name|title)[\s\w]*?([A-Z][a-zA-Z\s]+)/);
+            if (titleMatch) {
+                analysis.extractedData.title = titleMatch[1].trim();
+                this.collectedFields.add('title');
+            }
+        } else if (response.length < 50 && !response.includes('?')) {
+            analysis.extractedData.title = response;
+            this.collectedFields.add('title');
+        }
+
+        // Extract description
+        if (lowerResponse.includes('description') || lowerResponse.includes('about') || lowerResponse.includes('explain')) {
+            analysis.extractedData.description = response;
+            this.collectedFields.add('description');
+        }
+
+        // Extract creator/brand
+        if (lowerResponse.includes('create') || lowerResponse.includes('made') || lowerResponse.includes('brand')) {
+            analysis.extractedData.creator = response;
+            this.collectedFields.add('creator');
+        }
+
+        // Extract condition
+        if (lowerResponse.includes('new') || lowerResponse.includes('used') || lowerResponse.includes('condition')) {
+            if (lowerResponse.includes('new')) analysis.extractedData.condition = 'new';
+            else if (lowerResponse.includes('used')) analysis.extractedData.condition = 'used';
+            this.collectedFields.add('condition');
+        }
+
+        // Extract pricing
+        if (lowerResponse.includes('free') || lowerResponse.includes('paid') || lowerResponse.includes('price') || lowerResponse.includes('cost')) {
+            if (lowerResponse.includes('free')) analysis.extractedData.pricing = 'free';
+            else if (lowerResponse.includes('paid')) analysis.extractedData.pricing = 'paid';
+            this.collectedFields.add('pricing');
+        }
+
+        // Extract location
+        if (lowerResponse.includes('location') || lowerResponse.includes('where') || lowerResponse.includes('available')) {
+            analysis.extractedData.location = response;
+            this.collectedFields.add('location');
+        }
+
+        // Merge extracted data
+        Object.assign(this.conversationData, analysis.extractedData);
+
+        // Generate response based on what's missing
+        if (this.collectedFields.size >= this.requiredFields.length || this.conversationCount >= this.maxConversations) {
+            analysis.complete = true;
+            analysis.response = "Perfect! I've gathered enough information about your product. Let me create a comprehensive profile for you.";
+        } else {
+            analysis.response = this.generateNextQuestion();
+        }
+
+        return analysis;
+    }
+
+    generateNextQuestion() {
+        const questions = [
+            "That's interesting! Can you tell me more about what this product does? What problem does it solve?",
+            "Great! Who created or manufactures this product? Is it your own creation or from a specific brand?",
+            "Nice! What's the current condition of this product? Is it new, used, or something else?",
+            "Excellent! How do you plan to price this product? Will it be free, paid, or have a different pricing model?",
+            "Perfect! Where will this product be available? Is it local, online, or available in specific regions?",
+            "Interesting! Can you describe the key features or benefits of this product?",
+            "That sounds great! What makes this product unique compared to similar products?",
+            "Fascinating! Who would be the ideal customer for this product?",
+            "Wonderful! Are there any specific requirements or considerations for using this product?",
+            "Excellent! Is there anything else important about this product that potential users should know?"
+        ];
+
+        return questions[Math.floor(Math.random() * questions.length)];
+    }
+
+    generateSuggestions(analysis) {
+        const suggestions = [];
+        
+        if (!this.collectedFields.has('title')) {
+            suggestions.push("It's a mobile app for productivity");
+            suggestions.push("It's a physical gadget for home automation");
+            suggestions.push("It's an online course about programming");
+        }
+        
+        if (!this.collectedFields.has('description')) {
+            suggestions.push("It helps people organize their daily tasks");
+            suggestions.push("It's a tool that makes cooking easier");
+            suggestions.push("It teaches beginners how to code");
+        }
+        
+        if (!this.collectedFields.has('creator')) {
+            suggestions.push("I created it myself");
+            suggestions.push("It's from Apple");
+            suggestions.push("It's an open-source project");
+        }
+        
+        return suggestions.slice(0, 2);
+    }
+
+    updateProgress() {
+        const progress = (this.collectedFields.size / this.requiredFields.length) * 100;
+        document.getElementById('ai-progress-bar').style.width = `${Math.min(progress, 100)}%`;
+        
+        if (progress < 100) {
+            document.getElementById('ai-progress-text').textContent = `Gathering Information... ${Math.round(progress)}%`;
+            document.getElementById('ai-status').textContent = `AI has identified ${this.collectedFields.size} of ${this.requiredFields.length} key product attributes.`;
+        } else {
+            document.getElementById('ai-progress-text').textContent = "Analysis Complete!";
+            document.getElementById('ai-status').textContent = "AI has successfully analyzed your product information.";
+        }
+    }
+
+    showFinalSummary() {
+        this.analysisComplete = true;
+        this.addAIMessage("🎉 Excellent! I've successfully analyzed your product through our conversation. Here's what I've discovered:");
+        
+        setTimeout(() => {
+            this.displayAIAnalysis();
+            this.showSummary();
+        }, 1000);
+    }
+
+    displayAIAnalysis() {
+        const analysisPanel = document.getElementById('ai-analysis-panel');
+        const analysisContent = document.getElementById('ai-analysis-content');
+        
+        let analysisHtml = '<h6>AI Analysis Results:</h6>';
+        analysisHtml += '<div class="analysis-item"><strong>Conversation Analysis:</strong> Successfully extracted product information from natural language</div>';
+        analysisHtml += '<div class="analysis-item"><strong>Data Completeness:</strong> ' + this.collectedFields.size + '/' + this.requiredFields.length + ' key fields identified</div>';
+        analysisHtml += '<div class="analysis-item"><strong>AI Confidence:</strong> High - Natural language processing successful</div>';
+        analysisHtml += '<div class="analysis-item"><strong>Conversation Quality:</strong> ' + this.conversationCount + ' meaningful exchanges</div>';
+        
+        analysisContent.innerHTML = analysisHtml;
+        analysisPanel.style.display = 'block';
+    }
+
+    showSummary() {
+        const summarySection = document.getElementById('ai-summary-section');
+        const summaryDiv = document.getElementById('ai-form-summary');
+        
+        let summaryHtml = '<h6>AI-Generated Product Profile:</h6><ul class="list-group list-group-flush">';
+        
+        Object.keys(this.conversationData).forEach(key => {
+            if (key.startsWith('response_')) return; // Skip conversation responses
+            
+            const label = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            summaryHtml += `<li class="list-group-item"><strong>${label}:</strong> ${this.conversationData[key]}</li>`;
+        });
+        
+        summaryHtml += '</ul>';
+        summaryHtml += '<div class="alert alert-info mt-3"><strong>AI Note:</strong> This profile was generated through intelligent conversation analysis. The AI identified key product attributes from your natural language responses.</div>';
+        
+        summaryDiv.innerHTML = summaryHtml;
+        summarySection.style.display = 'block';
+        
+        this.disableInput();
+    }
+
+    getAISuggestions() {
+        this.addAIMessage("Here are some AI-generated suggestions to help you describe your product better:", [
+            "It's a digital tool that helps with project management",
+            "It's a physical product for home improvement",
+            "It's an educational resource for learning new skills",
+            "It's a creative solution for everyday problems"
+        ]);
+        this.enableInput();
+    }
+
+    enableInput() {
+        const userInput = document.getElementById('ai-user-input');
+        const sendBtn = document.getElementById('ai-send-btn');
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
+    }
+
+    disableInput() {
+        const userInput = document.getElementById('ai-user-input');
+        const sendBtn = document.getElementById('ai-send-btn');
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+    }
+
+    restart() {
+        this.conversationData = {};
+        this.collectedFields.clear();
+        this.conversationCount = 0;
+        this.analysisComplete = false;
+        
+        document.getElementById('ai-chat-messages').innerHTML = '';
+        document.getElementById('ai-analysis-panel').style.display = 'none';
+        document.getElementById('ai-summary-section').style.display = 'none';
+        document.getElementById('ai-progress-bar').style.width = '0%';
+        document.getElementById('ai-progress-text').textContent = 'Gathering Information...';
+        document.getElementById('ai-status').textContent = 'AI is analyzing your responses to determine the best questions to ask...';
+        
+        this.startAIChat();
+    }
+
+    scrollToBottom() {
+        const chatContainer = document.querySelector('.chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+
+// Initialize the AI chat when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    new AIDrivenChat();
+});
+</script>
+{% endblock %}
+
+
+
+
+

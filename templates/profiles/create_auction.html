@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+
+{% block title %}Create Auction{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-gavel me-2"></i>Create Auction</h4>
+                <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Item Types
+                </a>
+            </div>
+
+            <!-- Auction Definition -->
+            <div class="alert alert-warning mb-4">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is an Auction?</h6>
+                <p class="mb-2"><strong>Auctions are competitive bidding processes where items or services are sold to the highest bidder.</strong> They create market-driven pricing through competition.</p>
+                <p class="mb-0"><strong>Examples:</strong> Art auctions, estate sales, charity auctions, online bidding, government auctions, liquidation sales.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Section 1: Auction Classification -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-tags me-2"></i>1. Auction Classification</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="auction-type" class="form-label">Auction Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="auction-type" name="auction_type" required>
+                                        <option value="">Select type...</option>
+                                        <option value="english">English Auction (Open Ascending)</option>
+                                        <option value="dutch">Dutch Auction (Open Descending)</option>
+                                        <option value="sealed-bid">Sealed Bid</option>
+                                        <option value="reserve">Reserve Auction</option>
+                                        <option value="no-reserve">No Reserve Auction</option>
+                                        <option value="absolute">Absolute Auction</option>
+                                        <option value="online">Online Auction</option>
+                                        <option value="live">Live Auction</option>
+                                        <option value="hybrid">Hybrid (Live + Online)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="auction-category" class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="auction-category" name="auction_category" required>
+                                        <option value="">Select category...</option>
+                                        <option value="art">Art & Collectibles</option>
+                                        <option value="antiques">Antiques</option>
+                                        <option value="jewelry">Jewelry & Watches</option>
+                                        <option value="vehicles">Vehicles</option>
+                                        <option value="real-estate">Real Estate</option>
+                                        <option value="electronics">Electronics</option>
+                                        <option value="furniture">Furniture</option>
+                                        <option value="books">Books & Manuscripts</option>
+                                        <option value="charity">Charity Auction</option>
+                                        <option value="estate">Estate Sale</option>
+                                        <option value="government">Government Surplus</option>
+                                        <option value="business">Business Assets</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="custom-category-container" style="display: none;">
+                                    <label for="custom-category" class="form-label">Custom Category</label>
+                                    <input type="text" class="form-control" id="custom-category" name="custom_category" placeholder="Enter custom category">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="item-condition" class="form-label">Item Condition <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="item-condition" name="item_condition" required>
+                                        <option value="">Select condition...</option>
+                                        <option value="new">New</option>
+                                        <option value="like-new">Like New</option>
+                                        <option value="excellent">Excellent</option>
+                                        <option value="very-good">Very Good</option>
+                                        <option value="good">Good</option>
+                                        <option value="fair">Fair</option>
+                                        <option value="poor">Poor</option>
+                                        <option value="restoration-needed">Restoration Needed</option>
+                                        <option value="parts-only">Parts Only</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#classification-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="classification-icon"></i>Optional Classification Details
+                                </h6>
+                                <div class="collapse" id="classification-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="subcategory" class="form-label">Subcategory</label>
+                                            <input type="text" class="form-control" id="subcategory" name="subcategory" placeholder="More specific category">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="auction-tags" class="form-label">Tags & Keywords</label>
+                                            <input type="text" class="form-control" id="auction-tags" name="auction_tags" placeholder="vintage, rare, collectible">
+                                            <small class="text-muted">Separate with commas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Auctioneer & Organization -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-tie me-2"></i>2. Auctioneer & Organization</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="auctioneer-name" class="form-label">Auctioneer / Organization <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="auctioneer-name" name="auctioneer_name" placeholder="Auction house or individual auctioneer" required>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="contact-email" class="form-label">Contact Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="contact-email" name="contact_email" placeholder="contact@auctionhouse.com" required>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#auctioneer-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="auctioneer-icon"></i>Optional Auctioneer Details
+                                </h6>
+                                <div class="collapse" id="auctioneer-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="auctioneer-website" class="form-label">Website</label>
+                                            <input type="url" class="form-control" id="auctioneer-website" name="auctioneer_website" placeholder="https://auctionhouse.com">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="auctioneer-phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="auctioneer-phone" name="auctioneer_phone" placeholder="+1 234 567 8900">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="license-number" class="form-label">License Number</label>
+                                            <input type="text" class="form-control" id="license-number" name="license_number" placeholder="Auctioneer license number">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="years-experience" class="form-label">Years of Experience</label>
+                                            <input type="number" class="form-control" id="years-experience" name="years_experience" placeholder="Years in business">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Item Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>3. Item Information</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="item-title" class="form-label">Item Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="item-title" name="item_title" placeholder="Clear, descriptive title of the item" required>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="item-description" class="form-label">Item Description <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="item-description" name="item_description" rows="4" placeholder="Detailed description of the item being auctioned" required></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#item-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="item-icon"></i>Optional Item Details
+                                </h6>
+                                <div class="collapse" id="item-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="item-origin" class="form-label">Origin / Provenance</label>
+                                            <textarea class="form-control" id="item-origin" name="item_origin" rows="3" placeholder="History, previous owners, origin story"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="item-specifications" class="form-label">Specifications</label>
+                                            <textarea class="form-control" id="item-specifications" name="item_specifications" rows="3" placeholder="Dimensions, materials, technical details"></textarea>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="year-made" class="form-label">Year Made</label>
+                                            <input type="number" class="form-control" id="year-made" name="year_made" placeholder="Year of manufacture">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="artist-maker" class="form-label">Artist / Maker</label>
+                                            <input type="text" class="form-control" id="artist-maker" name="artist_maker" placeholder="Creator or manufacturer">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="edition-size" class="form-label">Edition Size</label>
+                                            <input type="text" class="form-control" id="edition-size" name="edition_size" placeholder="Limited edition info">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Bidding Details -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-dollar-sign me-2"></i>4. Bidding Details</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="starting-bid" class="form-label">Starting Bid <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="starting-bid" name="starting_bid" step="0.01" placeholder="0.00" required>
+                                        <select class="form-select" name="currency" style="max-width: 100px;">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="AED">AED</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="bid-increment" class="form-label">Bid Increment <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="bid-increment" name="bid_increment" step="0.01" placeholder="Minimum bid increase" required>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="reserve-price" class="form-label">Reserve Price</label>
+                                    <input type="number" class="form-control" id="reserve-price" name="reserve_price" step="0.01" placeholder="Minimum acceptable price">
+                                    <small class="text-muted">Leave empty for no reserve</small>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#bidding-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="bidding-icon"></i>Optional Bidding Details
+                                </h6>
+                                <div class="collapse" id="bidding-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="estimated-value" class="form-label">Estimated Value</label>
+                                            <input type="text" class="form-control" id="estimated-value" name="estimated_value" placeholder="$500 - $800">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="buy-now-price" class="form-label">Buy Now Price</label>
+                                            <input type="number" class="form-control" id="buy-now-price" name="buy_now_price" step="0.01" placeholder="Fixed purchase price">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="buyers-premium" class="form-label">Buyer's Premium (%)</label>
+                                            <input type="number" class="form-control" id="buyers-premium" name="buyers_premium" step="0.1" placeholder="Additional fee percentage">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Auction Schedule -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>5. Auction Schedule</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="start-date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="start-date" name="start_date" required>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="start-time" class="form-label">Start Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="start-time" name="start_time" required>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="end-date" class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="end-date" name="end_date" required>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="end-time" class="form-label">End Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="end-time" name="end_time" required>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#schedule-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="schedule-icon"></i>Optional Schedule Details
+                                </h6>
+                                <div class="collapse" id="schedule-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="preview-dates" class="form-label">Preview Dates</label>
+                                            <input type="text" class="form-control" id="preview-dates" name="preview_dates" placeholder="When items can be viewed">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="timezone" class="form-label">Timezone</label>
+                                            <select class="form-select" id="timezone" name="timezone">
+                                                <option value="">Select timezone...</option>
+                                                <option value="UTC">UTC</option>
+                                                <option value="EST">EST</option>
+                                                <option value="PST">PST</option>
+                                                <option value="GST">GST (UAE)</option>
+                                                <option value="CET">CET</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="auto-extend" class="form-label">Auto-Extend</label>
+                                            <select class="form-select" id="auto-extend" name="auto_extend">
+                                                <option value="no">No</option>
+                                                <option value="yes">Yes (extend if bid in last minutes)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: Location & Viewing -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-map-marker-alt me-2"></i>6. Location & Viewing</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="auction-location" class="form-label">Auction Location</label>
+                                    <input type="text" class="form-control" id="auction-location" name="auction_location" placeholder="Physical location or online platform">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="item-location" class="form-label">Item Location</label>
+                                    <input type="text" class="form-control" id="item-location" name="item_location" placeholder="Where item is currently located">
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="viewing-instructions" class="form-label">Viewing Instructions</label>
+                                    <textarea class="form-control" id="viewing-instructions" name="viewing_instructions" rows="3" placeholder="How and when potential bidders can view the item"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7: Terms & Conditions -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-file-contract me-2"></i>7. Terms & Conditions</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="payment-terms" class="form-label">Payment Terms</label>
+                                    <textarea class="form-control" id="payment-terms" name="payment_terms" rows="3" placeholder="When and how payment must be made"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="pickup-delivery" class="form-label">Pickup / Delivery</label>
+                                    <textarea class="form-control" id="pickup-delivery" name="pickup_delivery" rows="3" placeholder="How winner will receive the item"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="return-policy" class="form-label">Return Policy</label>
+                                    <textarea class="form-control" id="return-policy" name="return_policy" rows="2" placeholder="Returns, exchanges, guarantees"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="additional-fees" class="form-label">Additional Fees</label>
+                                    <textarea class="form-control" id="additional-fees" name="additional_fees" rows="2" placeholder="Shipping, handling, taxes"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 8: Media & Documentation -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-images me-2"></i>8. Media & Documentation</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="item-images" class="form-label">Item Images</label>
+                                    <input type="file" class="form-control mb-2" name="item_images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links">
+                                    <small class="text-muted">High-quality photos from multiple angles</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="item-videos" class="form-label">Item Videos</label>
+                                    <input type="file" class="form-control mb-2" name="item_videos" accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="YouTube, Vimeo links">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="certificates" class="form-label">Certificates / Documentation</label>
+                                    <input type="file" class="form-control mb-2" name="certificates" multiple accept=".pdf,.doc,.docx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Document links">
+                                    <small class="text-muted">Authentication, appraisals, provenance</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="auction-catalog" class="form-label">Auction Catalog Link</label>
+                                    <input type="url" class="form-control" id="auction-catalog" name="auction_catalog" placeholder="Link to full auction catalog">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 9: Registration & Participation -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-check me-2"></i>9. Registration & Participation</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="registration-required" class="form-label">Registration Required</label>
+                                    <select class="form-select" id="registration-required" name="registration_required">
+                                        <option value="yes">Yes</option>
+                                        <option value="no">No</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="bidder-qualification" class="form-label">Bidder Qualification</label>
+                                    <textarea class="form-control" id="bidder-qualification" name="bidder_qualification" rows="2" placeholder="Requirements to participate"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="deposit-required" class="form-label">Deposit Required</label>
+                                    <input type="number" class="form-control" id="deposit-required" name="deposit_required" step="0.01" placeholder="Security deposit amount">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="bidding-platform" class="form-label">Bidding Platform</label>
+                                    <input type="url" class="form-control" id="bidding-platform" name="bidding_platform" placeholder="Online bidding platform URL">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 10: Management & Metadata -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cog me-2"></i>10. Management & Metadata</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="created-date" class="form-label">Created Date</label>
+                                    <input type="date" class="form-control" id="created-date" name="created_date" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="last-updated" class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" id="last-updated" name="last_updated" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="auction-status" class="form-label">Auction Status</label>
+                                    <select class="form-select" id="auction-status" name="auction_status">
+                                        <option value="upcoming">Upcoming</option>
+                                        <option value="live">Live</option>
+                                        <option value="ended">Ended</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="visibility" class="form-label">Visibility</label>
+                                    <select class="form-select" id="visibility" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="restricted">Restricted</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#management-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="management-icon"></i>Optional Management Details
+                                </h6>
+                                <div class="collapse" id="management-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="lot-number" class="form-label">Lot Number</label>
+                                            <input type="text" class="form-control" id="lot-number" name="lot_number" placeholder="Catalog lot number">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="admin-notes" class="form-label">Admin Notes</label>
+                                            <textarea class="form-control" id="admin-notes" name="admin_notes" rows="2" placeholder="Internal notes"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-warning me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-warning">
+                                    <i class="fas fa-gavel me-2"></i>Create Auction
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Set current date for created and last updated fields
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created-date').value = today;
+    document.getElementById('last-updated').value = today;
+});
+
+// Auction category change handler
+document.getElementById('auction-category').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-category-container');
+    if (this.value === 'other') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+});
+
+// Collapse/Expand icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-right');
+                trigger.classList.add('fa-chevron-down');
+            }
+        });
+        
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-down');
+                trigger.classList.add('fa-chevron-right');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+

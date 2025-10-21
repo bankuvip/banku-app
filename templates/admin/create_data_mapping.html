@@ -1,0 +1,586 @@
+{% extends "base.html" %}
+
+{% block title %}Create Data Mapping - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Create Data Storage Mapping</h2>
+                <a href="{{ url_for('admin.dynamic_data_mappings') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Mappings
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Mapping Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="createMappingForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="item_type_id" class="form-label">Item Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="item_type_id" name="item_type_id" required>
+                                                <option value="">Select item type</option>
+                                                {% for item_type in item_types %}
+                                                <option value="{{ item_type.id }}">{{ item_type.display_name }} ({{ item_type.name }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="chatbot_id" class="form-label">Chatbot <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="chatbot_id" name="chatbot_id" required>
+                                                <option value="">Select chatbot</option>
+                                                {% for chatbot in chatbots %}
+                                                <option value="{{ chatbot.id }}">{{ chatbot.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="bank_id" class="form-label">Storage Bank <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="bank_id" name="bank_id" required>
+                                                <option value="">Select bank</option>
+                                                {% for bank in banks %}
+                                                <option value="{{ bank.id }}">{{ bank.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-muted mb-0">Data Mapping Configuration</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="autoFillBtn" disabled>
+                                        <i class="fas fa-magic me-1"></i>Auto-Fill JSON
+                                    </button>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="data_mapping" class="form-label">Field Mapping (JSON)</label>
+                                    <textarea class="form-control" id="data_mapping" name="data_mapping" rows="8" placeholder='{
+  "chatbot_field": "item_field",
+  "question_1": "title",
+  "question_2": "description",
+  "question_3": "category"
+}'></textarea>
+                                    <div class="form-text">Map chatbot question IDs to item fields (JSON format)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="validation_rules" class="form-label">Validation Rules (JSON)</label>
+                                    <textarea class="form-control" id="validation_rules" name="validation_rules" rows="6" placeholder='{
+  "title": {"required": true, "min_length": 5},
+  "description": {"required": true, "min_length": 10},
+  "category": {"required": true, "allowed_values": ["products", "services"]}
+}'></textarea>
+                                    <div class="form-text">Define validation rules for each field (JSON format)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="storage_config" class="form-label">Storage Configuration (JSON)</label>
+                                    <textarea class="form-control" id="storage_config" name="storage_config" rows="4" placeholder='{
+  "auto_save": true,
+  "backup_enabled": true,
+  "notify_on_save": false
+}'></textarea>
+                                    <div class="form-text">Additional storage settings (JSON format)</div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('admin.dynamic_data_mappings') }}" class="btn btn-secondary">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create Mapping
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Preview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="mappingPreview">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6 class="mb-2">Data Flow</h6>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="text-center">
+                                            <div class="badge bg-success mb-1" id="previewChatbot">Chatbot</div>
+                                            <div class="small text-muted">Collects Data</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <i class="fas fa-arrow-right text-muted"></i>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="badge bg-warning mb-1" id="previewBank">Bank</div>
+                                            <div class="small text-muted">Stores Data</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border rounded p-3">
+                                    <h6 class="mb-2">Item Type</h6>
+                                    <div class="small">
+                                        <div class="mb-1">
+                                            <strong>Type:</strong> <span id="previewItemType" class="text-muted">Not selected</span>
+                                        </div>
+                                        <div class="mb-1">
+                                            <strong>Fields:</strong> <span id="previewFields" class="text-muted">0 mapped</span>
+                                        </div>
+                                        <div class="mb-1">
+                                            <strong>Rules:</strong> <span id="previewRules" class="text-muted">0 defined</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">JSON Examples</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Data Mapping:</h6>
+                            <pre class="small bg-light p-2 rounded"><code>{
+  "question_1": "title",
+  "question_2": "description",
+  "question_3": "category"
+}</code></pre>
+                            
+                            <h6 class="mt-3">Validation Rules:</h6>
+                            <pre class="small bg-light p-2 rounded"><code>{
+  "title": {
+    "required": true,
+    "min_length": 5
+  },
+  "description": {
+    "required": true,
+    "min_length": 10
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createMappingForm');
+    const previewChatbot = document.getElementById('previewChatbot');
+    const previewBank = document.getElementById('previewBank');
+    const previewItemType = document.getElementById('previewItemType');
+    const previewFields = document.getElementById('previewFields');
+    const previewRules = document.getElementById('previewRules');
+
+    // Update preview when inputs change
+    function updatePreview() {
+        const itemTypeId = document.getElementById('item_type_id').value;
+        const chatbotId = document.getElementById('chatbot_id').value;
+        const bankId = document.getElementById('bank_id').value;
+        const dataMapping = document.getElementById('data_mapping').value;
+        const validationRules = document.getElementById('validation_rules').value;
+
+        // Update chatbot
+        const chatbotSelect = document.getElementById('chatbot_id');
+        const selectedChatbot = chatbotSelect.options[chatbotSelect.selectedIndex];
+        previewChatbot.textContent = chatbotId ? selectedChatbot.text : 'Chatbot';
+
+        // Update bank
+        const bankSelect = document.getElementById('bank_id');
+        const selectedBank = bankSelect.options[bankSelect.selectedIndex];
+        previewBank.textContent = bankId ? selectedBank.text : 'Bank';
+
+        // Update item type
+        const itemTypeSelect = document.getElementById('item_type_id');
+        const selectedItemType = itemTypeSelect.options[itemTypeSelect.selectedIndex];
+        previewItemType.textContent = itemTypeId ? selectedItemType.text : 'Not selected';
+
+        // Count fields and rules
+        let fieldCount = 0;
+        let ruleCount = 0;
+
+        try {
+            if (dataMapping) {
+                const mapping = JSON.parse(dataMapping);
+                fieldCount = Object.keys(mapping).length;
+            }
+        } catch (e) {
+            // Invalid JSON
+        }
+
+        try {
+            if (validationRules) {
+                const rules = JSON.parse(validationRules);
+                ruleCount = Object.keys(rules).length;
+            }
+        } catch (e) {
+            // Invalid JSON
+        }
+
+        previewFields.textContent = `${fieldCount} mapped`;
+        previewRules.textContent = `${ruleCount} defined`;
+    }
+
+    // Auto-fill JSON fields when chatbot and item type are selected
+    function autoFillJsonFields() {
+        const itemTypeId = document.getElementById('item_type_id').value;
+        const chatbotId = document.getElementById('chatbot_id').value;
+        
+        if (itemTypeId && chatbotId) {
+            // Show loading state
+            const autoFillBtn = document.getElementById('autoFillBtn');
+            const originalText = autoFillBtn.innerHTML;
+            autoFillBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+            autoFillBtn.disabled = true;
+            
+            // Fetch chatbot questions and auto-generate mappings
+            fetch(`/admin/api/chatbot/${chatbotId}/questions`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.questions) {
+                        generateDataMapping(data.questions, itemTypeId);
+                        generateValidationRules(data.questions, itemTypeId);
+                        generateStorageConfig(itemTypeId);
+                        updatePreview();
+                        
+                        // Show success message
+                        autoFillBtn.innerHTML = '<i class="fas fa-check me-1"></i>Auto-Filled!';
+                        autoFillBtn.classList.remove('btn-outline-primary');
+                        autoFillBtn.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            autoFillBtn.innerHTML = originalText;
+                            autoFillBtn.classList.remove('btn-success');
+                            autoFillBtn.classList.add('btn-outline-primary');
+                            autoFillBtn.disabled = false;
+                        }, 2000);
+                    } else {
+                        throw new Error('Failed to fetch questions');
+                    }
+                })
+                .catch(error => {
+                    console.log('Could not fetch chatbot questions, using default mapping');
+                    generateDefaultMapping(itemTypeId);
+                    updatePreview();
+                    
+                    // Show success message for default mapping
+                    autoFillBtn.innerHTML = '<i class="fas fa-check me-1"></i>Default Applied!';
+                    autoFillBtn.classList.remove('btn-outline-primary');
+                    autoFillBtn.classList.add('btn-warning');
+                    
+                    setTimeout(() => {
+                        autoFillBtn.innerHTML = originalText;
+                        autoFillBtn.classList.remove('btn-warning');
+                        autoFillBtn.classList.add('btn-outline-primary');
+                        autoFillBtn.disabled = false;
+                    }, 2000);
+                });
+        }
+    }
+    
+    // Generate data mapping based on chatbot questions and item type
+    function generateDataMapping(questions, itemTypeId) {
+        const mapping = {};
+        
+        // Map questions to fields based on question text patterns
+        questions.forEach((question, index) => {
+            const questionText = question.text.toLowerCase();
+            const questionId = question.id;
+            
+            if (questionText.includes('title') || questionText.includes('add title')) {
+                mapping[`question_${questionId}`] = 'title';
+            } else if (questionText.includes('short description')) {
+                mapping[`question_${questionId}`] = 'short_description';
+            } else if (questionText.includes('detailed description') || questionText.includes('write detailed')) {
+                mapping[`question_${questionId}`] = 'description';
+            } else if (questionText.includes('category & subcategory')) {
+                mapping[`question_${questionId}`] = 'category';
+            } else if (questionText.includes('suggest category')) {
+                mapping[`question_${questionId}`] = 'subcategory';
+            } else if (questionText.includes('tags') || questionText.includes('keywords')) {
+                mapping[`question_${questionId}`] = 'tags';
+            } else if (questionText.includes('price type')) {
+                mapping[`question_${questionId}`] = 'price_type';
+            } else if (questionText.includes('price amount')) {
+                mapping[`question_${questionId}`] = 'price';
+            } else if (questionText.includes('price currency')) {
+                mapping[`question_${questionId}`] = 'currency';
+            } else if (questionText.includes('location') || questionText.includes('where is')) {
+                mapping[`question_${questionId}`] = 'location';
+            } else if (questionText.includes('photos') || questionText.includes('upload')) {
+                mapping[`question_${questionId}`] = 'images';
+            } else if (questionText.includes('problem') || questionText.includes('solution')) {
+                mapping[`question_${questionId}`] = 'additional_info';
+            } else if (questionText.includes('audience') || questionText.includes('target')) {
+                mapping[`question_${questionId}`] = 'target_audience';
+            } else if (questionText.includes('prototype') || questionText.includes('mockup')) {
+                mapping[`question_${questionId}`] = 'prototypes';
+            } else if (questionText.includes('funding') || questionText.includes('investment')) {
+                mapping[`question_${questionId}`] = 'funding_needed';
+            } else if (questionText.includes('tested') || questionText.includes('users')) {
+                mapping[`question_${questionId}`] = 'user_testing';
+            } else if (questionText.includes('challenge') || questionText.includes('potential')) {
+                mapping[`question_${questionId}`] = 'challenges';
+            } else {
+                // Default mapping for other questions - use question text as key
+                const cleanText = questionText.replace(/[^a-z0-9]/g, '_').substring(0, 20);
+                mapping[`question_${questionId}`] = cleanText;
+            }
+        });
+        
+        document.getElementById('data_mapping').value = JSON.stringify(mapping, null, 2);
+    }
+    
+    // Generate validation rules based on item type
+    function generateValidationRules(questions, itemTypeId) {
+        const rules = {
+            'title': {
+                'required': true,
+                'min_length': 3,
+                'max_length': 200
+            },
+            'short_description': {
+                'required': true,
+                'min_length': 10,
+                'max_length': 500
+            },
+            'description': {
+                'required': true,
+                'min_length': 20,
+                'max_length': 2000
+            },
+            'category': {
+                'required': true
+            },
+            'subcategory': {
+                'required': false
+            },
+            'tags': {
+                'required': false,
+                'max_length': 1000
+            },
+            'price_type': {
+                'required': false,
+                'allowed_values': ['free', 'paid', 'negotiable']
+            },
+            'price': {
+                'required': false,
+                'min_value': 0
+            },
+            'currency': {
+                'required': false,
+                'allowed_values': ['USD', 'EUR', 'GBP', 'AED']
+            },
+            'location': {
+                'required': false,
+                'max_length': 200
+            },
+            'images': {
+                'required': false
+            }
+        };
+        
+        // Add specific rules based on item type
+        if (itemTypeId === '24') { // idea
+            rules.title.max_length = 150;
+            rules.description.max_length = 3000;
+            rules.short_description.max_length = 300;
+            // Add idea-specific fields
+            rules.additional_info = {
+                'required': false,
+                'max_length': 1000
+            };
+            rules.target_audience = {
+                'required': false,
+                'max_length': 500
+            };
+            rules.funding_needed = {
+                'required': false,
+                'allowed_values': ['yes', 'no', 'maybe']
+            };
+        } else if (itemTypeId === '31') { // information
+            rules.title.max_length = 100;
+            rules.description.max_length = 1000;
+            rules.short_description.max_length = 200;
+        }
+        
+        document.getElementById('validation_rules').value = JSON.stringify(rules, null, 2);
+    }
+    
+    // Generate storage configuration
+    function generateStorageConfig(itemTypeId) {
+        const config = {
+            'auto_save': true,
+            'backup_enabled': true,
+            'notify_on_save': false,
+            'require_approval': false
+        };
+        
+        // Customize based on item type
+        if (itemTypeId === '24') { // idea
+            config.require_approval = true;
+            config.notify_on_save = true;
+        }
+        
+        document.getElementById('storage_config').value = JSON.stringify(config, null, 2);
+    }
+    
+    // Generate default mapping if API fails
+    function generateDefaultMapping(itemTypeId) {
+        const defaultMapping = {
+            'question_1': 'title',
+            'question_2': 'description',
+            'question_3': 'category'
+        };
+        
+        const defaultRules = {
+            'title': {
+                'required': true,
+                'min_length': 3
+            },
+            'description': {
+                'required': true,
+                'min_length': 10
+            },
+            'category': {
+                'required': true
+            }
+        };
+        
+        const defaultConfig = {
+            'auto_save': true,
+            'backup_enabled': true,
+            'notify_on_save': false
+        };
+        
+        document.getElementById('data_mapping').value = JSON.stringify(defaultMapping, null, 2);
+        document.getElementById('validation_rules').value = JSON.stringify(defaultRules, null, 2);
+        document.getElementById('storage_config').value = JSON.stringify(defaultConfig, null, 2);
+    }
+
+    // Enable/disable auto-fill button
+    function updateAutoFillButton() {
+        const itemTypeId = document.getElementById('item_type_id').value;
+        const chatbotId = document.getElementById('chatbot_id').value;
+        const autoFillBtn = document.getElementById('autoFillBtn');
+        
+        if (itemTypeId && chatbotId) {
+            autoFillBtn.disabled = false;
+        } else {
+            autoFillBtn.disabled = true;
+        }
+    }
+
+    // Add event listeners
+    document.getElementById('item_type_id').addEventListener('change', function() {
+        updatePreview();
+        updateAutoFillButton();
+        autoFillJsonFields();
+    });
+    document.getElementById('chatbot_id').addEventListener('change', function() {
+        updatePreview();
+        updateAutoFillButton();
+        autoFillJsonFields();
+    });
+    document.getElementById('bank_id').addEventListener('change', updatePreview);
+    document.getElementById('data_mapping').addEventListener('input', updatePreview);
+    document.getElementById('validation_rules').addEventListener('input', updatePreview);
+    
+    // Auto-fill button click handler
+    document.getElementById('autoFillBtn').addEventListener('click', function() {
+        autoFillJsonFields();
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Parse JSON fields
+        try {
+            if (data.data_mapping) {
+                data.data_mapping = JSON.parse(data.data_mapping);
+            } else {
+                data.data_mapping = {};
+            }
+        } catch (e) {
+            alert('Invalid JSON in data mapping field');
+            return;
+        }
+
+        try {
+            if (data.validation_rules) {
+                data.validation_rules = JSON.parse(data.validation_rules);
+            } else {
+                data.validation_rules = {};
+            }
+        } catch (e) {
+            alert('Invalid JSON in validation rules field');
+            return;
+        }
+
+        try {
+            if (data.storage_config) {
+                data.storage_config = JSON.parse(data.storage_config);
+            } else {
+                data.storage_config = {};
+            }
+        } catch (e) {
+            alert('Invalid JSON in storage config field');
+            return;
+        }
+        
+        // Debug: Log the data being sent
+        console.log('Sending data:', data);
+        
+        fetch('{{ url_for("admin.create_data_mapping") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                window.location.href = '{{ url_for("admin.dynamic_data_mappings") }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the mapping: ' + error.message);
+        });
+    });
+
+    // Initialize preview and button state
+    updatePreview();
+    updateAutoFillButton();
+});
+</script>
+{% endblock %}

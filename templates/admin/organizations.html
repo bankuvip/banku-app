@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Organizations - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-sitemap me-2"></i>Manage Organizations
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="refreshOrganizations()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <form method="GET" class="row g-3 align-items-end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search organizations...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="type" class="form-label">Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="">All Types</option>
+                                {% for org_type in org_types %}
+                                <option value="{{ org_type.name }}" {{ 'selected' if type_filter == org_type.name else '' }}>{{ org_type.display_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Organizations Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Organizations
+                        <span class="badge bg-primary ms-2">{{ organizations.total }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if organizations.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Organization</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Visibility</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for org in organizations.items %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    {% if org.logo %}
+                                                        <img src="{{ org.logo }}" alt="{{ org.name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-building"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ org.name }}</h6>
+                                                    <small class="text-muted">{{ org.slug }}</small>
+                                                    {% if org.description %}
+                                                        <br><small class="text-muted">{{ org.description[:50] }}{% if org.description|length > 50 %}...{% endif %}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="{{ org.organization_type.icon_class if org.organization_type else 'fas fa-building' }} me-1"></i>
+                                                {{ org.organization_type.display_name if org.organization_type else 'Unknown' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if org.status == 'active' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Active
+                                                </span>
+                                            {% elif org.status == 'suspended' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-pause-circle me-1"></i>Suspended
+                                                </span>
+                                            {% elif org.status == 'closed' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle me-1"></i>Closed
+                                                </span>
+                                            {% elif org.status == 'pending_verification' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ org.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if org.is_public %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-globe me-1"></i>Public
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-lock me-1"></i>Private
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ org.created_at.strftime('%Y-%m-%d') if org.created_at else 'N/A' }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('admin.view_organization_by_slug', slug=org.slug) }}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-outline-warning toggle-status-btn" 
+                                                        data-org-id="{{ org.id }}" 
+                                                        data-current-status="{{ org.status }}"
+                                                        title="Toggle Status">
+                                                    <i class="fas fa-power-off"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger delete-btn" 
+                                                        data-org-id="{{ org.id }}" 
+                                                        data-org-name="{{ org.name }}"
+                                                        title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if organizations.pages > 1 %}
+                        <div class="card-footer bg-white border-0">
+                            <nav aria-label="Organizations pagination">
+                                <ul class="pagination pagination-sm justify-content-center mb-0">
+                                    {% if organizations.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.organizations_management', page=organizations.prev_num, search=search, type=type_filter) }}">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in organizations.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != organizations.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ url_for('admin.organizations_management', page=page_num, search=search, type=type_filter) }}">{{ page_num }}</a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">…</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if organizations.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.organizations_management', page=organizations.next_num, search=search, type=type_filter) }}">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No organizations found</h5>
+                            <p class="text-muted">
+                                {% if search or type_filter %}
+                                    Try adjusting your search criteria or filters.
+                                {% else %}
+                                    No organizations have been created yet.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the organization <strong id="deleteOrgName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone and will remove all associated data including members, items, and needs.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete Organization</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let deleteOrgId = null;
+    
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteOrgId = this.dataset.orgId;
+            document.getElementById('deleteOrgName').textContent = this.dataset.orgName;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (deleteOrgId) {
+            fetch(`/admin/organizations/${deleteOrgId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => {
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // Handle non-JSON response (likely a redirect to login)
+                    if (response.status === 302 || response.status === 401) {
+                        throw new Error('Session expired. Please log in again.');
+                    } else {
+                        throw new Error('Unexpected response format.');
+                    }
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message.includes('Session expired')) {
+                    alert(error.message);
+                    window.location.href = '/auth/login';
+                } else {
+                    alert('An error occurred while deleting the organization.');
+                }
+            });
+        }
+    });
+    
+    // Handle toggle status button clicks
+    document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orgId = this.dataset.orgId;
+            const currentStatus = this.dataset.currentStatus;
+            
+            fetch(`/admin/organizations/${orgId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => {
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // Handle non-JSON response (likely a redirect to login)
+                    if (response.status === 302 || response.status === 401) {
+                        throw new Error('Session expired. Please log in again.');
+                    } else {
+                        throw new Error('Unexpected response format.');
+                    }
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message.includes('Session expired')) {
+                    alert(error.message);
+                    window.location.href = '/auth/login';
+                } else {
+                    alert('An error occurred while updating the organization status.');
+                }
+            });
+        });
+    });
+});
+
+function refreshOrganizations() {
+    location.reload();
+}
+</script>
+{% endblock %}

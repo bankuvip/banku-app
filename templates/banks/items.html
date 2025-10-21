@@ -1,0 +1,829 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bank_type.title() }} Bank - BankU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/banks-items.css') }}?v=2025101924">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Bank Header -->
+            <div class="bank-header mb-4" style="background: linear-gradient(135deg, {{ bank.color }}, {{ bank.color }}dd); color: white; padding: 2rem; border-radius: 10px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-2">
+                            <i class="{{ bank.icon }} me-3"></i>{{ bank.name }}
+                        </h1>
+                        {% if bank.description %}
+                            <p class="mb-0 opacity-75">{{ bank.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        <div class="h3 mb-0">{{ items.total }} Items</div>
+                        <small class="opacity-75">Available Items</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Search and Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="search" placeholder="Search items..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="category">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" name="location">
+                                <option value="">All Locations</option>
+                                {% for loc in locations %}
+                                    <option value="{{ loc }}" {% if location == loc %}selected{% endif %}>{{ loc }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        {% if bank_type == 'products' and product_categories %}
+                        <div class="col-md-2">
+                            <select class="form-select" name="product_category_id">
+                                <option value="">All Product Types</option>
+                                {% for cat in product_categories %}
+                                    <option value="{{ cat.id }}" {% if cat.id|string == request.args.get('product_category_id', '') %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-1">
+                            <input type="number" class="form-control" name="min_price" value="{{ min_price or '' }}" placeholder="Min" step="0.01">
+                        </div>
+                        
+                        <div class="col-md-1">
+                            <input type="number" class="form-control" name="max_price" value="{{ max_price or '' }}" placeholder="Max" step="0.01">
+                        </div>
+                        
+                        <div class="col-md-1">
+                            <select class="form-select" name="sort_by" onchange="this.form.submit()">
+                                <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Date</option>
+                                <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
+                                <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-1">
+                            <select class="form-select" name="sort_order" onchange="this.form.submit()">
+                                <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Desc</option>
+                                <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Asc</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{{ url_for('banks.bank_items', bank_slug=bank_type) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+    
+    <!-- Products Grid -->
+    <div class="products-grid">
+        {% if items.items %}
+        {% for item in items.items %}
+        <div class="item-card" data-category="{{ item.category }}" data-item-id="{{ item.id }}" data-action="expand" data-images="{{ item.images_media|tojson if item.images_media else '[]' }}">
+            <!-- Part 1: Photo/Image -->
+            <div class="item-image">
+                {% if item.images_media and item.images_media|length > 0 %}
+                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" alt="{{ item.title }}" class="item-photo">
+                {% else %}
+                    <div class="item-icon">
+                        {% if item.item_type %}
+                            <i class="{{ item.item_type.icon_class or 'fas fa-box' }}" style="color: var(--bs-{{ item.item_type.button_color or 'primary' }});"></i>
+                        {% else %}
+                            <i class="fas fa-box"></i>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                        </div>
+            
+            <!-- Part 2: Item Type, Category, Subcategory, Tags -->
+            <div class="item-meta-row">
+                <span class="item-type badge" style="background-color: {{ bank.color or '#17a2b8' }};">{{ item.item_type.name.title() if item.item_type else 'Unknown' }}</span>
+                <span class="item-category">{{ item.category.title() }}</span>
+                        {% if item.subcategory %}
+                <span class="item-subcategory">{{ item.subcategory.title() }}</span>
+                        {% endif %}
+                        {% if item.tags %}
+                <div class="item-tags">
+                    {% for tag in item.tags[:2] %}
+                    <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                    {% if item.tags|length > 2 %}
+                    <span class="tag">+{{ item.tags|length - 2 }}</span>
+                    {% endif %}
+                </div>
+                        {% endif %}
+                    </div>
+                    
+            <!-- Part 3: Title -->
+            <div class="item-title">{{ item.title }}</div>
+            
+            <!-- Part 4: Creator Info -->
+            <div class="item-creator-row">
+                <div class="creator-info">
+                    <div class="creator-avatar">
+                        {% if item.profile and item.profile.photo %}
+                            <img src="{{ url_for('static', filename='uploads/' + item.profile.photo) }}" alt="{{ item.profile.name }}">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <span class="creator-name">{{ item.profile.name.split()[0] if item.profile and item.profile.name else 'Unknown' }}</span>
+                </div>
+                <div class="item-location">
+                    {{ item.location|format_location_cached }}
+                </div>
+                        </div>
+                
+            <!-- Part 5: Price and Rating -->
+            <div class="item-price-rating-row">
+                <div class="item-rating">
+                    <i class="fas fa-star"></i>
+                    <span>{{ "%.1f"|format(item.rating) if item.rating else '0.0' }}</span>
+                            </div>
+                <div class="item-price">
+                    {% if item.price %}
+                        <span class="currency">{{ item.currency or 'USD' }}</span>
+                        <span class="amount">{{ "%.2f"|format(item.price) }}</span>
+                    {% else %}
+                        <span class="free">Free</span>
+                            {% endif %}
+                    </div>
+                </div>
+            
+            <!-- Part 6: Button Bar -->
+            <div class="item-actions">
+                <button class="action-btn" onclick="event.stopPropagation(); saveItem({{ item.id }})" title="Save">
+                    <i class="fas fa-bookmark"></i>
+                </button>
+                <button class="action-btn" onclick="event.stopPropagation(); requestDeal({{ item.id }})" title="Request Deal">
+                    <i class="fas fa-handshake"></i>
+                </button>
+                <button class="action-btn" onclick="event.stopPropagation(); viewItem({{ item.id }})" title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state-container">
+            <div class="empty-state">
+                <i class="fas fa-search empty-icon"></i>
+                <h3 class="empty-title">No {{ bank_type }} found</h3>
+                <p class="empty-description">Try adjusting your search criteria or check back later for new items.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if items.pages > 1 %}
+    <div style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+            <nav aria-label="Items pagination">
+                <ul class="pagination justify-content-center">
+                    {% if items.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=items.prev_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in items.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != items.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=page_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if items.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=items.next_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Item Popup Modal -->
+<div class="item-popup" id="itemPopup" onclick="closePopup(event)">
+    <div class="popup-content" onclick="event.stopPropagation()">
+        <div class="popup-header">
+            <h2 class="popup-title" id="popupTitle">Item Details</h2>
+            <button class="popup-close" onclick="closePopup()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="popup-body" id="popupBody">
+            <!-- Content will be loaded dynamically -->
+        </div>
+        <div class="popup-footer">
+            <div class="popup-actions">
+                <button class="popup-action-btn save" onclick="saveItemFromPopup()" title="Save">
+                    <i class="fas fa-bookmark"></i>
+                    Save
+                </button>
+                <button class="popup-action-btn deal" onclick="requestDealFromPopup()" title="Request Deal">
+                    <i class="fas fa-handshake"></i>
+                    Request Deal
+                </button>
+                <button class="popup-action-btn view" onclick="viewItemFromPopup()" title="View Details">
+                    <i class="fas fa-eye"></i>
+                    View
+                </button>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global item images data
+window.itemImagesData = {
+    {% for item in items.items %}
+    {{ item.id }}: {{ item.images_media|tojson if item.images_media else '[]' }},
+    {% endfor %}
+};
+// Popup functionality
+function expandItem(cardElement) {
+    const itemId = cardElement.getAttribute('data-item-id');
+    const popup = document.getElementById('itemPopup');
+    const popupTitle = document.getElementById('popupTitle');
+    const popupBody = document.getElementById('popupBody');
+    
+    // Store current item ID for popup action buttons
+    window.currentPopupItemId = itemId;
+    
+    // Get item data from the card
+    const title = cardElement.querySelector('.item-title').textContent;
+    const category = cardElement.querySelector('.item-category').textContent;
+    const subcategory = cardElement.querySelector('.item-subcategory')?.textContent || '';
+    const creatorName = cardElement.querySelector('.creator-name').textContent;
+    const location = cardElement.querySelector('.item-location').textContent;
+    const rating = cardElement.querySelector('.item-rating span').textContent;
+    const price = cardElement.querySelector('.item-price');
+    const priceText = price.querySelector('.free')?.textContent || 
+                     (price.querySelector('.currency')?.textContent + ' ' + price.querySelector('.amount')?.textContent) || 
+                     'Price not specified';
+    
+    // Get tags
+    const tags = Array.from(cardElement.querySelectorAll('.item-tags .tag')).map(tag => tag.textContent);
+    
+    // Get images from the card - check if there are multiple images
+    const cardImage = cardElement.querySelector('.item-photo');
+    const cardIcon = cardElement.querySelector('.item-icon i');
+    
+    // Set up images array
+    currentPopupImages = [];
+    
+    // Get images from global data using item ID
+    if (window.itemImagesData && window.itemImagesData[itemId]) {
+        const imageArray = window.itemImagesData[itemId];
+        
+        if (Array.isArray(imageArray) && imageArray.length > 0) {
+            // Convert relative paths to full URLs
+            currentPopupImages = imageArray.map(img => {
+                if (img.startsWith('http')) {
+                    return img;
+                } else {
+                    // Construct the full URL for static files
+                    return `/static/uploads/${img}`;
+                }
+            });
+        }
+    }
+    
+    // Fallback to single image from card
+    if (currentPopupImages.length === 0) {
+        if (cardImage && cardImage.src) {
+            currentPopupImages.push(cardImage.src);
+        } else if (cardIcon) {
+            // Use the icon as fallback
+            currentPopupImages.push('icon');
+        }
+    }
+    
+    // Set popup title
+    popupTitle.textContent = title;
+    
+    // Clear popup body and set up image gallery first
+    popupBody.innerHTML = '';
+    
+    // Set up image gallery
+    setupPopupImageGallery();
+    
+    // Set popup content (after image gallery)
+    const contentHTML = `
+        <div class="popup-details">
+            <div class="detail-group">
+                <div class="detail-label">Category</div>
+                <div class="detail-value">${category}${subcategory ? ' - ' + subcategory : ''}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Creator</div>
+                <div class="detail-value">${creatorName}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Location</div>
+                <div class="detail-value">${location}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Rating</div>
+                <div class="detail-value">${rating} ⭐</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Price</div>
+                <div class="detail-value">${priceText}</div>
+            </div>
+            ${tags.length > 0 ? `
+            <div class="detail-group">
+                <div class="detail-label">Tags</div>
+                <div class="detail-value">${tags.join(', ')}</div>
+            </div>
+            ` : ''}
+        </div>
+        <div class="popup-description">
+            <div class="detail-label">Description</div>
+            <p>This is a detailed description of the item. The full description would be loaded from the server when the item is clicked.</p>
+        </div>
+    `;
+    
+    // Add content to popup body
+    popupBody.insertAdjacentHTML('beforeend', contentHTML);
+    
+    // Show popup
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePopup(event) {
+    if (event && event.target !== event.currentTarget) return;
+    
+    const popup = document.getElementById('itemPopup');
+    popup.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Global variables for popup image gallery
+let currentPopupImages = [];
+let currentImageIndex = 0;
+
+// Setup popup image gallery
+function setupPopupImageGallery() {
+    const popupBody = document.getElementById('popupBody');
+    
+    currentImageIndex = 0;
+    
+    if (currentPopupImages.length === 0) {
+        // No images, don't create gallery
+        return;
+    }
+    
+    // Create image gallery HTML
+    const imageGalleryHTML = `
+        <div class="popup-image-gallery" id="popupImageGallery">
+            <img class="popup-main-image" id="popupMainImage" src="" alt="Item Image">
+            <button class="popup-image-nav prev" id="popupPrevBtn" onclick="changePopupImage(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="popup-image-nav next" id="popupNextBtn" onclick="changePopupImage(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="popup-image-thumbnails" id="popupThumbnails">
+                <!-- Thumbnails will be loaded dynamically -->
+            </div>
+        </div>
+    `;
+    
+    // Add image gallery to popup body
+    popupBody.innerHTML = imageGalleryHTML;
+    
+    // Now get the elements we just created
+    const popupMainImage = document.getElementById('popupMainImage');
+    const popupThumbnails = document.getElementById('popupThumbnails');
+    
+    // Set main image
+    if (currentPopupImages[0] === 'icon') {
+        popupMainImage.style.display = 'none';
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'popup-main-image';
+        iconDiv.innerHTML = '<i class="fas fa-lightbulb"></i>';
+        popupMainImage.parentNode.replaceChild(iconDiv, popupMainImage);
+    } else {
+        popupMainImage.src = currentPopupImages[0];
+        popupMainImage.style.display = 'block';
+    }
+    
+    // Setup thumbnails
+    currentPopupImages.forEach((imageSrc, index) => {
+        const thumbnail = document.createElement('img');
+        thumbnail.className = 'popup-thumbnail';
+        thumbnail.src = imageSrc;
+        thumbnail.alt = `Thumbnail ${index + 1}`;
+        thumbnail.onclick = () => changePopupImageTo(index);
+        if (index === 0) thumbnail.classList.add('active');
+        popupThumbnails.appendChild(thumbnail);
+    });
+    
+    // Setup navigation buttons
+    updateNavigationButtons();
+}
+
+// Change popup image
+function changePopupImage(direction) {
+    if (currentPopupImages.length <= 1) return;
+    
+    currentImageIndex += direction;
+    
+    if (currentImageIndex < 0) {
+        currentImageIndex = currentPopupImages.length - 1;
+    } else if (currentImageIndex >= currentPopupImages.length) {
+        currentImageIndex = 0;
+    }
+    
+    updateMainImage();
+    updateThumbnails();
+    updateNavigationButtons();
+}
+
+// Change popup image to specific index
+function changePopupImageTo(index) {
+    if (index < 0 || index >= currentPopupImages.length) return;
+    
+    currentImageIndex = index;
+    updateMainImage();
+    updateThumbnails();
+    updateNavigationButtons();
+}
+
+// Update main image
+function updateMainImage() {
+    const popupMainImage = document.getElementById('popupMainImage');
+    if (!popupMainImage) return;
+    
+    if (currentPopupImages[currentImageIndex] === 'icon') {
+        popupMainImage.style.display = 'none';
+        // Icon is already handled in setup
+    } else {
+        popupMainImage.src = currentPopupImages[currentImageIndex];
+        popupMainImage.style.display = 'block';
+    }
+}
+
+// Update thumbnails
+function updateThumbnails() {
+    const thumbnails = document.querySelectorAll('.popup-thumbnail');
+    thumbnails.forEach((thumb, index) => {
+        thumb.classList.toggle('active', index === currentImageIndex);
+    });
+}
+
+// Update navigation buttons
+function updateNavigationButtons() {
+    const popupPrevBtn = document.getElementById('popupPrevBtn');
+    const popupNextBtn = document.getElementById('popupNextBtn');
+    
+    if (!popupPrevBtn || !popupNextBtn) return;
+    
+    if (currentPopupImages.length <= 1) {
+        popupPrevBtn.style.display = 'none';
+        popupNextBtn.style.display = 'none';
+    } else {
+        popupPrevBtn.style.display = 'flex';
+        popupNextBtn.style.display = 'flex';
+    }
+}
+
+// Add swipe functionality for mobile
+let touchStartX = 0;
+let touchEndX = 0;
+
+function handleTouchStart(e) {
+    touchStartX = e.changedTouches[0].screenX;
+}
+
+function handleTouchEnd(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+}
+
+function handleSwipe() {
+    const swipeThreshold = 50; // Minimum swipe distance
+    const swipeDistance = touchEndX - touchStartX;
+    
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+        if (swipeDistance > 0) {
+            // Swipe right - previous image
+            changePopupImage(-1);
+        } else {
+            // Swipe left - next image
+            changePopupImage(1);
+        }
+    }
+}
+
+// Add touch event listeners to popup image gallery
+document.addEventListener('DOMContentLoaded', function() {
+    const popupImageGallery = document.getElementById('popupImageGallery');
+    if (popupImageGallery) {
+        popupImageGallery.addEventListener('touchstart', handleTouchStart, { passive: true });
+        popupImageGallery.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+});
+
+// Action functions
+function saveItem(itemId) {
+    fetch(`/profiles/save-item/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Item saved successfully!', 'success');
+            // Update button state if needed
+            updateSaveButtonState(itemId, true);
+        } else {
+            showToast(data.message || 'Failed to save item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving item:', error);
+        showToast('An error occurred while saving the item', 'error');
+    });
+}
+
+function requestDeal(itemId) {
+    // Request deal functionality
+    showToast('Redirecting to deal request...', 'info');
+    // Redirect to deal request creation page
+    window.location.href = `/deals/my-deal-requests/create?item_id=${itemId}`;
+}
+
+function viewItem(itemId) {
+    // View full item details
+    window.location.href = `/banks/item/${itemId}`;
+}
+
+// Popup action functions
+function saveItemFromPopup() {
+    const currentItemId = window.currentPopupItemId;
+    if (currentItemId) {
+        saveItem(currentItemId);
+        closePopup();
+    }
+}
+
+function requestDealFromPopup() {
+    const currentItemId = window.currentPopupItemId;
+    if (currentItemId) {
+        requestDeal(currentItemId);
+        closePopup();
+    }
+}
+
+function viewItemFromPopup() {
+    const currentItemId = window.currentPopupItemId;
+    if (currentItemId) {
+        viewItem(currentItemId);
+        closePopup();
+    }
+}
+
+// Navigation function
+function goToItem(itemId) {
+    window.location.href = '/banks/item/' + itemId;
+}
+
+// Interactive features for product cards
+function toggleFavorite(itemId) {
+    // Toggle favorite state
+    const btn = event.target.closest('.action-btn');
+    const icon = btn.querySelector('i');
+    
+    if (icon.classList.contains('far')) {
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        btn.style.color = '#e74c3c';
+        showToast('Added to favorites!', 'success');
+    } else {
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        btn.style.color = '#6c757d';
+        showToast('Removed from favorites', 'info');
+    }
+}
+
+function shareProduct(itemId) {
+    // Share product functionality
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this product!',
+            text: 'I found this interesting product on BankU',
+            url: window.location.origin + '/banks/item/' + itemId
+        });
+    } else {
+        // Fallback: copy to clipboard
+        const url = window.location.origin + '/banks/item/' + itemId;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Product link copied to clipboard!', 'success');
+        });
+    }
+}
+
+function updateSaveButtonState(itemId, isSaved) {
+    // This function can be used to update save button states in other parts of the app
+    const saveButton = document.querySelector(`[data-save-item="${itemId}"]`);
+    if (saveButton) {
+        if (isSaved) {
+            saveButton.innerHTML = '<i class="fas fa-bookmark me-1"></i>Saved';
+            saveButton.classList.remove('btn-outline-primary');
+            saveButton.classList.add('btn-success');
+            saveButton.disabled = true;
+        } else {
+            saveButton.innerHTML = '<i class="fas fa-bookmark me-1"></i>Save';
+            saveButton.classList.remove('btn-success');
+            saveButton.classList.add('btn-outline-primary');
+            saveButton.disabled = false;
+        }
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    // Add toast styles
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#28a745' : '#17a2b8'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS for toast animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Add keyboard support for popup
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closePopup();
+    }
+});
+
+// Add staggered animation to product cards
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+    
+    // Add click handlers for item cards using event delegation
+    document.addEventListener('click', function(e) {
+        const card = e.target.closest('.item-card[data-action="expand"]');
+        if (card) {
+            e.preventDefault();
+            e.stopPropagation();
+            expandItem(card);
+        }
+    });
+    
+    // Add click handlers for action buttons
+    const actionButtons = document.querySelectorAll('.action-btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const action = this.getAttribute('data-action');
+            const itemId = this.getAttribute('data-item-id');
+            
+            if (action === 'favorite') {
+                toggleFavorite(itemId);
+            } else if (action === 'share') {
+                shareProduct(itemId);
+            }
+        });
+    });
+    
+    // Add hover effects for better interactivity
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-4px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+
+// Show filters
+function showFilters() {
+    const filterCard = document.querySelector('.filter-form').closest('.card');
+    filterCard.style.display = filterCard.style.display === 'none' ? 'block' : 'none';
+}
+
+// Show recommendations
+async function showRecommendations() {
+    try {
+        const response = await fetch('/banks/recommendations');
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+            showToast(`Found ${data.items.length} recommendations for you!`, 'info');
+        } else {
+            showToast('No recommendations available at the moment.', 'info');
+        }
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        showToast('Failed to load recommendations', 'error');
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Content - {{ bank.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-database me-2"></i>{{ bank.name }} Content</h2>
+                <a href="{{ url_for('admin.banks_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Banks
+                </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Content Items ({{ content|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if content %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>ID</th>
+                                            <th>Added At</th>
+                                            <th>Collector</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in content %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">{{ item.content_type.title() }}</span>
+                                            </td>
+                                            <td>{{ item.content_id }}</td>
+                                            <td>{{ item.added_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                {% if item.collector %}
+                                                    {{ item.collector.name }}
+                                                {% else %}
+                                                    <span class="text-muted">Manual</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="removeContent({{ item.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No Content Yet</h4>
+                                <p class="text-muted">This bank doesn't have any content yet. Content will be added automatically by connected collectors.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Bank Info</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Description:</strong> {{ bank.description }}</p>
+                            <p><strong>Type:</strong> {{ bank.bank_type.title() }}</p>
+                            {% if bank.organization_type %}
+                            <p><strong>Organization Type:</strong> {{ bank.organization_type.title() }}</p>
+                            {% endif %}
+                            <p><strong>Content Count:</strong> {{ bank.content_count }}</p>
+                            <p><strong>Last Updated:</strong> 
+                                {% if bank.last_updated %}
+                                    {{ bank.last_updated.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if bank.is_active else 'secondary' }}">
+                                    {{ 'Active' if bank.is_active else 'Inactive' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Connected Collectors</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if bank.collectors %}
+                                {% for collector in bank.collectors %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>{{ collector.collector.name }}</span>
+                                    <span class="badge bg-{{ 'success' if collector.is_active else 'secondary' }}">
+                                        {{ 'Active' if collector.is_active else 'Inactive' }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No collectors connected</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function removeContent(contentId) {
+    if (confirm('Are you sure you want to remove this content from the bank?')) {
+        fetch(`/admin/bank-content/${contentId}/remove`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

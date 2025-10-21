@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Withdraw Funds - My Wallet{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-arrow-up me-2"></i>Withdraw Funds
+                </h1>
+                <a href="{{ url_for('wallet.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Wallet
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Withdrawal Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Withdrawal Request</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Available Balance -->
+                    {% if wallet.balance < 10 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Insufficient Balance:</strong> ${{ "%.2f"|format(wallet.balance) }}
+                        <br>
+                        <small>Minimum withdrawal amount is $10.00. You need to earn more money before you can withdraw.</small>
+                    </div>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Available Balance:</strong> ${{ "%.2f"|format(wallet.balance) }}
+                        {% if wallet.balance >= 10 %}
+                        <br>
+                        <small class="text-success">✅ You can withdraw funds</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Withdrawal Form -->
+                    <form id="withdrawalForm" {% if wallet.balance < 10 %}style="opacity: 0.6; pointer-events: none;"{% endif %}>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="amount" class="form-label">Withdrawal Amount *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="amount" name="amount" 
+                                           step="0.01" min="10" max="10000" required>
+                                </div>
+                                <div class="form-text">
+                                    Minimum: $10.00 | Maximum: $10,000.00 | Available: ${{ "%.2f"|format(wallet.balance) }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="payment_method" class="form-label">Payment Method *</label>
+                                <select class="form-select" id="payment_method" name="payment_method" required>
+                                    <option value="">Select Payment Method</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="stripe">Stripe</option>
+                                    <option value="crypto">Cryptocurrency</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Bank Transfer Details -->
+                        <div id="bank_transfer_details" class="payment-details" style="display: none;">
+                            <h6 class="mb-3">Bank Transfer Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="account_holder_name" class="form-label">Account Holder Name *</label>
+                                    <input type="text" class="form-control" id="account_holder_name" name="account_holder_name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="account_number" class="form-label">Account Number *</label>
+                                    <input type="text" class="form-control" id="account_number" name="account_number">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="routing_number" class="form-label">Routing Number *</label>
+                                    <input type="text" class="form-control" id="routing_number" name="routing_number">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bank_name" class="form-label">Bank Name</label>
+                                    <input type="text" class="form-control" id="bank_name" name="bank_name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PayPal Details -->
+                        <div id="paypal_details" class="payment-details" style="display: none;">
+                            <h6 class="mb-3">PayPal Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="paypal_email" class="form-label">PayPal Email *</label>
+                                    <input type="email" class="form-control" id="paypal_email" name="paypal_email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="paypal_name" class="form-label">PayPal Account Name</label>
+                                    <input type="text" class="form-control" id="paypal_name" name="paypal_name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stripe Details -->
+                        <div id="stripe_details" class="payment-details" style="display: none;">
+                            <h6 class="mb-3">Stripe Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="stripe_account_id" class="form-label">Stripe Account ID *</label>
+                                    <input type="text" class="form-control" id="stripe_account_id" name="stripe_account_id">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="stripe_email" class="form-label">Stripe Email</label>
+                                    <input type="email" class="form-control" id="stripe_email" name="stripe_email">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Crypto Details -->
+                        <div id="crypto_details" class="payment-details" style="display: none;">
+                            <h6 class="mb-3">Cryptocurrency Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="crypto_type" class="form-label">Cryptocurrency *</label>
+                                    <select class="form-select" id="crypto_type" name="crypto_type">
+                                        <option value="">Select Cryptocurrency</option>
+                                        <option value="bitcoin">Bitcoin (BTC)</option>
+                                        <option value="ethereum">Ethereum (ETH)</option>
+                                        <option value="usdc">USD Coin (USDC)</option>
+                                        <option value="usdt">Tether (USDT)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="crypto_wallet" class="form-label">Wallet Address *</label>
+                                    <input type="text" class="form-control" id="crypto_wallet" name="crypto_wallet">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Processing Fee Information -->
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Processing Fees:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Bank Transfer: $2.50</li>
+                                <li>PayPal: 3.5%</li>
+                                <li>Stripe: 2.9% + $0.30</li>
+                                <li>Cryptocurrency: 1%</li>
+                            </ul>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="window.history.back()">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Withdrawals -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pending Withdrawals</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_withdrawals %}
+                        {% for withdrawal in pending_withdrawals %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">${{ "%.2f"|format(withdrawal.amount) }}</h6>
+                                <span class="badge bg-warning">{{ withdrawal.status.title() }}</span>
+                            </div>
+                            <p class="text-muted small mb-1">
+                                <i class="fas fa-{{ withdrawal.payment_method.replace('_', '-') }} me-1"></i>
+                                {{ withdrawal.payment_method.replace('_', ' ').title() }}
+                            </p>
+                            <p class="text-muted small mb-0">
+                                Requested: {{ withdrawal.created_at.strftime('%m/%d/%Y %H:%M') }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No pending withdrawals</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Withdrawal Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Withdrawal Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Minimum withdrawal: $10.00
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Processing time: 1-3 business days
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            All withdrawals are reviewed by admin
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Processing fees apply
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            You can cancel pending requests
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const paymentDetails = document.querySelectorAll('.payment-details');
+    const amountInput = document.getElementById('amount');
+    const availableBalance = {{ wallet.balance }};
+    
+    // Real-time amount validation
+    amountInput.addEventListener('input', function() {
+        const amount = parseFloat(this.value) || 0;
+        const formText = this.parentNode.nextElementSibling;
+        
+        // Remove existing validation classes
+        this.classList.remove('is-valid', 'is-invalid');
+        formText.classList.remove('text-success', 'text-danger', 'text-warning');
+        
+        if (amount === 0) {
+            formText.innerHTML = 'Minimum: $10.00 | Maximum: $10,000.00 | Available: ${{ "%.2f"|format(wallet.balance) }}';
+            formText.classList.remove('text-success', 'text-danger', 'text-warning');
+        } else if (amount < 10) {
+            this.classList.add('is-invalid');
+            formText.innerHTML = '❌ Minimum withdrawal amount is $10.00';
+            formText.classList.add('text-danger');
+        } else if (amount > 10000) {
+            this.classList.add('is-invalid');
+            formText.innerHTML = '❌ Maximum withdrawal amount is $10,000.00';
+            formText.classList.add('text-danger');
+        } else if (amount > availableBalance) {
+            this.classList.add('is-invalid');
+            formText.innerHTML = `❌ Insufficient funds. Available: $${availableBalance.toFixed(2)}`;
+            formText.classList.add('text-danger');
+        } else {
+            this.classList.add('is-valid');
+            formText.innerHTML = `✅ Valid amount. Available: $${availableBalance.toFixed(2)}`;
+            formText.classList.add('text-success');
+        }
+    });
+    
+    // Show/hide payment details based on selected method
+    paymentMethodSelect.addEventListener('change', function() {
+        // Hide all payment details
+        paymentDetails.forEach(detail => {
+            detail.style.display = 'none';
+        });
+        
+        // Show selected payment details
+        const selectedMethod = this.value;
+        if (selectedMethod) {
+            const detailsElement = document.getElementById(selectedMethod + '_details');
+            if (detailsElement) {
+                detailsElement.style.display = 'block';
+            }
+        }
+    });
+    
+    // Form submission
+    document.getElementById('withdrawalForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+        
+        // Collect form data
+        const formData = new FormData(this);
+        const amount = parseFloat(formData.get('amount'));
+        const paymentMethod = formData.get('payment_method');
+        
+        // Client-side validation
+        if (amount < 10) {
+            alert('Minimum withdrawal amount is $10');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request';
+            return;
+        }
+        
+        if (amount > 10000) {
+            alert('Maximum withdrawal amount is $10,000');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request';
+            return;
+        }
+        
+        // Check wallet balance
+        const availableBalance = {{ wallet.balance }};
+        if (amount > availableBalance) {
+            alert(`Insufficient funds. Available balance: $${availableBalance.toFixed(2)}`);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request';
+            return;
+        }
+        
+        // Build payment details object
+        const paymentDetails = {};
+        if (paymentMethod === 'bank_transfer') {
+            paymentDetails.account_holder_name = formData.get('account_holder_name');
+            paymentDetails.account_number = formData.get('account_number');
+            paymentDetails.routing_number = formData.get('routing_number');
+            paymentDetails.bank_name = formData.get('bank_name');
+        } else if (paymentMethod === 'paypal') {
+            paymentDetails.email = formData.get('paypal_email');
+            paymentDetails.name = formData.get('paypal_name');
+        } else if (paymentMethod === 'stripe') {
+            paymentDetails.stripe_account_id = formData.get('stripe_account_id');
+            paymentDetails.email = formData.get('stripe_email');
+        } else if (paymentMethod === 'crypto') {
+            paymentDetails.type = formData.get('crypto_type');
+            paymentDetails.wallet = formData.get('crypto_wallet');
+        }
+        
+        // Submit withdrawal request
+        fetch('{{ url_for("wallet.submit_withdrawal") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: parseFloat(formData.get('amount')),
+                payment_method: paymentMethod,
+                payment_details: paymentDetails
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.className = 'toast align-items-center text-white bg-success border-0';
+                toast.setAttribute('role', 'alert');
+                toast.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">${data.message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
+                
+                // Redirect to wallet dashboard
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("wallet.index") }}';
+                }, 2000);
+            } else {
+                alert('Error: ' + data.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error submitting withdrawal request');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Submit Withdrawal Request';
+        });
+    });
+});
+</script>
+{% endblock %}

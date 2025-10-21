@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Wallet Transactions - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-list me-2"></i>Wallet Transactions
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('admin.wallet_management') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Wallet Management
+                    </a>
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshPage()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-3">
+                            <label for="type" class="form-label">Transaction Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="">All Types</option>
+                                <option value="deposit" {% if request.args.get('type') == 'deposit' %}selected{% endif %}>Deposit</option>
+                                <option value="withdrawal" {% if request.args.get('type') == 'withdrawal' %}selected{% endif %}>Withdrawal</option>
+                                <option value="fee" {% if request.args.get('type') == 'fee' %}selected{% endif %}>Fee</option>
+                                <option value="refund" {% if request.args.get('type') == 'refund' %}selected{% endif %}>Refund</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="failed" {% if request.args.get('status') == 'failed' %}selected{% endif %}>Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                            <a href="{{ url_for('admin.wallet_transactions') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        All Wallet Transactions
+                        <span class="badge bg-secondary ms-2">{{ transactions.total }} total</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Balance After</th>
+                                        <th>Status</th>
+                                        <th>Reference</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>#{{ transaction.id }}</strong>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('admin.user_wallet_detail', user_id=transaction.user_id) }}">
+                                                {{ transaction.user.username }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if transaction.transaction_type == 'deposit' %}success{% elif transaction.transaction_type == 'withdrawal' %}warning{% elif transaction.transaction_type == 'fee' %}danger{% else %}secondary{% endif %}">
+                                                <i class="fas fa-{% if transaction.transaction_type == 'deposit' %}arrow-down{% elif transaction.transaction_type == 'withdrawal' %}arrow-up{% elif transaction.transaction_type == 'fee' %}minus{% else %}exchange-alt{% endif %} me-1"></i>
+                                                {{ transaction.transaction_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="{% if transaction.transaction_type in ['deposit', 'refund'] %}text-success{% elif transaction.transaction_type in ['withdrawal', 'fee'] %}text-danger{% endif %}">
+                                                {% if transaction.transaction_type in ['deposit', 'refund'] %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                                            </span>
+                                            {% if transaction.processing_fee > 0 %}
+                                                <br>
+                                                <small class="text-muted">Fee: ${{ "%.2f"|format(transaction.processing_fee) }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>${{ "%.2f"|format(transaction.balance_after) }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if transaction.status == 'completed' %}success{% elif transaction.status == 'pending' %}warning{% elif transaction.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                                <i class="fas fa-{% if transaction.status == 'completed' %}check{% elif transaction.status == 'pending' %}clock{% elif transaction.status == 'failed' %}times{% else %}question{% endif %} me-1"></i>
+                                                {{ transaction.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if transaction.reference_id and transaction.reference_type %}
+                                                <span class="badge bg-light text-dark">
+                                                    {{ transaction.reference_type.title() }}
+                                                </span>
+                                                <br>
+                                                <small class="text-muted">#{{ transaction.reference_id }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ transaction.created_at.strftime('%m/%d/%Y') }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ transaction.created_at.strftime('%H:%M:%S') }}</small>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if transactions.pages > 1 %}
+                        <nav aria-label="Transaction pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if transactions.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.wallet_transactions', page=transactions.prev_num, **request.args) }}">
+                                            <i class="fas fa-chevron-left"></i> Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in transactions.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != transactions.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('admin.wallet_transactions', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if transactions.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.wallet_transactions', page=transactions.next_num, **request.args) }}">
+                                            Next <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-list fa-4x text-muted mb-4"></i>
+                            <h4 class="text-muted">No Transactions Found</h4>
+                            <p class="text-muted">No wallet transactions match your current filters.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshPage() {
+    window.location.reload();
+}
+</script>
+{% endblock %}

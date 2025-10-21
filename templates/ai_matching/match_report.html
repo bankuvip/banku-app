@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Match Report - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Match Report
+                </h1>
+                <div>
+                    <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Match Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <i class="fas fa-bullhorn text-primary fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Need: {{ need.title }}</h6>
+                                    <p class="text-muted mb-1">{{ need.description[:100] }}{% if need.description|length > 100 %}...{% endif %}</p>
+                                    <small class="text-info">
+                                        <i class="fas fa-user me-1"></i>{{ need_user.first_name }} {{ need_user.last_name }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    <i class="fas fa-box text-success fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Item: {{ item.title }}</h6>
+                                    <p class="text-muted mb-1">{{ item.short_description[:100] }}{% if item.short_description|length > 100 %}...{% endif %}</p>
+                                    <small class="text-info">
+                                        <i class="fas fa-user me-1"></i>{{ item_creator.first_name if item_creator else 'Unknown' }} {{ item_creator.last_name if item_creator else '' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ "%.1f"|format(match.match_score * 100) }}%</h4>
+                                <p class="text-muted">Overall Match Score</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <span class="badge bg-{{ 'success' if match.confidence == 'high' else 'warning' if match.confidence == 'medium' else 'info' }} fs-6">
+                                    {{ match.confidence.title() }} Confidence
+                                </span>
+                                <p class="text-muted mt-2">AI Confidence</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6 class="text-muted">{{ match.created_at.strftime('%Y-%m-%d %H:%M') }}</h6>
+                                <p class="text-muted">Match Created</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-analytics me-2"></i>Match Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-key me-2"></i>Keyword Match</span>
+                                <span class="fw-bold">{{ "%.1f"|format(match_analysis.keyword_match * 100) }}%</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar bg-primary" style="width: {{ match_analysis.keyword_match * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-tags me-2"></i>Category Match</span>
+                                <span class="fw-bold">{{ "%.1f"|format(match_analysis.category_match * 100) }}%</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ match_analysis.category_match * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-map-marker-alt me-2"></i>Location Match</span>
+                                <span class="fw-bold">{{ "%.1f"|format(match_analysis.location_match * 100) }}%</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: {{ match_analysis.location_match * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-dollar-sign me-2"></i>Price Match</span>
+                                <span class="fw-bold">{{ "%.1f"|format(match_analysis.price_match * 100) }}%</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar bg-warning" style="width: {{ match_analysis.price_match * 100 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-clock me-2"></i>Urgency Match</span>
+                                <span class="fw-bold">{{ "%.1f"|format(match_analysis.urgency_match * 100) }}%</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: {{ match_analysis.urgency_match * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bullhorn me-2"></i>Need Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Title:</strong></td>
+                            <td>{{ need.title }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Type:</strong></td>
+                            <td>{{ need.need_type.title() }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Urgency:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if need.urgency_level == 'urgent' else 'warning' if need.urgency_level == 'high' else 'info' }}">
+                                    {{ need.urgency_level.title() }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Budget:</strong></td>
+                            <td>{{ need.budget_range if need.budget_range else 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Location:</strong></td>
+                            <td>{{ need.location if need.location else 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Description:</strong></td>
+                            <td>{{ need.description }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-box me-2"></i>Item Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Title:</strong></td>
+                            <td>{{ item.title }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Category:</strong></td>
+                            <td>{{ item.category.title() if item.category else 'General' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Price:</strong></td>
+                            <td>{{ item.price if item.price else 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Availability:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if item.is_available else 'danger' }}">
+                                    {{ 'Available' if item.is_available else 'Unavailable' }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Location:</strong></td>
+                            <td>{{ item.location if item.location else 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Description:</strong></td>
+                            <td>{{ item.short_description }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Rate This Match
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="text-muted">Help improve our AI matching by rating this recommendation:</p>
+                            <div class="input-group mb-3">
+                                <input type="range" class="form-range" id="ratingSlider" min="1" max="100" value="50">
+                                <span class="input-group-text" id="ratingValue">50%</span>
+                            </div>
+                            <button class="btn btn-primary" onclick="submitRating()">
+                                <i class="fas fa-star me-1"></i>Submit Rating
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6 class="text-muted">Current Average Rating</h6>
+                                <h4 class="text-primary" id="averageRating">
+                                    {% if feedback_history %}
+                                        {{ "%.1f"|format((feedback_history|selectattr('feedback_type', 'equalto', 'rating')|map(attribute='rating')|list|sum / (feedback_history|selectattr('feedback_type', 'equalto', 'rating')|list|length)) if (feedback_history|selectattr('feedback_type', 'equalto', 'rating')|list|length) > 0 else 0) }}%
+                                    {% else %}
+                                        No ratings yet
+                                    {% endif %}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback History -->
+    {% if feedback_history %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Feedback History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Rating</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feedback in feedback_history %}
+                                <tr>
+                                    <td>{{ feedback.user.first_name }} {{ feedback.user.last_name }}</td>
+                                    <td>{{ feedback.feedback_type.title() }}</td>
+                                    <td>
+                                        {% if feedback.feedback_type == 'rating' %}
+                                            <span class="badge bg-primary">{{ feedback.rating }}%</span>
+                                        {% else %}
+                                            {{ feedback.rating }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ feedback.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingSlider = document.getElementById('ratingSlider');
+    const ratingValue = document.getElementById('ratingValue');
+    
+    ratingSlider.addEventListener('input', function() {
+        ratingValue.textContent = this.value + '%';
+    });
+});
+
+function submitRating() {
+    const rating = document.getElementById('ratingSlider').value;
+    
+    fetch(`{{ url_for('ai_matching.rate_match', recommendation_id=match.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rating: parseInt(rating) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Thank you! Your rating helps improve AI matching.');
+            // Update average rating display
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error submitting rating');
+    });
+}
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

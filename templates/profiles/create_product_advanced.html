@@ -1,0 +1,2338 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Add Product - Step by Step{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-star me-2 text-primary"></i>
+                    Advanced Add Product - Step by Step
+                </h4>
+                <div>
+                    <span class="badge bg-primary me-2">ADVANCED PATH</span>
+                    <a href="{{ url_for('profiles.create_product') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Progress</span>
+                        <span id="progress-text" class="text-muted">Step 1 of 13</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" style="width: 7.7%" aria-valuenow="1" aria-valuemin="0" aria-valuemax="13"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">Category</small>
+                        <small class="text-muted">Creator</small>
+                        <small class="text-muted">Basic Info</small>
+                        <small class="text-muted">Media</small>
+                        <small class="text-muted">Condition</small>
+                        <small class="text-muted">Quantity</small>
+                        <small class="text-muted">Availability</small>
+                        <small class="text-muted">Pricing</small>
+                        <small class="text-muted">Discounts</small>
+                        <small class="text-muted">Payments</small>
+                        <small class="text-muted">Logistics</small>
+                        <small class="text-muted">Languages</small>
+                        <small class="text-muted">Management</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-body">
+                    <form id="advanced-form" method="POST" action="{{ url_for('profiles.create_product_form', path_type='advanced') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Debug info -->
+                        <input type="hidden" name="debug" value="1">
+                        
+                        <!-- Step 1: Category & Classification -->
+                        <div class="step-content" id="step-1">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-tags fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 1 — Category & classification</h4>
+                                <p class="text-muted">Let's start by categorizing your product</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of your product? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" id="main-category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="physical" {{ 'selected' if form_data and form_data.get('main_category') == 'physical' else '' }}>📦 Physical - Tangible items you can touch</option>
+                                            <option value="digital" {{ 'selected' if form_data and form_data.get('main_category') == 'digital' else '' }}>💻 Digital - Files, software, apps, digital content</option>
+                                            <option value="knowledge" {{ 'selected' if form_data and form_data.get('main_category') == 'knowledge' else '' }}>🧠 Knowledge - Information, courses, tutorials, guides</option>
+                                            <option value="plans_strategies" {{ 'selected' if form_data and form_data.get('main_category') == 'plans_strategies' else '' }}>📋 Plans & Strategies - Business plans, roadmaps</option>
+                                            <option value="imagination_creativity" {{ 'selected' if form_data and form_data.get('main_category') == 'imagination_creativity' else '' }}>🎨 Imagination & Creativity - Creative works, designs</option>
+                                        </select>
+                                        <div id="category-description" class="mt-3 p-3 bg-light rounded" style="display: none;">
+                                            <small class="text-muted"></small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="subcategory-section" style="display: none;">
+                                        <label class="form-label fs-5">Which kind? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="sub_category" id="sub-category" required disabled>
+                                            <option value="">Select a sub-category...</option>
+                                        </select>
+                                        <div id="custom-subcategory" class="mt-3" style="display: none;">
+                                            <input type="text" class="form-control form-control-lg" name="custom_sub_category" placeholder="Tell us more specifically what it is...">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Tags & keywords (optional)</label>
+                                        <input type="text" class="form-control" name="tags" placeholder='e.g. "iPhone, smartphone, Apple, mobile, 128GB"' value="{{ form_data.get('tags', '') if form_data else '' }}">
+                                        <div class="form-text">Help people find your product with relevant keywords</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Creator & Ownership -->
+                        <div class="step-content" id="step-2" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-user-tie fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 2 — Creator & Ownership</h4>
+                                <p class="text-muted">Who created this product and who owns it?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is the Type of creator? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="creator_type" id="creator-type" required>
+                                            <option value="">Select creator type...</option>
+                                            <option value="individual" {{ 'selected' if form_data and form_data.get('creator_type') == 'individual' else '' }}>Individual</option>
+                                            <option value="team" {{ 'selected' if form_data and form_data.get('creator_type') == 'team' else '' }}>Team</option>
+                                            <option value="company" {{ 'selected' if form_data and form_data.get('creator_type') == 'company' else '' }}>Company</option>
+                                            <option value="unknown" {{ 'selected' if form_data and form_data.get('creator_type') == 'unknown' else '' }}>Unknown</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Link (URL) — optional</label>
+                                        <input type="url" class="form-control" name="creator_link" placeholder="https://..." value="{{ form_data.get('creator_link', '') if form_data else '' }}">
+                                        <div class="form-text">Website or profile link for the creator</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who created or manufactured the product? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required placeholder="e.g., Apple, Nike, Your Company Name, Your Name" value="{{ form_data.get('creator', '') if form_data else '' }}">
+                                        <div class="form-text">Name of the creator, brand, company, or individual</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="owner_is_creator" id="owner-is-creator" {{ 'checked' if form_data and form_data.get('owner_is_creator') else '' }}>
+                                            <label class="form-check-label fs-5" for="owner-is-creator">
+                                                Owner is the creator
+                                            </label>
+                                            <div class="form-text">Check this if the owner and creator are the same</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who is the owner now? <span class="text-danger">*</span></label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="owner_type" id="owner-me" value="me" {{ 'checked' if form_data and form_data.get('owner_type') == 'me' else '' }} required>
+                                                    <label class="form-check-label" for="owner-me">
+                                                        I own it
+                                                    </label>
+                                            </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="owner_type" id="owner-other" value="other" {{ 'checked' if form_data and form_data.get('owner_type') == 'other' else '' }} required>
+                                                    <label class="form-check-label" for="owner-other">
+                                                        Other
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="owner_type" id="owner-unknown" value="unknown" {{ 'checked' if form_data and form_data.get('owner_type') == 'unknown' else '' }} required>
+                                                    <label class="form-check-label" for="owner-unknown">
+                                                        Unknown
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="other-owner-details" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner type <span class="text-danger">*</span></label>
+                                            <select class="form-select" name="other_owner_type">
+                                                <option value="">Select owner type...</option>
+                                                <option value="individual" {{ 'selected' if form_data and form_data.get('other_owner_type') == 'individual' else '' }}>Individual</option>
+                                                <option value="team" {{ 'selected' if form_data and form_data.get('other_owner_type') == 'team' else '' }}>Team</option>
+                                                <option value="company" {{ 'selected' if form_data and form_data.get('other_owner_type') == 'company' else '' }}>Company</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="owner_name" placeholder="Owner's name" value="{{ form_data.get('owner_name', '') if form_data else '' }}">
+                                            </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner link (URL) — optional</label>
+                                                <input type="url" class="form-control" name="owner_link" placeholder="https://..." value="{{ form_data.get('owner_link', '') if form_data else '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Ownership legal type <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="ownership_type" id="ownership-legal-type" required>
+                                            <option value="">Select ownership type...</option>
+                                            <option value="sole" {{ 'selected' if form_data and form_data.get('ownership_legal_type') == 'sole' else '' }}>Sole</option>
+                                            <option value="partner" {{ 'selected' if form_data and form_data.get('ownership_legal_type') == 'partner' else '' }}>Partner</option>
+                                            <option value="llc" {{ 'selected' if form_data and form_data.get('ownership_legal_type') == 'llc' else '' }}>LLC</option>
+                                            <option value="corporation" {{ 'selected' if form_data and form_data.get('ownership_legal_type') == 'corporation' else '' }}>Corporation</option>
+                                            <option value="other" {{ 'selected' if form_data and form_data.get('ownership_legal_type') == 'other' else '' }}>Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="partners-section" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Partner entities</label>
+                                            <div id="partners-list">
+                                                <div class="partner-entry mb-2">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <input type="text" class="form-control" name="partner_names[]" placeholder="Partner name">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <input type="url" class="form-control" name="partner_links[]" placeholder="Partner link (URL)">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" id="add-partner" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Add another partner
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div id="other-ownership-description" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Describe the ownership type</label>
+                                            <textarea class="form-control" name="other_ownership_description" rows="3" placeholder="Please describe the ownership structure...">{{ form_data.get('other_ownership_description', '') if form_data else '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Basic Information -->
+                        <div class="step-content" id="step-3" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 3 — Basic Information</h4>
+                                <p class="text-muted">Tell us about your product</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Product name or Title? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required placeholder="Give your product a clear, descriptive name" value="{{ form_data.get('title', '') if form_data else '' }}" minlength="3" maxlength="120">
+                                        <div class="form-text">3–120 characters</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Brand / Manufacturer</label>
+                                        <input type="text" class="form-control" name="brand_manufacturer" placeholder="Brand name (prefilled from Creator if available)" value="{{ form_data.get('brand_manufacturer', '') if form_data else '' }}">
+                                        <div class="form-text">Optional - will prefill from Creator if available</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Model / SKU</label>
+                                        <input type="text" class="form-control" name="model_sku" placeholder="Model number or SKU" value="{{ form_data.get('model_sku', '') if form_data else '' }}">
+                                        <div class="form-text">Optional</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Short description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="250" required placeholder="Describe your product in 1–2 short sentences (max 250 characters)">{{ form_data.get('short_description', '') if form_data else '' }}</textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">1–2 short sentences</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/250</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Detailed description</label>
+                                        <textarea class="form-control" name="detailed_description" rows="5" placeholder="Provide more detailed information about your product...">{{ form_data.get('detailed_description', '') if form_data else '' }}</textarea>
+                                        <div class="form-text">Optional - provide comprehensive details about your product</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Features</label>
+                                        <div id="features-list">
+                                            <div class="feature-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="features[]" placeholder="e.g., Waterproof, 10h battery">
+                                                    <button type="button" class="btn btn-outline-danger remove-feature" onclick="removeFeature(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                    </div>
+                                </div>
+                            </div>
+                                        <button type="button" id="add-feature" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another feature
+                                        </button>
+                                        <div class="form-text">Optional - multi-line list or tags</div>
+                        </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Highlights (unique selling points)</label>
+                                        <div id="highlights-list">
+                                            <div class="highlight-entry mb-2">
+                                                <input type="text" class="form-control" name="highlights[]" placeholder="• Unique selling point 1">
+                                            </div>
+                                            <div class="highlight-entry mb-2">
+                                                <input type="text" class="form-control" name="highlights[]" placeholder="• Unique selling point 2">
+                                            </div>
+                                            <div class="highlight-entry mb-2">
+                                                <input type="text" class="form-control" name="highlights[]" placeholder="• Unique selling point 3">
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Optional - suggest 3 bullets</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Media -->
+                        <div class="step-content" id="step-4" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-images fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 4 — Media</h4>
+                                <p class="text-muted">Show off your product with photos, videos, and more</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Which media do you want to add?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="images" id="media-images">
+                                                    <label class="form-check-label" for="media-images">
+                                                        <i class="fas fa-image me-2"></i>Images
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="videos" id="media-videos">
+                                                    <label class="form-check-label" for="media-videos">
+                                                        <i class="fas fa-video me-2"></i>Videos
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="audios" id="media-audios">
+                                                    <label class="form-check-label" for="media-audios">
+                                                        <i class="fas fa-music me-2"></i>Audios
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="pdfs" id="media-pdfs">
+                                                    <label class="form-check-label" for="media-pdfs">
+                                                        <i class="fas fa-file-pdf me-2"></i>PDFs
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="proofs" id="media-proofs">
+                                                    <label class="form-check-label" for="media-proofs">
+                                                        <i class="fas fa-certificate me-2"></i>Proofs (certificates)
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-lg mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="external_links" id="media-links">
+                                                    <label class="form-check-label" for="media-links">
+                                                        <i class="fas fa-external-link-alt me-2"></i>External links
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Select the types of media you want to add</div>
+                                    </div>
+
+                                    <!-- Images Section -->
+                                    <div class="media-section mb-4" id="images-section" style="display: none;">
+                                        <h5><i class="fas fa-image me-2"></i>Images</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload images</label>
+                                                    <input type="file" class="form-control" name="images" multiple accept="image/jpg,image/jpeg,image/png" data-max-files="10" data-max-size="10485760">
+                                                    <div class="form-text">Accept JPG/PNG, max 10 files, max 10 MB each</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Image URL</label>
+                                                    <input type="url" class="form-control" name="image_urls" placeholder="Paste image URLs (separate multiple with commas)">
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <button type="button" class="btn btn-outline-primary" id="camera-capture-btn">
+                                                        <i class="fas fa-camera me-2"></i>Capture from camera
+                                                    </button>
+                                                    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+                                                </div>
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-lightbulb me-2"></i>Recommend at least 3 images for better visibility
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Videos Section -->
+                                    <div class="media-section mb-4" id="videos-section" style="display: none;">
+                                        <h5><i class="fas fa-video me-2"></i>Videos</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload video (currently disabled)</label>
+                                                    <input type="file" class="form-control" name="videos" multiple accept="video/*" disabled>
+                                                    <div class="form-text">Video upload feature coming soon</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Video link (URL)</label>
+                                                    <input type="url" class="form-control" name="video_urls" placeholder="YouTube, Vimeo, or other video links">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Audios Section -->
+                                    <div class="media-section mb-4" id="audios-section" style="display: none;">
+                                        <h5><i class="fas fa-music me-2"></i>Audios</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload audio</label>
+                                                    <input type="file" class="form-control" name="audios" multiple accept="audio/*">
+                                                    <div class="form-text">Accept MP3, WAV, etc.</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Audio link (URL)</label>
+                                                    <input type="url" class="form-control" name="audio_urls" placeholder="SoundCloud, Spotify, or other audio links">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- PDFs Section -->
+                                    <div class="media-section mb-4" id="pdfs-section" style="display: none;">
+                                        <h5><i class="fas fa-file-pdf me-2"></i>Documents / PDFs (manuals, brochure)</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload documents</label>
+                                                    <input type="file" class="form-control" name="documents" multiple accept=".pdf,.doc,.docx" data-max-size="10485760">
+                                                    <div class="form-text">Accept PDF, DOCX, max 10 MB</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Document link</label>
+                                                    <input type="url" class="form-control" name="document_urls" placeholder="Links to manuals, specifications, etc.">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Proofs Section -->
+                                    <div class="media-section mb-4" id="proofs-section" style="display: none;">
+                                        <h5><i class="fas fa-certificate me-2"></i>Proofs (certs/licenses)</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload proofs</label>
+                                                    <input type="file" class="form-control" name="proofs" multiple accept=".pdf,.jpg,.jpeg,.png" data-max-size="10485760">
+                                                    <div class="form-text">Accept PDF, JPG, PNG, max 10 MB</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Proof link</label>
+                                                    <input type="url" class="form-control" name="proof_urls" placeholder="Links to certificates, licenses, etc.">
+                                                </div>
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-shield-alt me-2"></i>Optional but increases credibility
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- External Links Section -->
+                                    <div class="media-section mb-4" id="external-links-section" style="display: none;">
+                                        <h5><i class="fas fa-external-link-alt me-2"></i>External Links / References</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div id="external-links-list">
+                                                    <div class="external-link-entry mb-2">
+                                                        <div class="input-group">
+                                                            <input type="url" class="form-control" name="external_links[]" placeholder="e.g., store page, demo, website">
+                                                            <button type="button" class="btn btn-outline-danger remove-link" onclick="removeExternalLink(this)" style="display: none;">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="add-external-link" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-plus me-1"></i>Add another link
+                                                </button>
+                                                <div class="form-text">Store page, demo, social media, etc.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Condition & Warranty -->
+                        <div class="step-content" id="step-5" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-check-circle fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 5 — Condition & Warranty</h4>
+                                <p class="text-muted">What's the current condition of your product?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is the condition of the product? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="condition" id="condition-select" required>
+                                            <option value="">Select condition...</option>
+                                            <option value="new" {{ 'selected' if form_data and form_data.get('condition') == 'new' else '' }}>New</option>
+                                            <option value="used" {{ 'selected' if form_data and form_data.get('condition') == 'used' else '' }}>Used</option>
+                                            <option value="refurbished" {{ 'selected' if form_data and form_data.get('condition') == 'refurbished' else '' }}>Refurbished</option>
+                                            <option value="damaged" {{ 'selected' if form_data and form_data.get('condition') == 'damaged' else '' }}>Damaged</option>
+                                            <option value="prototype" {{ 'selected' if form_data and form_data.get('condition') == 'prototype' else '' }}>Prototype</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- New condition details -->
+                                    <div class="mb-4" id="new-condition-details" style="display: none;">
+                                        <label class="form-label">State</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="new_state" id="new-closed" value="closed" {{ 'checked' if form_data and form_data.get('new_state') == 'closed' else '' }}>
+                                                    <label class="form-check-label" for="new-closed">
+                                                        Closed (sealed)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="new_state" id="new-opened" value="opened" {{ 'checked' if form_data and form_data.get('new_state') == 'opened' else '' }}>
+                                                    <label class="form-check-label" for="new-opened">
+                                                        Opened but untouched
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Used condition details -->
+                                    <div class="mb-4" id="used-condition-details" style="display: none;">
+                                        <label class="form-label">Quality</label>
+                                        <select class="form-select" name="used_quality">
+                                            <option value="">Select quality...</option>
+                                            <option value="like_new" {{ 'selected' if form_data and form_data.get('used_quality') == 'like_new' else '' }}>Like new</option>
+                                            <option value="good" {{ 'selected' if form_data and form_data.get('used_quality') == 'good' else '' }}>Good</option>
+                                            <option value="fair" {{ 'selected' if form_data and form_data.get('used_quality') == 'fair' else '' }}>Fair</option>
+                                            <option value="poor" {{ 'selected' if form_data and form_data.get('used_quality') == 'poor' else '' }}>Poor</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Refurbished condition details -->
+                                    <div class="mb-4" id="refurbished-condition-details" style="display: none;">
+                                        <label class="form-label">What was fixed? <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="refurbished_details" rows="3" placeholder="Describe what was repaired or refurbished...">{{ form_data.get('refurbished_details', '') if form_data else '' }}</textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Expiration date?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="has_expiration" id="exp-yes" value="yes" {{ 'checked' if form_data and form_data.get('has_expiration') == 'yes' else '' }}>
+                                                    <label class="form-check-label" for="exp-yes">
+                                                        Yes
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="has_expiration" id="exp-no" value="no" {{ 'checked' if form_data and form_data.get('has_expiration') == 'no' else '' }}>
+                                                    <label class="form-check-label" for="exp-no">
+                                                        No
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="expiration-date-field" style="display: none;">
+                                        <label class="form-label">Expiry date</label>
+                                        <input type="date" class="form-control" name="expiration_date" value="{{ form_data.get('expiration_date', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Warranty</label>
+                                        <div class="mb-3">
+                                            <label class="form-label">Warranty provider</label>
+                                            <select class="form-select" name="warranty_provider" id="warranty-provider">
+                                                <option value="">Select warranty provider...</option>
+                                                <option value="manufacturer" {{ 'selected' if form_data and form_data.get('warranty_provider') == 'manufacturer' else '' }}>Manufacturer</option>
+                                                <option value="seller" {{ 'selected' if form_data and form_data.get('warranty_provider') == 'seller' else '' }}>Seller</option>
+                                                <option value="owner" {{ 'selected' if form_data and form_data.get('warranty_provider') == 'owner' else '' }}>Owner</option>
+                                                <option value="other" {{ 'selected' if form_data and form_data.get('warranty_provider') == 'other' else '' }}>Other</option>
+                                        </select>
+                                    </div>
+
+                                        <div id="warranty-details" style="display: none;">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Warranty length</label>
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control" name="warranty_length" placeholder="Length" value="{{ form_data.get('warranty_length', '') if form_data else '' }}">
+                                                        <select class="form-select" name="warranty_unit" style="max-width: 120px;">
+                                                            <option value="years" {{ 'selected' if form_data and form_data.get('warranty_unit') == 'years' else '' }}>Years</option>
+                                                            <option value="months" {{ 'selected' if form_data and form_data.get('warranty_unit') == 'months' else '' }}>Months</option>
+                                                            <option value="weeks" {{ 'selected' if form_data and form_data.get('warranty_unit') == 'weeks' else '' }}>Weeks</option>
+                                                            <option value="days" {{ 'selected' if form_data and form_data.get('warranty_unit') == 'days' else '' }}>Days</option>
+                                                            <option value="hours" {{ 'selected' if form_data and form_data.get('warranty_unit') == 'hours' else '' }}>Hours</option>
+                                                        </select>
+                                    </div>
+                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Warranty contact</label>
+                                                    <input type="text" class="form-control" name="warranty_contact" placeholder="Phone/email" value="{{ form_data.get('warranty_contact', '') if form_data else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                                        <div id="other-warranty-details" style="display: none;">
+                                            <div class="mb-3">
+                                                <label class="form-label">Describe warranty provider</label>
+                                                <input type="text" class="form-control" name="other_warranty_provider" placeholder="Describe the warranty provider..." value="{{ form_data.get('other_warranty_provider', '') if form_data else '' }}">
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Warranty length</label>
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control" name="other_warranty_length" placeholder="Length">
+                                                        <select class="form-select" name="other_warranty_unit" style="max-width: 120px;">
+                                                            <option value="years">Years</option>
+                                                            <option value="months">Months</option>
+                                                            <option value="weeks">Weeks</option>
+                                                            <option value="days">Days</option>
+                                                            <option value="hours">Hours</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Contact</label>
+                                                    <input type="text" class="form-control" name="other_warranty_contact" placeholder="Phone/email">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 6: Quantity -->
+                        <div class="step-content" id="step-6" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-cubes fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 6 — Quantity</h4>
+                                <p class="text-muted">How many do you have?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Quantity type <span class="text-danger">*</span></label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check form-check-lg">
+                                                    <input class="form-check-input" type="radio" name="quantity_type" id="quantity-unlimited" value="unlimited" {{ 'checked' if form_data and form_data.get('quantity_type') == 'unlimited' else '' }} required>
+                                                    <label class="form-check-label" for="quantity-unlimited">
+                                                        <i class="fas fa-infinity me-2"></i>Unlimited
+                                                        <small class="d-block text-muted">Digital/ambiguous products</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check form-check-lg">
+                                                    <input class="form-check-input" type="radio" name="quantity_type" id="quantity-limited" value="limited" {{ 'checked' if form_data and form_data.get('quantity_type') == 'limited' else '' }} required>
+                                                    <label class="form-check-label" for="quantity-limited">
+                                                        <i class="fas fa-hashtag me-2"></i>Limited
+                                                        <small class="d-block text-muted">Specific quantity available</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="limited-quantity-details" style="display: none;">
+                                        <label class="form-label fs-5">Quantity <span class="text-danger">*</span></label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="quantity_number" placeholder="Enter quantity" value="{{ form_data.get('quantity_number', '') if form_data else '' }}" min="1">
+                                            <select class="form-select" name="quantity_unit" style="min-width: 180px; max-width: 200px;">
+                                                <option value="">Select unit...</option>
+                                                <option value="pieces" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'pieces' else '' }}>Pieces</option>
+                                                <option value="sets" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'sets' else '' }}>Sets</option>
+                                                <option value="kg" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'kg' else '' }}>Kg</option>
+                                                <option value="grams" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'grams' else '' }}>Grams</option>
+                                                <option value="liters" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'liters' else '' }}>Liters</option>
+                                                <option value="meters" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'meters' else '' }}>Meters</option>
+                                                <option value="cm" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'cm' else '' }}>CM</option>
+                                                <option value="inches" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'inches' else '' }}>Inches</option>
+                                                <option value="boxes" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'boxes' else '' }}>Boxes</option>
+                                                <option value="packs" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'packs' else '' }}>Packs</option>
+                                                <option value="units" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'units' else '' }}>Units</option>
+                                                <option value="other" {{ 'selected' if form_data and form_data.get('quantity_unit') == 'other' else '' }}>Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-text">Specify the exact quantity and unit</div>
+                                    </div>
+
+                                    <div class="mb-4" id="custom-unit-field" style="display: none;">
+                                        <label class="form-label">Custom unit</label>
+                                        <input type="text" class="form-control" name="custom_quantity_unit" placeholder="e.g., bottles, pages, hours..." value="{{ form_data.get('custom_quantity_unit', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div id="unlimited-note" class="alert alert-info" style="display: none;">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Unlimited quantity</strong> - Perfect for digital products, services, or items with no quantity restrictions.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 7: Availability -->
+                        <div class="step-content" id="step-7" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 7 — Availability</h4>
+                                <p class="text-muted">When and how is your product available?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is product status? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="product_status" required>
+                                            <option value="">Select status...</option>
+                                            <option value="available" {{ 'selected' if form_data and form_data.get('product_status') == 'available' else '' }}>Available (ready)</option>
+                                            <option value="pending" {{ 'selected' if form_data and form_data.get('product_status') == 'pending' else '' }}>Pending (being prepared)</option>
+                                            <option value="draft" {{ 'selected' if form_data and form_data.get('product_status') == 'draft' else '' }}>Draft</option>
+                                            <option value="archived" {{ 'selected' if form_data and form_data.get('product_status') == 'archived' else '' }}>Archived</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Stock status?</label>
+                                        <select class="form-select form-select-lg" name="stock_status">
+                                            <option value="">Select stock status...</option>
+                                            <option value="in_stock" {{ 'selected' if form_data and form_data.get('stock_status') == 'in_stock' else '' }}>In stock (ready to ship)</option>
+                                            <option value="made_to_order" {{ 'selected' if form_data and form_data.get('stock_status') == 'made_to_order' else '' }}>Made to order (custom production)</option>
+                                            <option value="pre_order" {{ 'selected' if form_data and form_data.get('stock_status') == 'pre_order' else '' }}>Pre-order (coming soon)</option>
+                                            <option value="out_of_stock" {{ 'selected' if form_data and form_data.get('stock_status') == 'out_of_stock' else '' }}>Out of stock</option>
+                                            </select>
+                                        </div>
+
+                                    <div class="mb-4" id="lead-time-section" style="display: none;">
+                                        <label class="form-label">What is Estimated lead time? (optional)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="lead_time_number" placeholder="Time" value="{{ form_data.get('lead_time_number', '') if form_data else '' }}" min="1">
+                                            <select class="form-select" name="lead_time_unit" style="max-width: 120px;">
+                                                <option value="">Select unit...</option>
+                                                <option value="days" {{ 'selected' if form_data and form_data.get('lead_time_unit') == 'days' else '' }}>Days</option>
+                                                <option value="weeks" {{ 'selected' if form_data and form_data.get('lead_time_unit') == 'weeks' else '' }}>Weeks</option>
+                                                <option value="months" {{ 'selected' if form_data and form_data.get('lead_time_unit') == 'months' else '' }}>Months</option>
+                                            </select>
+                                </div>
+                                        <div class="form-text">Show if Made to order or Pre-order selected</div>
+                                    </div>
+
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Availability Tips:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li><strong>Available:</strong> Product is ready and can be delivered immediately</li>
+                                            <li><strong>Pending:</strong> Product is being prepared or processed</li>
+                                            <li><strong>Draft:</strong> Product listing is not yet complete</li>
+                                            <li><strong>Made to order:</strong> Product will be created after order is placed</li>
+                                            <li><strong>Pre-order:</strong> Product is coming soon, customers can order in advance</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 8: Value & Pricing -->
+                        <div class="step-content" id="step-8" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 8 — Value & Pricing</h4>
+                                <p class="text-muted">What's your pricing strategy?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Price type? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="pricing_type" id="price-type" required>
+                                            <option value="">Select price type...</option>
+                                            <option value="free" {{ 'selected' if form_data and form_data.get('price_type') == 'free' else '' }}>Free</option>
+                                            <option value="paid" {{ 'selected' if form_data and form_data.get('price_type') == 'paid' else '' }}>Paid</option>
+                                            <option value="hybrid" {{ 'selected' if form_data and form_data.get('price_type') == 'hybrid' else '' }}>Hybrid (some free some paid)</option>
+                                            <option value="negotiable" {{ 'selected' if form_data and form_data.get('price_type') == 'negotiable' else '' }}>Negotiable</option>
+                                            <option value="price_on_request" {{ 'selected' if form_data and form_data.get('price_type') == 'price_on_request' else '' }}>Price on request</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="price-details" style="display: none;">
+                                        <label class="form-label fs-5">Price <span class="text-danger">*</span></label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00" value="{{ form_data.get('price', '') if form_data else '' }}" min="0" required>
+                                            <select class="form-select" name="currency" style="min-width: 150px; max-width: 180px;" required>
+                                                <option value="">Currency</option>
+                                                <option value="USD" {{ 'selected' if form_data and form_data.get('price_currency') == 'USD' else '' }}>USD</option>
+                                                <option value="EUR" {{ 'selected' if form_data and form_data.get('price_currency') == 'EUR' else '' }}>EUR</option>
+                                                <option value="JPY" {{ 'selected' if form_data and form_data.get('price_currency') == 'JPY' else '' }}>JPY</option>
+                                                <option value="GBP" {{ 'selected' if form_data and form_data.get('price_currency') == 'GBP' else '' }}>GBP</option>
+                                                <option value="AUD" {{ 'selected' if form_data and form_data.get('price_currency') == 'AUD' else '' }}>AUD</option>
+                                                <option value="CAD" {{ 'selected' if form_data and form_data.get('price_currency') == 'CAD' else '' }}>CAD</option>
+                                                <option value="CHF" {{ 'selected' if form_data and form_data.get('price_currency') == 'CHF' else '' }}>CHF</option>
+                                                <option value="CNH" {{ 'selected' if form_data and form_data.get('price_currency') == 'CNH' else '' }}>CNH</option>
+                                                <option value="AED" {{ 'selected' if form_data and form_data.get('price_currency') == 'AED' else '' }}>AED</option>
+                                                <option value="SAR" {{ 'selected' if form_data and form_data.get('price_currency') == 'SAR' else '' }}>SAR</option>
+                                                <option value="other" {{ 'selected' if form_data and form_data.get('price_currency') == 'other' else '' }}>Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-text">Validation: >= 0.00</div>
+                                    </div>
+
+                                    <div class="mb-4" id="other-currency-field" style="display: none;">
+                                        <label class="form-label">Other currency</label>
+                                        <input type="text" class="form-control" name="other_currency" placeholder="Specify currency..." value="{{ form_data.get('other_currency', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is the Price model?</label>
+                                        <select class="form-select form-select-lg" name="price_model">
+                                            <option value="">Select price model...</option>
+                                            <option value="by_item" {{ 'selected' if form_data and form_data.get('price_model') == 'by_item' else '' }}>By item</option>
+                                            <option value="by_hour" {{ 'selected' if form_data and form_data.get('price_model') == 'by_hour' else '' }}>By hour</option>
+                                            <option value="by_task" {{ 'selected' if form_data and form_data.get('price_model') == 'by_task' else '' }}>By task</option>
+                                            <option value="negotiable" {{ 'selected' if form_data and form_data.get('price_model') == 'negotiable' else '' }}>Negotiable</option>
+                                            <option value="custom" {{ 'selected' if form_data and form_data.get('price_model') == 'custom' else '' }}>Custom</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="custom-price-model" style="display: none;">
+                                        <label class="form-label">Custom billing method</label>
+                                        <textarea class="form-control" name="custom_billing_method" rows="3" placeholder="Describe your billing method...">{{ form_data.get('custom_billing_method', '') if form_data else '' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 9: Discounts, Offers & Coupons -->
+                        <div class="step-content" id="step-9" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-percent fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 9 — Discounts, Offers & Coupons</h4>
+                                <p class="text-muted">Any special deals or discounts?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Discount type?</label>
+                                        <select class="form-select form-select-lg" name="discount_type" id="discount-type">
+                                            <option value="none">None</option>
+                                            <option value="percentage">Percentage</option>
+                                            <option value="amount">Amount</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-4" id="discount-details" style="display: none;">
+                                        <label class="form-label">Discount value</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="discount_value" placeholder="Discount value" min="0">
+                                            <span class="input-group-text" id="discount-unit">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="discount-time-section" style="display: none;">
+                                        <label class="form-label fs-5">What is the Discount time?</label>
+                                        <select class="form-select" name="discount_time" id="discount-time">
+                                            <option value="forever">Forever</option>
+                                            <option value="limited">Limited time</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="limited-time-options" style="display: none;">
+                                        <label class="form-label">Limited time options</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="limited_time_type" id="till-date" value="till_date">
+                                                    <label class="form-check-label" for="till-date">Till date</label>
+                                                </div>
+                                                <div id="till-date-picker" style="display: none; margin-top: 10px;">
+                                                    <input type="date" class="form-control" name="discount_end_date">
+                                            </div>
+                                                </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="limited_time_type" id="for-days" value="for_days">
+                                                    <label class="form-check-label" for="for-days">For X days</label>
+                                            </div>
+                                                <div id="for-days-input" style="display: none; margin-top: 10px;">
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control" name="discount_days" placeholder="Number of days" min="1">
+                                                        <span class="input-group-text">days</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Coupons allowed?</label>
+                                        <select class="form-select" name="coupons_allowed" id="coupons-allowed">
+                                            <option value="not_allowed">Not allowed</option>
+                                            <option value="allowed">Allowed</option>
+                                            <option value="allowed_till">Allowed till</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="coupons-till-days" style="display: none;">
+                                        <label class="form-label">Allowed till (days)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="coupons_days" placeholder="Number of days" min="1">
+                                            <span class="input-group-text">days</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 10: Payments -->
+                        <div class="step-content" id="step-10" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-credit-card fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 10 — Payments</h4>
+                                <p class="text-muted">How do customers pay?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Payment condition (when to pay)?</label>
+                                        <select class="form-select form-select-lg" name="payment_condition" id="payment-condition">
+                                            <option value="">Select payment condition...</option>
+                                            <option value="before_work">Before work</option>
+                                            <option value="during_work">During work</option>
+                                            <option value="when_delivered">When delivered</option>
+                                            <option value="after_work">After work</option>
+                                            <option value="installments">Installments</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Payment method?</label>
+                                        <select class="form-select form-select-lg" name="payment_method" id="payment-method">
+                                            <option value="">Select payment method...</option>
+                                            <option value="cash">Cash</option>
+                                            <option value="credit_card">Credit card</option>
+                                            <option value="bank_transfer">Bank transfer</option>
+                                            <option value="on_delivery">On delivery</option>
+                                            <option value="mobile_wallet">Mobile wallet</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="other-payment-method" style="display: none;">
+                                        <label class="form-label">Other payment method details</label>
+                                        <input type="text" class="form-control" name="other_payment_details" placeholder="Specify other payment method...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 11: Logistics & Delivery -->
+                        <div class="step-content" id="step-11" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-truck fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 11 — Logistics & Delivery</h4>
+                                <p class="text-muted">How will people get your product?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is your Location?</label>
+                                        <select class="form-select form-select-lg" name="location_method" id="location-method">
+                                            <option value="">Select location method...</option>
+                                            <option value="write_address">I'll write the address</option>
+                                            <option value="use_device">Use my device location</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-4" id="address-field" style="display: none;">
+                                        <label class="form-label">Address</label>
+                                        <textarea class="form-control" name="address" rows="3" placeholder="Enter your complete address..."></textarea>
+                                    </div>
+
+                                    <div class="mb-4" id="device-location-field" style="display: none;">
+                                        <button type="button" class="btn btn-outline-primary" id="get-location-btn">
+                                            <i class="fas fa-map-marker-alt me-2"></i>Get my current location
+                                        </button>
+                                        <div id="location-result" class="mt-2" style="display: none;">
+                                            <small class="text-muted">Location captured successfully</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Delivery method?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="remote" id="delivery-remote">
+                                                    <label class="form-check-label" for="delivery-remote">Remote (download/license)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="physical_shipping" id="delivery-shipping">
+                                                    <label class="form-check-label" for="delivery-shipping">Physical shipping</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="pickup" id="delivery-pickup">
+                                                    <label class="form-check-label" for="delivery-pickup">Pick-up</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="onsite" id="delivery-onsite">
+                                                    <label class="form-check-label" for="delivery-onsite">On-site</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="installation" id="delivery-installation">
+                                                    <label class="form-check-label" for="delivery-installation">Installation service</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="physical-shipping-details" style="display: none;">
+                                        <h6>Physical Shipping Details</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Weight</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" name="weight" placeholder="Weight" step="0.01" min="0">
+                                                    <select class="form-select" name="weight_unit" style="max-width: 80px;">
+                                                        <option value="kg">kg</option>
+                                                        <option value="g">g</option>
+                                                        <option value="lb">lb</option>
+                                                        <option value="oz">oz</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Weight after packing</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" name="packed_weight" placeholder="Packed weight" step="0.01" min="0">
+                                                    <select class="form-select" name="packed_weight_unit" style="max-width: 80px;">
+                                                        <option value="kg">kg</option>
+                                                        <option value="g">g</option>
+                                                        <option value="lb">lb</option>
+                                                        <option value="oz">oz</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Length (cm)</label>
+                                                <input type="number" class="form-control" name="length" placeholder="Length" step="0.1" min="0">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Width (cm)</label>
+                                                <input type="number" class="form-control" name="width" placeholder="Width" step="0.1" min="0">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Height (cm)</label>
+                                                <input type="number" class="form-control" name="height" placeholder="Height" step="0.1" min="0">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What is Availability region?</label>
+                                        <select class="form-select form-select-lg" name="availability_region" id="availability-region">
+                                            <option value="">Select availability region...</option>
+                                            <option value="zone">Zone (local radius)</option>
+                                            <option value="local">Local (same city)</option>
+                                            <option value="national">National (same country)</option>
+                                            <option value="international">International (worldwide)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="zone-radius-field" style="display: none;">
+                                        <label class="form-label">Zone radius</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="zone_radius" placeholder="Radius" min="1">
+                                            <span class="input-group-text">km</span>
+                                        </div>
+                                        <div class="form-text">Specify delivery radius from your location</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">What is Shipping package details? <small class="text-muted">(optional)</small></label>
+                                        <textarea class="form-control" name="shipping_notes" rows="3" placeholder="Special packaging requirements, handling instructions, etc..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 12: Languages Supported -->
+                        <div class="step-content" id="step-12" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-language fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 12 — Languages Supported</h4>
+                                <p class="text-muted">Which languages does this product support?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Which languages does this product support / documentation in?</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="english" id="lang-en"><label class="form-check-label" for="lang-en">English</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="chinese" id="lang-zh"><label class="form-check-label" for="lang-zh">Chinese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="hindi" id="lang-hi"><label class="form-check-label" for="lang-hi">Hindi</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="arabic" id="lang-ar"><label class="form-check-label" for="lang-ar">Arabic</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="spanish" id="lang-es"><label class="form-check-label" for="lang-es">Spanish</label></div>
+                                    </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="french" id="lang-fr"><label class="form-check-label" for="lang-fr">French</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="german" id="lang-de"><label class="form-check-label" for="lang-de">German</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="italian" id="lang-it"><label class="form-check-label" for="lang-it">Italian</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="bengali" id="lang-bn"><label class="form-check-label" for="lang-bn">Bengali</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="russian" id="lang-ru"><label class="form-check-label" for="lang-ru">Russian</label></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="portuguese" id="lang-pt"><label class="form-check-label" for="lang-pt">Portuguese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="korean" id="lang-ko"><label class="form-check-label" for="lang-ko">Korean</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="japanese" id="lang-ja"><label class="form-check-label" for="lang-ja">Japanese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="vietnamese" id="lang-vi"><label class="form-check-label" for="lang-vi">Vietnamese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="turkish" id="lang-tr"><label class="form-check-label" for="lang-tr">Turkish</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="persian" id="lang-fa"><label class="form-check-label" for="lang-fa">Persian</label></div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <input type="text" class="form-control" name="other_languages" placeholder="Other languages (separate with commas)">
+                                        </div>
+                                        <div class="form-text">Select all that apply</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 13: Management & Metadata -->
+                        <div class="step-content" id="step-13" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-cog fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 13 — Management & Metadata</h4>
+                                <p class="text-muted">Final settings for your product listing</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Created date</label>
+                                        <input type="text" class="form-control" value="{{ current_date }}" readonly>
+                                        <div class="form-text">Auto (display only)</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Last updated</label>
+                                        <input type="text" class="form-control" value="{{ current_date }}" readonly>
+                                        <div class="form-text">Auto (display only)</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Expiration date (optional)</label>
+                                        <input type="date" class="form-control" name="listing_expiration_date">
+                                        <div class="form-text">Date picker</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Visibility <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="visibility" required>
+                                            <option value="">Select visibility...</option>
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Verification status</label>
+                                        <select class="form-select" name="verification_status" readonly>
+                                            <option value="unverified" selected>Unverified</option>
+                                        </select>
+                                        <div class="form-text">Auto (display only) — e.g., Unverified / Pending / Verified (based on proofs & checks)</div>
+                                    </div>
+
+                                    <!-- Success Card -->
+                                    <div class="card bg-light mt-5">
+                                        <div class="card-body">
+                                            <div class="text-center">
+                                                <i class="fas fa-trophy fa-3x text-success mb-3"></i>
+                                                <h5 class="card-title text-success">🎉 Excellent Work!</h5>
+                                                <p class="card-text">
+                                                    You've provided comprehensive details for your product. 
+                                                    This will earn you maximum visibility and credibility points!
+                                                </p>
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-star me-2"></i>
+                                                    <strong>Your product will rank higher in search results and build more customer trust!</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-4 pt-4 border-top">
+                            <button type="button" id="prev-btn" class="btn btn-outline-secondary btn-lg" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                            <div class="flex-grow-1"></div>
+                            <button type="button" id="next-btn" class="btn btn-primary btn-lg">
+                                Next<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <div id="final-buttons" class="d-none">
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-primary btn-lg me-2" id="save-draft-final-btn">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success btn-lg" id="create-product-final-btn">
+                                    <i class="fas fa-star me-2"></i>Create Product
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check-lg .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.125em;
+}
+
+.form-check-lg .form-check-label {
+    font-size: 1.1rem;
+    padding-left: 0.5rem;
+}
+
+.step-content {
+    min-height: 500px;
+}
+
+.progress {
+    transition: all 0.3s ease;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.btn-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between small {
+        font-size: 0.7rem;
+    }
+    
+    .step-content {
+        min-height: 400px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 13;
+    
+    // Initialize form
+    updateProgress();
+    initializeFormLogic();
+    
+    // Next button handler
+    document.getElementById('next-btn').addEventListener('click', function() {
+        if (validateCurrentStep()) {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+    });
+    
+    // Previous button handler
+    document.getElementById('prev-btn').addEventListener('click', function() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+            updateProgress();
+        }
+    });
+    
+    function showStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(function(stepEl) {
+            stepEl.style.display = 'none';
+        });
+        
+        // Show current step
+        document.getElementById('step-' + step).style.display = 'block';
+        
+        // Update navigation buttons
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finalButtons = document.getElementById('final-buttons');
+        
+        if (step === 1) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+        }
+        
+        if (step === totalSteps) {
+            nextBtn.style.display = 'none';
+            finalButtons.classList.remove('d-none');
+        } else {
+            nextBtn.style.display = 'block';
+            finalButtons.classList.add('d-none');
+        }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function updateProgress() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const percentage = (currentStep / totalSteps) * 100;
+        
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', currentStep);
+        progressText.textContent = `Step ${currentStep} of ${totalSteps}`;
+    }
+    
+    function validateCurrentStep() {
+        const currentStepEl = document.getElementById('step-' + currentStep);
+        let isValid = true;
+        let invalidFields = [];
+        
+        // Remove existing alerts and invalid classes
+        const existingAlerts = currentStepEl.querySelectorAll('.alert-danger');
+        existingAlerts.forEach(alert => alert.remove());
+        currentStepEl.querySelectorAll('.is-invalid').forEach(field => field.classList.remove('is-invalid'));
+        
+        // Validate text inputs and selects
+        const requiredTextFields = currentStepEl.querySelectorAll('input[required]:not([type="radio"]):not([type="checkbox"]), select[required], textarea[required]');
+        requiredTextFields.forEach(function(field) {
+            // Skip hidden fields or fields in hidden sections
+            if (field.offsetParent === null) return;
+            
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                invalidFields.push(field);
+                isValid = false;
+            }
+        });
+        
+        // Validate radio button groups
+        const radioGroups = {};
+        const requiredRadios = currentStepEl.querySelectorAll('input[type="radio"][required]');
+        requiredRadios.forEach(function(radio) {
+            // Skip hidden radio buttons
+            if (radio.offsetParent === null) return;
+            
+            const groupName = radio.name;
+            if (!radioGroups[groupName]) {
+                radioGroups[groupName] = [];
+            }
+            radioGroups[groupName].push(radio);
+        });
+        
+        // Check if at least one radio in each group is selected
+        Object.keys(radioGroups).forEach(function(groupName) {
+            const radios = radioGroups[groupName];
+            const isChecked = radios.some(radio => radio.checked);
+            
+            if (!isChecked) {
+                radios.forEach(radio => {
+                    radio.classList.add('is-invalid');
+                    if (invalidFields.length === 0) invalidFields.push(radio);
+                });
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            // Create detailed validation message
+            let message = '<i class="fas fa-exclamation-triangle me-2"></i>Please fill in the following required fields:<ul class="mb-0 mt-2">';
+            
+            // Add specific field names to the message
+            const fieldMessages = [];
+            if (currentStep === 2) {
+                const creatorType = document.getElementById('creator-type');
+                const creator = document.querySelector('[name="creator"]');
+                const ownerRadios = document.querySelectorAll('[name="owner_type"]');
+                const ownershipType = document.getElementById('ownership-legal-type');
+                
+                if (creatorType && !creatorType.value) fieldMessages.push('Type of creator');
+                if (creator && !creator.value.trim()) fieldMessages.push('Creator name');
+                if (!Array.from(ownerRadios).some(r => r.checked)) fieldMessages.push('Who is the owner');
+                if (ownershipType && !ownershipType.value) fieldMessages.push('Ownership legal type');
+                
+                // Check conditional fields
+                const checkedOwnerRadio = document.querySelector('[name="owner_type"]:checked');
+                if (checkedOwnerRadio && checkedOwnerRadio.value === 'other') {
+                    const otherOwnerType = document.querySelector('[name="other_owner_type"]');
+                    const otherOwnerName = document.querySelector('[name="owner_name"]');
+                    if (otherOwnerType && !otherOwnerType.value) fieldMessages.push('Other owner type');
+                    if (otherOwnerName && !otherOwnerName.value.trim()) fieldMessages.push('Other owner name');
+                }
+            }
+            
+            if (fieldMessages.length > 0) {
+                fieldMessages.forEach(msg => {
+                    message += '<li>' + msg + '</li>';
+                });
+            } else {
+                message += '<li>All required fields marked with red asterisk (*)</li>';
+            }
+            message += '</ul>';
+            
+            // Show validation message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger mt-3';
+            alertDiv.innerHTML = message;
+            currentStepEl.appendChild(alertDiv);
+            
+            // Scroll to first invalid field
+            if (invalidFields.length > 0) {
+                invalidFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => invalidFields[0].focus(), 300);
+            }
+        }
+        
+        return isValid;
+    }
+    
+    function initializeFormLogic() {
+        // Category descriptions
+        const categoryDescriptions = {
+            'physical': 'Tangible items you can touch - electronics, books, tools, furniture, clothing, etc.',
+            'digital': 'Files, software, apps, and digital content that exists electronically',
+            'knowledge': 'Information, courses, tutorials, guides, research, and documentation',
+            'plans_strategies': 'Business plans, marketing strategies, project blueprints, and roadmaps',
+            'imagination_creativity': 'Creative works, designs, concepts, and artistic creations'
+        };
+        
+        // Sub-category options
+        const subCategories = {
+            'physical': ['Electronics', 'Books & Media', 'Tools & Equipment', 'Furniture & Home', 'Clothing & Accessories', 'Sports & Recreation', 'Health & Beauty', 'Food & Beverages', 'Automotive', 'Other'],
+            'digital': ['Software & Apps', 'Digital Media', 'E-books & Courses', 'Templates & Resources', 'Games', 'Other'],
+            'knowledge': ['Courses & Training', 'Research & Reports', 'Guides & Tutorials', 'Documentation', 'Databases', 'Other'],
+            'plans_strategies': ['Business Plans', 'Marketing Strategies', 'Project Plans', 'Financial Plans', 'Other'],
+            'imagination_creativity': ['Art & Design', 'Creative Writing', 'Music & Audio', 'Video Content', 'Concepts & Ideas', 'Other']
+        };
+        
+        // Step 1: Category & Classification handlers
+        const mainCategorySelect = document.getElementById('main-category');
+        if (mainCategorySelect) {
+            mainCategorySelect.addEventListener('change', function() {
+            const selectedCategory = this.value;
+            const descriptionDiv = document.getElementById('category-description');
+            const subCategorySelect = document.getElementById('sub-category');
+            const subCategorySection = document.getElementById('subcategory-section');
+            
+            if (selectedCategory && categoryDescriptions[selectedCategory]) {
+                descriptionDiv.querySelector('small').textContent = categoryDescriptions[selectedCategory];
+                descriptionDiv.style.display = 'block';
+                subCategorySection.style.display = 'block';
+                
+                // Update sub-categories
+                subCategorySelect.innerHTML = '<option value="">Select a sub-category...</option>';
+                if (subCategories[selectedCategory]) {
+                    subCategories[selectedCategory].forEach(function(subCat) {
+                        const option = document.createElement('option');
+                        option.value = subCat.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and');
+                        option.textContent = subCat;
+                        subCategorySelect.appendChild(option);
+                    });
+                    subCategorySelect.disabled = false;
+                }
+            } else {
+                descriptionDiv.style.display = 'none';
+                subCategorySection.style.display = 'none';
+                subCategorySelect.disabled = true;
+            }
+        });
+        }
+        
+        const subCategorySelect = document.getElementById('sub-category');
+        if (subCategorySelect) {
+            subCategorySelect.addEventListener('change', function() {
+            const customDiv = document.getElementById('custom-subcategory');
+            if (this.value === 'other') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+            }
+        });
+        }
+        
+        // Step 2: Creator & Ownership handlers
+        const ownerIsCreatorCheckbox = document.getElementById('owner-is-creator');
+        if (ownerIsCreatorCheckbox) {
+            ownerIsCreatorCheckbox.addEventListener('change', function() {
+                const creatorName = document.querySelector('[name="creator"]');
+                const ownerMeRadio = document.getElementById('owner-me');
+                if (this.checked && creatorName && ownerMeRadio) {
+                    ownerMeRadio.checked = true;
+                    ownerMeRadio.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+        
+        // Owner type radio handlers
+        const ownerRadios = document.querySelectorAll('[name="owner_type"]');
+        ownerRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const otherOwnerDetails = document.getElementById('other-owner-details');
+                const otherOwnerType = document.querySelector('[name="other_owner_type"]');
+                const otherOwnerName = document.querySelector('[name="owner_name"]');
+                
+            if (this.value === 'other') {
+                    otherOwnerDetails.style.display = 'block';
+                    // Add required attributes when visible
+                    if (otherOwnerType) otherOwnerType.setAttribute('required', '');
+                    if (otherOwnerName) otherOwnerName.setAttribute('required', '');
+            } else {
+                    otherOwnerDetails.style.display = 'none';
+                    // Remove required attributes when hidden
+                    if (otherOwnerType) otherOwnerType.removeAttribute('required');
+                    if (otherOwnerName) otherOwnerName.removeAttribute('required');
+                }
+            });
+        });
+        
+        // Ownership legal type handler
+        const ownershipLegalType = document.getElementById('ownership-legal-type');
+        if (ownershipLegalType) {
+            ownershipLegalType.addEventListener('change', function() {
+                const partnersSection = document.getElementById('partners-section');
+                const otherOwnershipDesc = document.getElementById('other-ownership-description');
+                
+                if (['partner', 'llc', 'corporation'].includes(this.value)) {
+                    partnersSection.style.display = 'block';
+                    otherOwnershipDesc.style.display = 'none';
+                } else if (this.value === 'other') {
+                    partnersSection.style.display = 'none';
+                    otherOwnershipDesc.style.display = 'block';
+                } else {
+                    partnersSection.style.display = 'none';
+                    otherOwnershipDesc.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add partner button
+        const addPartnerBtn = document.getElementById('add-partner');
+        if (addPartnerBtn) {
+            addPartnerBtn.addEventListener('click', function() {
+                const partnersList = document.getElementById('partners-list');
+                const newPartnerEntry = document.createElement('div');
+                newPartnerEntry.className = 'partner-entry mb-2';
+                newPartnerEntry.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" name="partner_names[]" placeholder="Partner name">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="url" class="form-control" name="partner_links[]" placeholder="Partner link (URL)">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.partner-entry').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                partnersList.appendChild(newPartnerEntry);
+            });
+        }
+        
+        // Step 3: Character counter for short description
+        const shortDescTextarea = document.querySelector('[name="short_description"]');
+        if (shortDescTextarea) {
+            shortDescTextarea.addEventListener('input', function() {
+                const charCount = document.getElementById('char-count');
+                if (charCount) {
+                    charCount.textContent = this.value.length;
+                }
+            });
+        }
+        
+        // Detailed description textarea (no special handling needed)
+        
+        // Add feature button
+        const addFeatureBtn = document.getElementById('add-feature');
+        if (addFeatureBtn) {
+            addFeatureBtn.addEventListener('click', function() {
+                const featuresList = document.getElementById('features-list');
+                const newFeatureEntry = document.createElement('div');
+                newFeatureEntry.className = 'feature-entry mb-2';
+                newFeatureEntry.innerHTML = `
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="features[]" placeholder="e.g., Waterproof, 10h battery">
+                        <button type="button" class="btn btn-outline-danger remove-feature" onclick="removeFeature(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                featuresList.appendChild(newFeatureEntry);
+                updateRemoveButtons();
+            });
+        }
+        
+        // Step 4: Media type checkboxes
+        const mediaCheckboxes = document.querySelectorAll('[name="media_types"]');
+        mediaCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const sectionId = this.value + '-section';
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        });
+        
+        // Step 5: Condition handlers
+        const conditionSelect = document.getElementById('condition-select');
+        if (conditionSelect) {
+            conditionSelect.addEventListener('change', function() {
+                // Hide all condition details first
+                document.getElementById('new-condition-details').style.display = 'none';
+                document.getElementById('used-condition-details').style.display = 'none';
+                document.getElementById('refurbished-condition-details').style.display = 'none';
+                
+                // Show relevant details based on selection
+                if (this.value === 'new') {
+                    document.getElementById('new-condition-details').style.display = 'block';
+                } else if (this.value === 'used') {
+                    document.getElementById('used-condition-details').style.display = 'block';
+                } else if (this.value === 'refurbished') {
+                    document.getElementById('refurbished-condition-details').style.display = 'block';
+                }
+            });
+        }
+        
+        // Expiration date handler
+        const expirationRadios = document.querySelectorAll('[name="has_expiration"]');
+        expirationRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const dateField = document.getElementById('expiration-date-field');
+                if (this.value === 'yes') {
+                    dateField.style.display = 'block';
+            } else {
+                    dateField.style.display = 'none';
+                }
+            });
+        });
+        
+        // Warranty provider handler
+        const warrantyProvider = document.getElementById('warranty-provider');
+        if (warrantyProvider) {
+            warrantyProvider.addEventListener('change', function() {
+                const warrantyDetails = document.getElementById('warranty-details');
+                const otherWarrantyDetails = document.getElementById('other-warranty-details');
+                
+                if (['manufacturer', 'seller', 'owner'].includes(this.value)) {
+                    warrantyDetails.style.display = 'block';
+                    otherWarrantyDetails.style.display = 'none';
+                } else if (this.value === 'other') {
+                    warrantyDetails.style.display = 'none';
+                    otherWarrantyDetails.style.display = 'block';
+                } else {
+                    warrantyDetails.style.display = 'none';
+                    otherWarrantyDetails.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 6: Quantity type handlers
+        const quantityRadios = document.querySelectorAll('[name="quantity_type"]');
+        quantityRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const limitedDetails = document.getElementById('limited-quantity-details');
+                const unlimitedNote = document.getElementById('unlimited-note');
+                const quantityNumber = document.querySelector('[name="quantity_number"]');
+                const quantityUnit = document.querySelector('[name="quantity_unit"]');
+                
+                if (this.value === 'limited') {
+                    limitedDetails.style.display = 'block';
+                    unlimitedNote.style.display = 'none';
+                    // Add required attributes when visible
+                    if (quantityNumber) quantityNumber.setAttribute('required', '');
+                    if (quantityUnit) quantityUnit.setAttribute('required', '');
+                } else {
+                    limitedDetails.style.display = 'none';
+                    unlimitedNote.style.display = 'block';
+                    // Remove required attributes when hidden
+                    if (quantityNumber) quantityNumber.removeAttribute('required');
+                    if (quantityUnit) quantityUnit.removeAttribute('required');
+                }
+            });
+        });
+        
+        // Quantity unit handler
+        const quantityUnitSelect = document.querySelector('[name="quantity_unit"]');
+        if (quantityUnitSelect) {
+            quantityUnitSelect.addEventListener('change', function() {
+                const customUnitField = document.getElementById('custom-unit-field');
+                if (this.value === 'other') {
+                    customUnitField.style.display = 'block';
+                } else {
+                    customUnitField.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 7: Stock status handler
+        const stockStatus = document.querySelector('[name="stock_status"]');
+        if (stockStatus) {
+            stockStatus.addEventListener('change', function() {
+                const leadTimeSection = document.getElementById('lead-time-section');
+                if (['made_to_order', 'pre_order'].includes(this.value)) {
+                    leadTimeSection.style.display = 'block';
+                } else {
+                    leadTimeSection.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 8: Price type handlers (now dropdown)
+        const priceTypeSelect = document.getElementById('price-type');
+        if (priceTypeSelect) {
+            priceTypeSelect.addEventListener('change', function() {
+                const priceDetails = document.getElementById('price-details');
+                if (['paid', 'hybrid'].includes(this.value)) {
+                    priceDetails.style.display = 'block';
+                } else {
+                    priceDetails.style.display = 'none';
+                }
+            });
+        }
+        
+        // Currency handler
+        const currencySelect = document.querySelector('[name="currency"]');
+        if (currencySelect) {
+            currencySelect.addEventListener('change', function() {
+                const otherCurrencyField = document.getElementById('other-currency-field');
+                if (this.value === 'other') {
+                    otherCurrencyField.style.display = 'block';
+                } else {
+                    otherCurrencyField.style.display = 'none';
+                }
+                
+                // Update discount currency symbol in Step 9 if discount type is 'amount'
+                const discountType = document.getElementById('discount-type');
+                const discountUnit = document.getElementById('discount-unit');
+                if (discountType && discountType.value === 'amount' && discountUnit) {
+                    const currencySymbols = {
+                        'USD': '$', 'EUR': '€', 'JPY': '¥', 'GBP': '£', 'AUD': 'A$',
+                        'CAD': 'C$', 'CHF': 'Fr', 'CNH': '¥', 'AED': 'د.إ', 'SAR': 'ر.س'
+                    };
+                    const currencySymbol = currencySymbols[this.value] || this.value || '$';
+                    discountUnit.textContent = currencySymbol;
+                }
+            });
+        }
+        
+        // Price model handler
+        const priceModelSelect = document.querySelector('[name="price_model"]');
+        if (priceModelSelect) {
+            priceModelSelect.addEventListener('change', function() {
+                const customPriceModel = document.getElementById('custom-price-model');
+            if (this.value === 'custom') {
+                    customPriceModel.style.display = 'block';
+            } else {
+                    customPriceModel.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 9: Discount type handler
+        const discountType = document.getElementById('discount-type');
+        if (discountType) {
+            discountType.addEventListener('change', function() {
+                const discountDetails = document.getElementById('discount-details');
+                const discountTimeSection = document.getElementById('discount-time-section');
+                const discountUnit = document.getElementById('discount-unit');
+                
+                if (this.value === 'percentage') {
+                    discountDetails.style.display = 'block';
+                    discountTimeSection.style.display = 'block';
+                    discountUnit.textContent = '%';
+                } else if (this.value === 'amount') {
+                    discountDetails.style.display = 'block';
+                    discountTimeSection.style.display = 'block';
+                    // Get currency from Step 8 price currency
+                    const priceCurrency = document.querySelector('[name="currency"]');
+                    let currencySymbol = '$'; // default
+                    if (priceCurrency && priceCurrency.value) {
+                        const currencySymbols = {
+                            'USD': '$', 'EUR': '€', 'JPY': '¥', 'GBP': '£', 'AUD': 'A$',
+                            'CAD': 'C$', 'CHF': 'Fr', 'CNH': '¥', 'AED': 'د.إ', 'SAR': 'ر.س'
+                        };
+                        currencySymbol = currencySymbols[priceCurrency.value] || priceCurrency.value || '$';
+                    }
+                    discountUnit.textContent = currencySymbol;
+            } else {
+                    discountDetails.style.display = 'none';
+                    discountTimeSection.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 9: Discount time handler
+        const discountTimeSelect = document.getElementById('discount-time');
+        if (discountTimeSelect) {
+            discountTimeSelect.addEventListener('change', function() {
+                const limitedTimeOptions = document.getElementById('limited-time-options');
+                if (this.value === 'limited') {
+                    limitedTimeOptions.style.display = 'block';
+            } else {
+                    limitedTimeOptions.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 9: Limited time type handlers
+        const limitedTimeRadios = document.querySelectorAll('[name="limited_time_type"]');
+        limitedTimeRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const tillDatePicker = document.getElementById('till-date-picker');
+                const forDaysInput = document.getElementById('for-days-input');
+                
+                if (this.value === 'till_date') {
+                    tillDatePicker.style.display = 'block';
+                    forDaysInput.style.display = 'none';
+                } else if (this.value === 'for_days') {
+                    tillDatePicker.style.display = 'none';
+                    forDaysInput.style.display = 'block';
+                }
+            });
+        });
+        
+        // Step 9: Coupons allowed handler
+        const couponsAllowedSelect = document.getElementById('coupons-allowed');
+        if (couponsAllowedSelect) {
+            couponsAllowedSelect.addEventListener('change', function() {
+                const couponsTillDays = document.getElementById('coupons-till-days');
+                if (this.value === 'allowed_till') {
+                    couponsTillDays.style.display = 'block';
+                } else {
+                    couponsTillDays.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 10: Payment method handler
+        const paymentMethodSelect = document.getElementById('payment-method');
+        if (paymentMethodSelect) {
+            paymentMethodSelect.addEventListener('change', function() {
+                const otherPaymentMethod = document.getElementById('other-payment-method');
+                if (this.value === 'other') {
+                    otherPaymentMethod.style.display = 'block';
+                } else {
+                    otherPaymentMethod.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 11: Location method handler (now dropdown)
+        const locationMethodSelect = document.getElementById('location-method');
+        if (locationMethodSelect) {
+            locationMethodSelect.addEventListener('change', function() {
+                const addressField = document.getElementById('address-field');
+                const deviceLocationField = document.getElementById('device-location-field');
+                
+                if (this.value === 'write_address') {
+                    addressField.style.display = 'block';
+                    deviceLocationField.style.display = 'none';
+                } else if (this.value === 'use_device') {
+                    addressField.style.display = 'none';
+                    deviceLocationField.style.display = 'block';
+                } else {
+                    addressField.style.display = 'none';
+                    deviceLocationField.style.display = 'none';
+                }
+            });
+        }
+        
+        // Step 11: Delivery methods handler
+        const deliveryCheckboxes = document.querySelectorAll('[name="delivery_methods"]');
+        deliveryCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const physicalShippingDetails = document.getElementById('physical-shipping-details');
+                const physicalShippingChecked = document.getElementById('delivery-shipping').checked;
+                
+                if (physicalShippingChecked) {
+                    physicalShippingDetails.style.display = 'block';
+                } else {
+                    physicalShippingDetails.style.display = 'none';
+                }
+            });
+        });
+        
+        // Step 11: Availability region handler
+        const availabilityRegionSelect = document.getElementById('availability-region');
+        if (availabilityRegionSelect) {
+            availabilityRegionSelect.addEventListener('change', function() {
+                const zoneRadiusField = document.getElementById('zone-radius-field');
+                if (this.value === 'zone') {
+                    zoneRadiusField.style.display = 'block';
+                } else {
+                    zoneRadiusField.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add external link button
+        const addExternalLinkBtn = document.getElementById('add-external-link');
+        if (addExternalLinkBtn) {
+            addExternalLinkBtn.addEventListener('click', function() {
+                const linksList = document.getElementById('external-links-list');
+                const newLinkEntry = document.createElement('div');
+                newLinkEntry.className = 'external-link-entry mb-2';
+                newLinkEntry.innerHTML = `
+                    <div class="input-group">
+                        <input type="url" class="form-control" name="external_links[]" placeholder="e.g., store page, demo, website">
+                        <button type="button" class="btn btn-outline-danger remove-link" onclick="removeExternalLink(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                linksList.appendChild(newLinkEntry);
+            });
+        }
+        
+        // Initialize existing form values
+        initializeExistingValues();
+    }
+    
+    // Helper functions
+    function removeFeature(button) {
+        button.closest('.feature-entry').remove();
+        updateRemoveButtons();
+    }
+    
+    function removeExternalLink(button) {
+        button.closest('.external-link-entry').remove();
+    }
+    
+    function updateRemoveButtons() {
+        const featureEntries = document.querySelectorAll('.feature-entry');
+        featureEntries.forEach(function(entry, index) {
+            const removeBtn = entry.querySelector('.remove-feature');
+            if (index === 0 && featureEntries.length === 1) {
+                removeBtn.style.display = 'none';
+            } else {
+                removeBtn.style.display = 'block';
+            }
+        });
+        
+        // Camera capture button
+        const cameraCaptureBtn = document.getElementById('camera-capture-btn');
+        if (cameraCaptureBtn) {
+            cameraCaptureBtn.addEventListener('click', function() {
+                captureFromCamera();
+            });
+        }
+        
+        // Get location button
+        const getLocationBtn = document.getElementById('get-location-btn');
+        if (getLocationBtn) {
+            getLocationBtn.addEventListener('click', function() {
+                getDeviceLocation();
+            });
+        }
+        
+        // Form submission handlers
+        const form = document.getElementById('advanced-form');
+        const createProductBtn = document.getElementById('create-product-final-btn');
+        const saveDraftBtn = document.getElementById('save-draft-final-btn');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const submitButton = document.activeElement;
+                
+                if (submitButton && (submitButton.id === 'create-product-final-btn' || submitButton.id === 'save-draft-final-btn')) {
+                    // Show loading state
+                    const originalText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                    submitButton.disabled = true;
+                    
+                    // Remove required attribute from hidden fields to prevent validation errors
+                    const allRequiredFields = form.querySelectorAll('[required]');
+                    allRequiredFields.forEach(field => {
+                        // If field is not visible (hidden or in hidden parent), remove required temporarily
+                        if (field.offsetParent === null) {
+                            field.removeAttribute('required');
+                            field.setAttribute('data-was-required', 'true');
+                        }
+                    });
+                    
+                    // Basic validation for required fields
+                    const requiredFields = [
+                        { field: 'main_category', name: 'Product Category' },
+                        { field: 'creator', name: 'Creator Name' },
+                        { field: 'title', name: 'Product Title' }
+                    ];
+                    
+                    let missingFields = [];
+                    requiredFields.forEach(fieldInfo => {
+                        const field = form.querySelector(`[name="${fieldInfo.field}"]`);
+                        if (!field || !field.value.trim()) {
+                            missingFields.push(fieldInfo.name);
+                        }
+                    });
+                    
+                    if (missingFields.length > 0) {
+                        e.preventDefault();
+                        alert('Please fill in the following required fields: ' + missingFields.join(', '));
+                        
+                        // Restore required attributes
+                        form.querySelectorAll('[data-was-required]').forEach(field => {
+                            field.setAttribute('required', '');
+                            field.removeAttribute('data-was-required');
+                        });
+                        
+                        // Reset button
+                        submitButton.innerHTML = originalText;
+                        submitButton.disabled = false;
+                        return false;
+                    }
+                    
+                    // Allow form to submit normally
+                    console.log('Form submitting with action:', submitButton.value);
+                    console.log('Form data being submitted:');
+                    const formData = new FormData(form);
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+                    
+                    // Add a timeout to show user feedback if redirect takes too long
+                    setTimeout(function() {
+                        if (submitButton.disabled) {
+                            submitButton.innerHTML = originalText + ' <small>(Processing...)</small>';
+                        }
+                    }, 3000);
+                }
+            });
+            
+            // Add error handling for form submission failures
+            window.addEventListener('beforeunload', function(e) {
+                const submitButtons = document.querySelectorAll('#create-product-final-btn, #save-draft-final-btn');
+                submitButtons.forEach(btn => {
+                    if (btn.disabled) {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.innerHTML.replace('<i class="fas fa-spinner fa-spin me-2"></i>Processing...', btn.getAttribute('data-original-text') || '<i class="fas fa-star me-2"></i>Create Product');
+                    }
+                });
+            });
+        }
+        
+    }
+    
+    
+    function captureFromCamera() {
+        const cameraInput = document.getElementById('camera-input');
+        const imageUpload = document.querySelector('[name="images"]');
+        
+        // Simple approach: just trigger the file input with camera capture
+        if (cameraInput) {
+            cameraInput.click();
+            
+            // Handle the captured/selected image
+            cameraInput.onchange = function(event) {
+                if (event.target.files && event.target.files[0]) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success mt-2';
+                    alertDiv.innerHTML = '<i class="fas fa-check me-2"></i>Image selected successfully! (' + event.target.files[0].name + ')';
+                    
+                    // Remove existing alerts
+                    const existingAlerts = document.querySelectorAll('#images-section .alert-success');
+                    existingAlerts.forEach(alert => alert.remove());
+                    
+                    // Add new alert
+                    const imagesSection = document.getElementById('images-section');
+                    if (imagesSection) {
+                        const cardBody = imagesSection.querySelector('.card-body');
+                        if (cardBody) {
+                            cardBody.appendChild(alertDiv);
+                            
+                            // Remove alert after 3 seconds
+                            setTimeout(() => {
+                                if (alertDiv.parentNode) {
+                                    alertDiv.remove();
+                                }
+                            }, 3000);
+                        }
+                    }
+                    
+                    console.log('Image captured:', event.target.files[0].name);
+                }
+            };
+        } else {
+            alert('Camera input not found. Please use the regular file upload.');
+        }
+    }
+    
+    function getDeviceLocation() {
+        const locationBtn = document.getElementById('get-location-btn');
+        const locationResult = document.getElementById('location-result');
+        
+        if (!locationResult) {
+            alert('Location result element not found.');
+            return;
+        }
+        
+        if (navigator.geolocation) {
+            // Show loading state
+            if (locationBtn) {
+                locationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Getting location...';
+                locationBtn.disabled = true;
+            }
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                
+                // Show success message
+                locationResult.innerHTML = `<small class="text-success"><i class="fas fa-check me-1"></i>Location captured: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</small>`;
+                locationResult.style.display = 'block';
+                
+                // Reset button
+                if (locationBtn) {
+                    locationBtn.innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Get my current location';
+                    locationBtn.disabled = false;
+                }
+                
+                console.log('Location captured:', latitude, longitude);
+            }, function(error) {
+                let errorMessage = 'Unable to get location. ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Permission denied.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Request timeout.';
+                        break;
+                    default:
+                        errorMessage += 'Unknown error.';
+                        break;
+                }
+                
+                locationResult.innerHTML = `<small class="text-danger"><i class="fas fa-times me-1"></i>${errorMessage}</small>`;
+                locationResult.style.display = 'block';
+                
+                // Reset button
+                if (locationBtn) {
+                    locationBtn.innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Get my current location';
+                    locationBtn.disabled = false;
+                }
+                
+                console.error('Geolocation error:', error);
+            });
+        } else {
+            locationResult.innerHTML = '<small class="text-danger"><i class="fas fa-times me-1"></i>Geolocation is not supported by this browser.</small>';
+            locationResult.style.display = 'block';
+        }
+    }
+    
+    
+    function initializeExistingValues() {
+        // Trigger category change if there's existing data
+        const categorySelect = document.getElementById('main-category');
+        if (categorySelect && categorySelect.value) {
+            categorySelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger sub-category change if there's existing data
+        const subCategorySelect = document.getElementById('sub-category');
+        if (subCategorySelect && subCategorySelect.value) {
+            subCategorySelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger owner type changes if there's existing data
+        const checkedOwnerRadio = document.querySelector('[name="owner_type"]:checked');
+        if (checkedOwnerRadio) {
+            checkedOwnerRadio.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger ownership legal type change if there's existing data
+        const ownershipLegalTypeSelect = document.getElementById('ownership-legal-type');
+        if (ownershipLegalTypeSelect && ownershipLegalTypeSelect.value) {
+            ownershipLegalTypeSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger condition change if there's existing data
+        const conditionSelect = document.getElementById('condition-select');
+        if (conditionSelect && conditionSelect.value) {
+            conditionSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger expiration date change if there's existing data
+        const checkedExpirationRadio = document.querySelector('[name="has_expiration"]:checked');
+        if (checkedExpirationRadio) {
+            checkedExpirationRadio.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger warranty change if there's existing data
+        const warrantyProvider = document.getElementById('warranty-provider');
+        if (warrantyProvider && warrantyProvider.value) {
+            warrantyProvider.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger quantity type change if there's existing data
+        const checkedQuantityRadio = document.querySelector('[name="quantity_type"]:checked');
+        if (checkedQuantityRadio) {
+            checkedQuantityRadio.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger quantity unit change if there's existing data
+        const quantityUnitSelect = document.querySelector('[name="quantity_unit"]');
+        if (quantityUnitSelect && quantityUnitSelect.value) {
+            quantityUnitSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger stock status change if there's existing data
+        const stockStatusSelect = document.querySelector('[name="stock_status"]');
+        if (stockStatusSelect && stockStatusSelect.value) {
+            stockStatusSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger price type change if there's existing data
+        const checkedPriceRadio = document.querySelector('[name="price_type"]:checked');
+        if (checkedPriceRadio) {
+            checkedPriceRadio.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger currency change if there's existing data
+        const currencySelect = document.querySelector('[name="price_currency"]');
+        if (currencySelect && currencySelect.value) {
+            currencySelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger price model change if there's existing data
+        const priceModelSelect = document.querySelector('[name="price_model"]');
+        if (priceModelSelect && priceModelSelect.value) {
+            priceModelSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger discount type change if there's existing data
+        const discountTypeSelect = document.getElementById('discount-type');
+        if (discountTypeSelect && discountTypeSelect.value) {
+            discountTypeSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger location method change if there's existing data
+        const checkedLocationRadio = document.querySelector('[name="location_method"]:checked');
+        if (checkedLocationRadio) {
+            checkedLocationRadio.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger media type checkboxes if there's existing data
+        const checkedMediaCheckboxes = document.querySelectorAll('[name="media_types"]:checked');
+        checkedMediaCheckboxes.forEach(function(checkbox) {
+            checkbox.dispatchEvent(new Event('change'));
+        });
+        
+        // Update character count if there's existing data
+        const shortDescTextarea = document.querySelector('[name="short_description"]');
+        if (shortDescTextarea && shortDescTextarea.value) {
+            const charCount = document.getElementById('char-count');
+            if (charCount) {
+                charCount.textContent = shortDescTextarea.value.length;
+            }
+        }
+        
+        // Update remove buttons for features
+        updateRemoveButtons();
+    }
+});
+</script>
+{% endblock %}
+

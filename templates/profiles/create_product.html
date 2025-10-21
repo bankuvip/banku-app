@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+
+{% block title %}Create Product{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-box me-2"></i>Create Product</h4>
+                <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Item Types
+                </a>
+            </div>
+
+            <!-- Product Definition -->
+            <div class="alert alert-info mb-4">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is a Product?</h6>
+                <p class="mb-0"><strong>Products</strong> are outputs of human effort, can be sold, rented, given, or shared. They have a creator but they are independent physical things.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Section 1: Category & Classification -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-tags me-2"></i>1. Category & Classification</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="main_category" id="main-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="physical">Physical</option>
+                                        <option value="digital">Digital</option>
+                                        <option value="knowledge">Knowledge</option>
+                                        <option value="plans_strategies">Plans & Strategies</option>
+                                        <option value="imagination_creativity">Imagination & Creativity</option>
+                                    </select>
+                                    <!-- Category descriptions -->
+                                    <div id="category-description" class="mt-2 text-muted small" style="display: none;"></div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="sub_category" id="sub-category" required disabled>
+                                        <option value="">Select Sub-Category</option>
+                                    </select>
+                                    <!-- Custom sub-category input -->
+                                    <div id="custom-subcategory" class="mt-2" style="display: none;">
+                                        <input type="text" class="form-control" name="custom_sub_category" placeholder="Enter custom sub-category">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#classification-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="classification-icon"></i>Optional Classification Details
+                                </h6>
+                                <div class="collapse" id="classification-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Tags & Keywords</label>
+                                            <input type="text" class="form-control" name="tags" placeholder='e.g. "iPhone, smartphone, Apple, mobile, 128GB"' value="{{ form_data.get('tags', '') if form_data else '' }}">
+                                            <div class="form-text">Separate with commas</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Ownership & Creator -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-tie me-2"></i>2. Ownership & Creator</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Creator/Manufacture/Brand <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="creator" required placeholder="Creator/Brand name" value="{{ form_data.get('creator', '') if form_data else '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#ownership-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="ownership-icon"></i>Optional Ownership Details
+                                </h6>
+                                <div class="collapse" id="ownership-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Creator Link/Profile</label>
+                                            <input type="url" class="form-control" name="creator_link" placeholder="https://..." value="{{ form_data.get('creator_link', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Owner Type</label>
+                                            <select class="form-select" name="owner_type" id="owner-type">
+                                                <option value="me" {{ 'selected' if form_data and form_data.get('owner_type') == 'me' else '' }}>Me</option>
+                                                <option value="other" {{ 'selected' if form_data and form_data.get('owner_type') == 'other' else '' }}>Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3" id="owner-details" style="display: none;">
+                                            <label class="form-label">Owner Name</label>
+                                            <input type="text" class="form-control" name="owner_name" placeholder="Owner name" value="{{ form_data.get('owner_name', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3" id="owner-link-field" style="display: none;">
+                                            <label class="form-label">Owner Link</label>
+                                            <input type="url" class="form-control" name="owner_link" placeholder="https://..." value="{{ form_data.get('owner_link', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Ownership Type</label>
+                                            <select class="form-select" name="ownership_type">
+                                                <option value="individual" {{ 'selected' if form_data and form_data.get('ownership_type') == 'individual' else '' }}>Individual</option>
+                                                <option value="organization" {{ 'selected' if form_data and form_data.get('ownership_type') == 'organization' else '' }}>Organization</option>
+                                                <option value="shared" {{ 'selected' if form_data and form_data.get('ownership_type') == 'shared' else '' }}>Shared</option>
+                                                <option value="open_source" {{ 'selected' if form_data and form_data.get('ownership_type') == 'open_source' else '' }}>Open Source</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>3. Basic Information</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Title / Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="title" required value="{{ form_data.get('title', '') if form_data else '' }}">
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Short Description <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" name="short_description" rows="3" maxlength="200" required placeholder="Brief description (max 200 characters)">{{ form_data.get('short_description', '') if form_data else '' }}</textarea>
+                                    <div class="form-text"><span id="char-count">0</span>/200 characters</div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#basic-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="basic-icon"></i>Optional Product Details
+                                </h6>
+                                <div class="collapse" id="basic-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Brand/Manufacturer</label>
+                                            <input type="text" class="form-control" name="brand_manufacturer" placeholder="Brand name" value="{{ form_data.get('brand_manufacturer', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Model/SKU</label>
+                                            <input type="text" class="form-control" name="model_sku" placeholder="Model number or SKU" value="{{ form_data.get('model_sku', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Detailed Description</label>
+                                            <textarea class="form-control" name="detailed_description" rows="5" placeholder="Detailed information about the product">{{ form_data.get('detailed_description', '') if form_data else '' }}</textarea>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Key Features</label>
+                                            <textarea class="form-control" name="key_features" rows="4" placeholder="• Feature 1&#10;• Feature 2&#10;• Feature 3">{{ form_data.get('key_features', '') if form_data else '' }}</textarea>
+                                            <div class="form-text">Use bullet points (•) for each feature</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Condition & Status -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-check-circle me-2"></i>4. Condition & Status</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Condition <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="condition" id="condition-select" required>
+                                        <option value="">Select Condition</option>
+                                        <option value="new" {{ 'selected' if form_data and form_data.get('condition') == 'new' else '' }}>New</option>
+                                        <option value="opened_new" {{ 'selected' if form_data and form_data.get('condition') == 'opened_new' else '' }}>Opened but New</option>
+                                        <option value="like_new" {{ 'selected' if form_data and form_data.get('condition') == 'like_new' else '' }}>Like New</option>
+                                        <option value="used_a" {{ 'selected' if form_data and form_data.get('condition') == 'used_a' else '' }}>Used - Class A</option>
+                                        <option value="used_b" {{ 'selected' if form_data and form_data.get('condition') == 'used_b' else '' }}>Used - Class B</option>
+                                        <option value="used_c" {{ 'selected' if form_data and form_data.get('condition') == 'used_c' else '' }}>Used - Class C</option>
+                                        <option value="refurbished" {{ 'selected' if form_data and form_data.get('condition') == 'refurbished' else '' }}>Refurbished</option>
+                                        <option value="concept" {{ 'selected' if form_data and form_data.get('condition') == 'concept' else '' }}>Concept Only</option>
+                                        <option value="prototype" {{ 'selected' if form_data and form_data.get('condition') == 'prototype' else '' }}>Prototype</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active" {{ 'selected' if form_data and form_data.get('status') == 'active' else '' }}>Active</option>
+                                        <option value="pending" {{ 'selected' if form_data and form_data.get('status') == 'pending' else '' }}>Pending</option>
+                                        <option value="draft" {{ 'selected' if form_data and form_data.get('status') == 'draft' else '' }}>Draft</option>
+                                        <option value="archived" {{ 'selected' if form_data and form_data.get('status') == 'archived' else '' }}>Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#condition-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="condition-icon"></i>Optional Condition Details
+                                </h6>
+                                <div class="collapse" id="condition-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3" id="used-details" style="display: none;">
+                                            <label class="form-label">Used Time (in months)</label>
+                                            <input type="number" class="form-control" name="used_time_months" placeholder="Number of months used" value="{{ form_data.get('used_time_months', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Warranty</label>
+                                            <select class="form-select" name="warranty" id="warranty-select">
+                                                <option value="no_warranty" {{ 'selected' if form_data and form_data.get('warranty') == 'no_warranty' else '' }}>No Warranty</option>
+                                                <option value="manufacturer_warranty" {{ 'selected' if form_data and form_data.get('warranty') == 'manufacturer_warranty' else '' }}>Manufacturer Warranty</option>
+                                                <option value="seller_warranty" {{ 'selected' if form_data and form_data.get('warranty') == 'seller_warranty' else '' }}>Seller Warranty</option>
+                                                <option value="extended_warranty" {{ 'selected' if form_data and form_data.get('warranty') == 'extended_warranty' else '' }}>Extended Warranty</option>
+                                                <option value="custom" {{ 'selected' if form_data and form_data.get('warranty') == 'custom' else '' }}>Custom</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3" id="custom-warranty" style="display: none;">
+                                            <input type="text" class="form-control" name="custom_warranty" placeholder="Describe warranty terms" value="{{ form_data.get('custom_warranty', '') if form_data else '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Value & Availability -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-dollar-sign me-2"></i>5. Value & Availability</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" name="quantity" id="quantity-input" placeholder="Enter number" value="{{ form_data.get('quantity', '') if form_data else '' }}">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="unlimited_quantity" id="unlimited" {{ 'checked' if form_data and form_data.get('unlimited_quantity') else '' }}>
+                                        <label class="form-check-label" for="unlimited">Unlimited</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Pricing Model</label>
+                                    <select class="form-select" name="pricing_type" id="pricing-type">
+                                        <option value="free" {{ 'selected' if form_data and form_data.get('pricing_type') == 'free' else '' }}>Free</option>
+                                        <option value="paid" {{ 'selected' if form_data and form_data.get('pricing_type') == 'paid' else '' }}>Paid</option>
+                                        <option value="hybrid" {{ 'selected' if form_data and form_data.get('pricing_type') == 'hybrid' else '' }}>Hybrid</option>
+                                        <option value="negotiable" {{ 'selected' if form_data and form_data.get('pricing_type') == 'negotiable' else '' }}>Negotiable / On Request</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="price-fields" style="display: none;">
+                                    <label class="form-label">Price</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00" value="{{ form_data.get('price', '') if form_data else '' }}">
+                                        <select class="form-select" name="currency" style="max-width: 100px;">
+                                            <option value="AED" {{ 'selected' if form_data and form_data.get('currency') == 'AED' else '' }}>AED</option>
+                                            <option value="USD" {{ 'selected' if form_data and form_data.get('currency') == 'USD' else '' }}>USD</option>
+                                            <option value="EUR" {{ 'selected' if form_data and form_data.get('currency') == 'EUR' else '' }}>EUR</option>
+                                            <option value="GBP" {{ 'selected' if form_data and form_data.get('currency') == 'GBP' else '' }}>GBP</option>
+                                            <option value="SAR" {{ 'selected' if form_data and form_data.get('currency') == 'SAR' else '' }}>SAR</option>
+                                            <option value="QAR" {{ 'selected' if form_data and form_data.get('currency') == 'QAR' else '' }}>QAR</option>
+                                            <option value="KWD" {{ 'selected' if form_data and form_data.get('currency') == 'KWD' else '' }}>KWD</option>
+                                            <option value="BHD" {{ 'selected' if form_data and form_data.get('currency') == 'BHD' else '' }}>BHD</option>
+                                            <option value="OMR" {{ 'selected' if form_data and form_data.get('currency') == 'OMR' else '' }}>OMR</option>
+                                            <option value="EGP" {{ 'selected' if form_data and form_data.get('currency') == 'EGP' else '' }}>EGP</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#value-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="value-icon"></i>Optional Value Details
+                                </h6>
+                                <div class="collapse" id="value-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Discounts/Offers</label>
+                                            <input type="text" class="form-control" name="discounts_offers" placeholder="Special offers or discounts" value="{{ form_data.get('discounts_offers', '') if form_data else '' }}">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Stock Keeping</label>
+                                            <select class="form-select" name="stock_keeping">
+                                                <option value="in_stock" {{ 'selected' if form_data and form_data.get('stock_keeping') == 'in_stock' else '' }}>In Stock</option>
+                                                <option value="made_to_order" {{ 'selected' if form_data and form_data.get('stock_keeping') == 'made_to_order' else '' }}>Made to Order</option>
+                                                <option value="pre_order" {{ 'selected' if form_data and form_data.get('stock_keeping') == 'pre_order' else '' }}>Pre-order</option>
+                                                <option value="out_of_stock" {{ 'selected' if form_data and form_data.get('stock_keeping') == 'out_of_stock' else '' }}>Out of Stock</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: Logistics & Delivery -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-truck me-2"></i>6. Logistics & Delivery</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Delivery Method</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="delivery_methods" value="remote" id="delivery-remote" {{ 'checked' if form_data and 'remote' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                        <label class="form-check-label" for="delivery-remote">Remote</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="delivery_methods" value="on_site" id="delivery-onsite" {{ 'checked' if form_data and 'on_site' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                        <label class="form-check-label" for="delivery-onsite">On-site</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="delivery_methods" value="shipping" id="delivery-shipping" {{ 'checked' if form_data and 'shipping' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                        <label class="form-check-label" for="delivery-shipping">Shipping</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="location" placeholder="City, Country or Online" value="{{ form_data.get('location', '') if form_data else '' }}">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Availability Region</label>
+                                    <select class="form-select" name="availability_region">
+                                        <option value="local" {{ 'selected' if form_data and form_data.get('availability_region') == 'local' else '' }}>Local</option>
+                                        <option value="national" {{ 'selected' if form_data and form_data.get('availability_region') == 'national' else '' }}>National</option>
+                                        <option value="international" {{ 'selected' if form_data and form_data.get('availability_region') == 'international' else '' }}>International</option>
+                                        <option value="online" {{ 'selected' if form_data and form_data.get('availability_region') == 'online' else '' }}>Online/Global</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7: Media & Proof -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-images me-2"></i>7. Media & Proof</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Images</label>
+                                    <input type="file" class="form-control mb-2" name="images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links (separate with commas)" value="{{ form_data.get('image_links', '') if form_data else '' }}">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Videos</label>
+                                    <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="Or paste video links (YouTube, Vimeo, etc.)" value="{{ form_data.get('video_links', '') if form_data else '' }}">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Documents / Files</label>
+                                    <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Or paste document links" value="{{ form_data.get('document_links', '') if form_data else '' }}">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Links / References</label>
+                                    <textarea class="form-control" name="external_links" rows="3" placeholder="Website: https://...&#10;Demo: https://...&#10;Documentation: https://...">{{ form_data.get('external_links', '') if form_data else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 8: Management -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cog me-2"></i>8. Management</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Created Date</label>
+                                    <input type="date" class="form-control" name="created_date" id="created-date" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" name="last_updated" id="last-updated" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Visibility</label>
+                                    <select class="form-select" name="visibility">
+                                        <option value="public" {{ 'selected' if form_data and form_data.get('visibility') == 'public' else '' }}>Public</option>
+                                        <option value="private" {{ 'selected' if form_data and form_data.get('visibility') == 'private' else '' }}>Private</option>
+                                        <option value="restricted" {{ 'selected' if form_data and form_data.get('visibility') == 'restricted' else '' }}>Restricted</option>
+                                        <option value="members_only" {{ 'selected' if form_data and form_data.get('visibility') == 'members_only' else '' }}>Members-only</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Verification Status</label>
+                                    <select class="form-select" name="verification_status">
+                                        <option value="pending" {{ 'selected' if form_data and form_data.get('verification_status') == 'pending' else '' }}>Pending</option>
+                                        <option value="verified" {{ 'selected' if form_data and form_data.get('verification_status') == 'verified' else '' }}>Verified</option>
+                                        <option value="unverified" {{ 'selected' if form_data and form_data.get('verification_status') == 'unverified' else '' }}>Unverified</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#management-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="management-icon"></i>Optional Management Details
+                                </h6>
+                                <div class="collapse" id="management-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Expiration Date</label>
+                                            <input type="date" class="form-control" name="expiration_date" value="{{ form_data.get('expiration_date', '') if form_data else '' }}">
+                                            <div class="form-text">Leave empty if no expiration</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect') if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-primary">
+                                    <i class="fas fa-box me-2"></i>Create Product
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Set current date for created and last updated fields
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created-date').value = today;
+    document.getElementById('last-updated').value = today;
+});
+
+// Category descriptions
+const categoryDescriptions = {
+    'physical': 'Tangible items you can touch (electronics, books, tools, furniture, etc.)',
+    'digital': 'Files, software, apps, digital content that exists electronically',
+    'knowledge': 'Information, courses, tutorials, guides, research, documentation',
+    'plans_strategies': 'Business plans, marketing strategies, project blueprints, roadmaps',
+    'imagination_creativity': 'Creative works, designs, concepts, artistic creations'
+};
+
+// Sub-category options for each main category
+const subCategories = {
+    'physical': ['Electronics', 'Books & Media', 'Tools & Equipment', 'Furniture & Home', 'Clothing & Accessories', 'Sports & Recreation', 'Health & Beauty', 'Food & Beverages', 'Automotive', 'Other'],
+    'digital': ['Software & Apps', 'Digital Media', 'E-books & Courses', 'Templates & Resources', 'Games', 'Other'],
+    'knowledge': ['Courses & Training', 'Research & Reports', 'Guides & Tutorials', 'Documentation', 'Databases', 'Other'],
+    'plans_strategies': ['Business Plans', 'Marketing Strategies', 'Project Plans', 'Financial Plans', 'Other'],
+    'imagination_creativity': ['Art & Design', 'Creative Writing', 'Music & Audio', 'Video Content', 'Concepts & Ideas', 'Other']
+};
+
+// Handle main category change
+document.getElementById('main-category').addEventListener('change', function() {
+    const selectedCategory = this.value;
+    const descriptionDiv = document.getElementById('category-description');
+    const subCategorySelect = document.getElementById('sub-category');
+    
+    // Show description
+    if (selectedCategory && categoryDescriptions[selectedCategory]) {
+        descriptionDiv.textContent = categoryDescriptions[selectedCategory];
+        descriptionDiv.style.display = 'block';
+    } else {
+        descriptionDiv.style.display = 'none';
+    }
+    
+    // Update sub-categories
+    subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
+    if (selectedCategory && subCategories[selectedCategory]) {
+        subCategories[selectedCategory].forEach(function(subCat) {
+            const option = document.createElement('option');
+            option.value = subCat.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and');
+            option.textContent = subCat;
+            subCategorySelect.appendChild(option);
+        });
+        subCategorySelect.disabled = false;
+    } else {
+        subCategorySelect.disabled = true;
+    }
+});
+
+// Handle sub-category change (show custom input if "Other" selected)
+document.getElementById('sub-category').addEventListener('change', function() {
+    const customDiv = document.getElementById('custom-subcategory');
+    if (this.value === 'other') {
+        customDiv.style.display = 'block';
+    } else {
+        customDiv.style.display = 'none';
+    }
+});
+
+// Handle owner type change
+document.getElementById('owner-type').addEventListener('change', function() {
+    const ownerDetails = document.getElementById('owner-details');
+    const ownerLinkField = document.getElementById('owner-link-field');
+    
+    if (this.value === 'other') {
+        ownerDetails.style.display = 'block';
+        ownerLinkField.style.display = 'block';
+    } else {
+        ownerDetails.style.display = 'none';
+        ownerLinkField.style.display = 'none';
+    }
+});
+
+// Handle condition change (show used details if used condition selected)
+document.getElementById('condition-select').addEventListener('change', function() {
+    const usedDetails = document.getElementById('used-details');
+    const usedConditions = ['used_a', 'used_b', 'used_c'];
+    
+    if (usedConditions.includes(this.value)) {
+        usedDetails.style.display = 'block';
+    } else {
+        usedDetails.style.display = 'none';
+    }
+});
+
+// Handle warranty change (show custom input if custom selected)
+document.getElementById('warranty-select').addEventListener('change', function() {
+    const customWarrantyDiv = document.getElementById('custom-warranty');
+    
+    if (this.value === 'custom') {
+        customWarrantyDiv.style.display = 'block';
+    } else {
+        customWarrantyDiv.style.display = 'none';
+    }
+});
+
+// Character counter for short description
+document.querySelector('[name="short_description"]').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length;
+});
+
+// Unlimited quantity checkbox handler
+document.getElementById('unlimited').addEventListener('change', function() {
+    const quantityInput = document.querySelector('[name="quantity"]');
+    if (this.checked) {
+        quantityInput.disabled = true;
+        quantityInput.value = '';
+        quantityInput.placeholder = 'Unlimited';
+    } else {
+        quantityInput.disabled = false;
+        quantityInput.placeholder = 'Enter number';
+    }
+});
+
+// Show/hide price fields based on pricing model
+document.getElementById('pricing-type').addEventListener('change', function() {
+    const priceFields = document.getElementById('price-fields');
+    if (this.value === 'paid' || this.value === 'hybrid') {
+        priceFields.style.display = 'block';
+    } else {
+        priceFields.style.display = 'none';
+    }
+});
+
+// Collapse/Expand icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-right');
+                trigger.classList.add('fa-chevron-down');
+            }
+        });
+        
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-down');
+                trigger.classList.add('fa-chevron-right');
+            }
+        });
+    });
+});
+
+// Initialize form based on existing data
+document.addEventListener('DOMContentLoaded', function() {
+    // Trigger category change if there's existing data
+    const categorySelect = document.getElementById('main-category');
+    if (categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Trigger sub-category change if there's existing data
+    const subCategorySelect = document.getElementById('sub-category');
+    if (subCategorySelect.value) {
+        subCategorySelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Trigger owner type change if there's existing data
+    const ownerTypeSelect = document.getElementById('owner-type');
+    if (ownerTypeSelect.value) {
+        ownerTypeSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Trigger condition change if there's existing data
+    const conditionSelect = document.getElementById('condition-select');
+    if (conditionSelect.value) {
+        conditionSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Trigger warranty change if there's existing data
+    const warrantySelect = document.getElementById('warranty-select');
+    if (warrantySelect.value) {
+        warrantySelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Trigger pricing change if there's existing data
+    const pricingSelect = document.getElementById('pricing-type');
+    if (pricingSelect.value) {
+        pricingSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Update character count if there's existing data
+    const shortDescTextarea = document.querySelector('[name="short_description"]');
+    if (shortDescTextarea.value) {
+        document.getElementById('char-count').textContent = shortDescTextarea.value.length;
+    }
+});
+</script>
+{% endblock %}

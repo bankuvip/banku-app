@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Add Hidden Gem{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>
+                    Quick Add Hidden Gem
+                </h4>
+                <div>
+                    <span class="badge bg-warning text-dark me-2">QUICK PATH</span>
+                    <a href="{{ url_for('profiles.create_hidden_gem') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-gem fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Tell us about your hidden gem</h4>
+                                <p class="text-muted">Just the essential details to get you started</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's this hidden gem? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required 
+                                               placeholder="e.g., Secret Beach in Dubai, Unknown Restaurant, Hidden Talent">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Brief description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="200" required 
+                                                  placeholder="Describe what makes this a hidden gem (max 200 characters)"></textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">Keep it concise and engaging</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/200</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of hidden gem is this? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="place">📍 Place - Hidden locations and spots</option>
+                                            <option value="person">👤 Person - Talented individuals</option>
+                                            <option value="business">🏪 Business - Unknown great services</option>
+                                            <option value="experience">✨ Experience - Unique activities</option>
+                                            <option value="product">📦 Product - Underrated items</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who discovered this gem? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required 
+                                               placeholder="e.g., Your Name, Your Friend, Local Explorer">
+                                        <div class="form-text">This could be you or someone you know</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Where is this hidden gem? (Optional)</label>
+                                        <input type="text" class="form-control form-control-lg" name="location" 
+                                               placeholder="e.g., Dubai, UAE or Online or Specific Area">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Why is it special? (Optional)</label>
+                                        <textarea class="form-control" name="detailed_description" rows="2" 
+                                                  placeholder="What makes this gem unique or valuable?"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Save as Draft
+                            </button>
+                            <button type="submit" name="action" value="publish" class="btn btn-warning btn-lg px-5">
+                                <i class="fas fa-gem me-2"></i>Publish Hidden Gem
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shortDescTextarea = document.querySelector('[name="short_description"]');
+    const charCount = document.getElementById('char-count');
+    
+    if (shortDescTextarea && charCount) {
+        shortDescTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+});
+</script>
+{% endblock %}
+

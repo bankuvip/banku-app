@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}{{ need.title }} - Need Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>{{ need.title }}
+                    </h1>
+                    <p class="text-muted">Need ID: {{ need.id }} • Created {{ need.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <button type="button" class="btn btn-primary" onclick="findNewMatches()">
+                        <i class="fas fa-search me-2"></i>Find New Matches
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Need Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Need Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Category</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-primary">{{ need.category }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Budget Range</label>
+                            <div class="form-control-plaintext">{{ need.budget_range or 'Not specified' }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Location</label>
+                            <div class="form-control-plaintext">{{ need.location or 'Not specified' }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Timeline</label>
+                            <div class="form-control-plaintext">{{ need.timeline or 'Not specified' }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <div class="form-control-plaintext">{{ need.description }}</div>
+                    </div>
+                    
+                    {% if need.requirements %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Requirements</label>
+                        <div class="form-control-plaintext">{{ need.requirements }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if need.tags %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tags</label>
+                        <div>
+                            {% for tag in need.tags %}
+                            <span class="badge bg-secondary me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Matches -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-handshake me-2"></i>Matching Items
+                        </h5>
+                        <span class="badge bg-primary">{{ matches|length }} matches found</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if matches %}
+                        {% for match in matches %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="card-title mb-1">
+                                            <a href="{{ url_for('profiles.item_detail', item_id=match.item.id) }}" class="text-decoration-none">
+                                                {{ match.item.title }}
+                                            </a>
+                                        </h6>
+                                        <p class="card-text text-muted small mb-2">
+                                            {{ match.item.description[:150] }}{% if match.item.description|length > 150 %}...{% endif %}
+                                        </p>
+                                        <div class="small text-muted">
+                                            <span class="badge bg-{{ 'primary' if match.item.category == 'product' else 'success' if match.item.category == 'service' else 'info' }}">
+                                                {{ match.item.category.title() }}
+                                            </span>
+                                            {% if match.item.location %}
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ match.item.location }}
+                                            {% endif %}
+                                            {% if match.item.price %}
+                                                <i class="fas fa-dollar-sign me-1"></i>${{ "%.2f"|format(match.item.price) }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="mb-2">
+                                            <span class="badge bg-{{ 'success' if match.score >= 0.8 else 'warning' if match.score >= 0.6 else 'secondary' }}">
+                                                {{ "%.1f"|format(match.score * 100) }}% Match
+                                            </span>
+                                        </div>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="recordFeedback({{ match.id }}, 'positive')">
+                                                <i class="fas fa-thumbs-up"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="recordFeedback({{ match.id }}, 'negative')">
+                                                <i class="fas fa-thumbs-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-search text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">No matches found</h5>
+                            <p class="text-muted">Try adjusting your requirements or search criteria.</p>
+                            <button type="button" class="btn btn-primary" onclick="findNewMatches()">
+                                <i class="fas fa-search me-2"></i>Search Again
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Match Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Match Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h4 mb-1">{{ matches|length }}</div>
+                            <div class="text-muted small">Total Matches</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 mb-1">{{ (matches|selectattr('score', '>=', 0.8)|list)|length }}</div>
+                            <div class="text-muted small">High Quality</div>
+                        </div>
+                    </div>
+                    
+                    {% if matches %}
+                    <hr>
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Average Score:</span>
+                            <span>{{ "%.1f"|format((matches|map(attribute='score')|sum / matches|length) * 100) }}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Best Match:</span>
+                            <span>{{ "%.1f"|format(matches|map(attribute='score')|max * 100) }}%</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="findNewMatches()">
+                            <i class="fas fa-search me-2"></i>Find New Matches
+                        </button>
+                        <a href="{{ url_for('ai_matching.my_needs') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>All My Needs
+                        </a>
+                        <a href="{{ url_for('ai_matching.my_matches') }}" class="btn btn-outline-success">
+                            <i class="fas fa-handshake me-2"></i>All Matches
+                        </a>
+                        <button type="button" class="btn btn-outline-warning" onclick="editNeed()">
+                            <i class="fas fa-edit me-2"></i>Edit Need
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function findNewMatches() {
+    fetch('{{ url_for("ai_matching.matches", need_id=need.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'refresh'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while searching for matches.');
+    });
+}
+
+function recordFeedback(matchId, feedback) {
+    fetch('{{ url_for("ai_matching.feedback") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            match_id: matchId,
+            feedback_type: feedback,
+            feedback_details: ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show feedback confirmation
+            const button = event.target.closest('button');
+            button.classList.remove('btn-outline-success', 'btn-outline-danger');
+            button.classList.add(feedback === 'positive' ? 'btn-success' : 'btn-danger');
+            button.disabled = true;
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while recording feedback.');
+    });
+}
+
+function editNeed() {
+    // Redirect to edit page or show edit modal
+    window.location.href = '{{ url_for("ai_matching.create_need") }}?edit={{ need.id }}';
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

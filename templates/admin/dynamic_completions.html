@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Chatbot Completions - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-history me-2"></i>Chatbot Completions & Data Flow</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary" onclick="location.reload()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ completions|length }}</h4>
+                                    <p class="card-text">Total Completions</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ completions|selectattr('completion_status', 'equalto', 'completed')|list|length }}</h4>
+                                    <p class="card-text">Successful</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-thumbs-up fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ completions|selectattr('storage_status', 'equalto', 'stored')|list|length }}</h4>
+                                    <p class="card-text">Data Stored</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ completions|selectattr('completion_status', 'equalto', 'failed')|list|length }}</h4>
+                                    <p class="card-text">Failed</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completions List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Completions</h5>
+                </div>
+                <div class="card-body">
+                    {% if completions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Chatbot</th>
+                                        <th>Item Type</th>
+                                        <th>Status</th>
+                                        <th>Storage</th>
+                                        <th>Started</th>
+                                        <th>Completed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for completion in completions %}
+                                    <tr>
+                                        <td>
+                                            <code>#{{ completion.id }}</code>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    {{ completion.user.first_name[0] if completion.user.first_name else 'U' }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ completion.user.first_name }} {{ completion.user.last_name }}</div>
+                                                    <small class="text-muted">{{ completion.user.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ completion.chatbot.name }}</span>
+                                        </td>
+                                        <td>
+                                            {% if completion.item_type %}
+                                                <span class="badge bg-success">{{ completion.item_type.display_name }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if completion.completion_status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif completion.completion_status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">In Progress</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if completion.storage_status == 'stored' %}
+                                                <span class="badge bg-success">Stored</span>
+                                            {% elif completion.storage_status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ completion.started_at.strftime('%m/%d %H:%M') if completion.started_at else '-' }}</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ completion.completed_at.strftime('%m/%d %H:%M') if completion.completed_at else '-' }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" 
+                                                        class="btn btn-outline-info view-btn" 
+                                                        data-completion-id="{{ completion.id }}"
+                                                        title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if completion.error_message %}
+                                                <button type="button" 
+                                                        class="btn btn-outline-warning error-btn" 
+                                                        data-error="{{ completion.error_message }}"
+                                                        title="View Error">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No completions yet</h5>
+                            <p class="text-muted">Chatbot completions will appear here once users start using the system.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Details Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Completion Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="completionDetails">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Details Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="errorMessage" class="bg-light p-3 rounded"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle view button clicks
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const completionId = this.dataset.completionId;
+            loadCompletionDetails(completionId);
+        });
+    });
+    
+    // Handle error button clicks
+    document.querySelectorAll('.error-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const error = this.dataset.error;
+            document.getElementById('errorMessage').textContent = error;
+            new bootstrap.Modal(document.getElementById('errorModal')).show();
+        });
+    });
+    
+    function loadCompletionDetails(completionId) {
+        // This would typically fetch details from the server
+        // For now, we'll show a placeholder
+        document.getElementById('completionDetails').innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                <p class="text-muted">Loading completion details...</p>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('viewModal')).show();
+        
+        // Simulate loading (replace with actual API call)
+        setTimeout(() => {
+            document.getElementById('completionDetails').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Completion Information</h6>
+                        <p class="text-muted">Completion ID: ${completionId}</p>
+                        <p class="text-muted">Details would be loaded here</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Data Flow</h6>
+                        <p class="text-muted">Collected data and storage information would be shown here</p>
+                    </div>
+                </div>
+            `;
+        }, 1000);
+    }
+});
+</script>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Information - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit Information
+                    </h4>
+                    <p class="text-muted mb-0">Update your information entry</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ info.title }}" required>
+                                <div class="invalid-feedback">Please provide a title.</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select category...</option>
+                                    <option value="person" {{ 'selected' if info.category == 'person' else '' }}>Person</option>
+                                    <option value="company" {{ 'selected' if info.category == 'company' else '' }}>Company</option>
+                                    <option value="industry" {{ 'selected' if info.category == 'industry' else '' }}>Industry</option>
+                                    <option value="market" {{ 'selected' if info.category == 'market' else '' }}>Market</option>
+                                    <option value="opportunity" {{ 'selected' if info.category == 'opportunity' else '' }}>Opportunity</option>
+                                    <option value="event" {{ 'selected' if info.category == 'event' else '' }}>Event</option>
+                                    <option value="other" {{ 'selected' if info.category == 'other' else '' }}>Other</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a category.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required>{{ info.description }}</textarea>
+                            <div class="invalid-feedback">Please provide a description.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="source" class="form-label">Source</label>
+                                <input type="text" class="form-control" id="source" name="source" value="{{ info.source or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" value="{{ info.location or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="contact_info" class="form-label">Contact Information</label>
+                            <textarea class="form-control" id="contact_info" name="contact_info" rows="2">{{ info.contact_info or '' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low" {{ 'selected' if info.priority == 'low' else '' }}>Low</option>
+                                    <option value="medium" {{ 'selected' if info.priority == 'medium' else '' }}>Medium</option>
+                                    <option value="high" {{ 'selected' if info.priority == 'high' else '' }}>High</option>
+                                    <option value="urgent" {{ 'selected' if info.priority == 'urgent' else '' }}>Urgent</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tags" class="form-label">Tags</label>
+                                <input type="text" class="form-control" id="tags" name="tags" value="{{ info.tags|join(', ') if info.tags else '' }}" placeholder="Separate tags with commas">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_public" name="is_public" {{ 'checked' if info.is_public else '' }}>
+                                <label class="form-check-label" for="is_public">
+                                    Make this information public
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('dashboard.add_info') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Add Info
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Update Information
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

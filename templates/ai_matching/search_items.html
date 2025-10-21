@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}AI Search Items - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-search me-2"></i>AI Search Items
+                </h1>
+                <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Search Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="searchForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="query" class="form-label">Search Query</label>
+                                    <input type="text" class="form-control" id="query" name="q" placeholder="Enter keywords...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">All Categories</option>
+                                        <option value="product">Product</option>
+                                        <option value="service">Service</option>
+                                        <option value="idea">Idea</option>
+                                        <option value="information">Information</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" placeholder="City, Country">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="budget_min" class="form-label">Min Price</label>
+                                    <input type="number" class="form-control" id="budget_min" name="budget_min" placeholder="0" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="budget_max" class="form-label">Max Price</label>
+                                    <input type="number" class="form-control" id="budget_max" name="budget_max" placeholder="1000" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>Search Items
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Search Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="searchResults">
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>Start Your Search</h5>
+                            <p class="text-muted">Use the filters above to find items that match your needs.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const searchResults = document.getElementById('searchResults');
+
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+
+    function performSearch() {
+        const formData = new FormData(searchForm);
+        const params = new URLSearchParams();
+        
+        for (let [key, value] of formData.entries()) {
+            if (value.trim()) {
+                params.append(key, value);
+            }
+        }
+
+        // Show loading state
+        searchResults.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Searching...</span>
+                </div>
+                <p class="mt-2">Searching for items...</p>
+            </div>
+        `;
+
+        // Perform search
+        fetch(`/ai-matching/api/search-items?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                searchResults.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error performing search. Please try again.
+                    </div>
+                `;
+            });
+    }
+
+    function displayResults(results) {
+        if (!results || results.length === 0) {
+            searchResults.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No Results Found</h5>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `<div class="row">`;
+        results.forEach(item => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">${item.title}</h6>
+                            <p class="card-text text-muted">${item.description || 'No description available'}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    ${item.price ? `<span class="text-success fw-bold">$${item.price}</span>` : ''}
+                                    ${item.location ? `<br><small class="text-muted">${item.location}</small>` : ''}
+                                    ${item.category ? `<br><span class="badge bg-secondary">${item.category}</span>` : ''}
+                                </div>
+                                <a href="${item.url}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        
+        searchResults.innerHTML = html;
+    }
+
+    function clearForm() {
+        searchForm.reset();
+        searchResults.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>Start Your Search</h5>
+                <p class="text-muted">Use the filters above to find items that match your needs.</p>
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}

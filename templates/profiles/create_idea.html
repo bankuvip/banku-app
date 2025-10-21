@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+
+{% block title %}Create Idea{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Create Idea</h4>
+                <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Item Types
+                </a>
+            </div>
+
+            <!-- Idea Definition -->
+            <div class="alert alert-warning mb-4">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is an Idea?</h6>
+                <p class="mb-2"><strong>Definition:</strong> Mental constructs not yet realized in reality.</p>
+                <p class="mb-0"><strong>Examples:</strong> Business concepts, inventions, creative ideas in brains.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Section 1: Category & Classification -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-tags me-2"></i>1. Category & Classification</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="idea-category" class="form-label">Idea Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="idea-category" name="idea_category" required>
+                                        <option value="">Select category...</option>
+                                        <option value="tech">Tech</option>
+                                        <option value="social">Social</option>
+                                        <option value="business">Business</option>
+                                        <option value="art">Art</option>
+                                        <option value="science">Science</option>
+                                        <option value="education">Education</option>
+                                        <option value="health">Health</option>
+                                        <option value="environment">Environment</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="lifestyle">Lifestyle</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3" id="custom-idea-category-container" style="display: none;">
+                                    <label for="custom-idea-category" class="form-label">Custom Category</label>
+                                    <input type="text" class="form-control" id="custom-idea-category" name="custom_idea_category" placeholder="Enter custom category">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="idea-subcategory" class="form-label">Sub-Category</label>
+                                    <select class="form-select" id="idea-subcategory" name="idea_subcategory">
+                                        <option value="">Select sub-category...</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="target-audience" class="form-label">Target Audience / Users</label>
+                                    <select class="form-select" id="target-audience" name="target_audience">
+                                        <option value="">Select audience...</option>
+                                        <option value="individuals">Individuals</option>
+                                        <option value="businesses">Businesses</option>
+                                        <option value="communities">Communities</option>
+                                        <option value="government">Government</option>
+                                        <option value="nonprofits">Non-profits</option>
+                                        <option value="students">Students</option>
+                                        <option value="professionals">Professionals</option>
+                                        <option value="seniors">Seniors</option>
+                                        <option value="children">Children</option>
+                                        <option value="universal">Universal</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#classification-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="classification-icon"></i>Optional Classification Details
+                                </h6>
+                                <div class="collapse" id="classification-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="industry-sector" class="form-label">Industry / Market Sector</label>
+                                            <select class="form-select" id="industry-sector" name="industry_sector">
+                                                <option value="">Select sector...</option>
+                                                <option value="fintech">Fintech</option>
+                                                <option value="healthcare">Healthcare</option>
+                                                <option value="green-energy">Green Energy</option>
+                                                <option value="entertainment">Entertainment</option>
+                                                <option value="education">Education</option>
+                                                <option value="retail">Retail</option>
+                                                <option value="manufacturing">Manufacturing</option>
+                                                <option value="transportation">Transportation</option>
+                                                <option value="real-estate">Real Estate</option>
+                                                <option value="food-beverage">Food & Beverage</option>
+                                                <option value="travel">Travel</option>
+                                                <option value="media">Media</option>
+                                                <option value="gaming">Gaming</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Creator & Ownership -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-tie me-2"></i>2. Creator & Ownership</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="idea-creator" class="form-label">Idea Creator <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="idea-creator" name="idea_creator" placeholder="Name / Organization" required>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#creator-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="creator-icon"></i>Optional Creator Details
+                                </h6>
+                                <div class="collapse" id="creator-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="creator-location" class="form-label">Location</label>
+                                            <input type="text" class="form-control" id="creator-location" name="creator_location" placeholder="City, Country">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="ownership-rights" class="form-label">Ownership / Rights</label>
+                                            <select class="form-select" id="ownership-rights" name="ownership_rights">
+                                                <option value="">Select rights...</option>
+                                                <option value="open-idea">Open Idea</option>
+                                                <option value="shared">Shared</option>
+                                                <option value="patent-pending">Patent Pending</option>
+                                                <option value="confidential">Confidential</option>
+                                                <option value="proprietary">Proprietary</option>
+                                                <option value="creative-commons">Creative Commons</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label for="contact-info" class="form-label">Contact Information</label>
+                                            <textarea class="form-control" id="contact-info" name="contact_info" rows="2" placeholder="Email, Website, Social links"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>3. Basic Information</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="idea-title" class="form-label">Idea Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="idea-title" name="idea_title" placeholder="Catchy, easy to remember" required>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="problem-statement" class="form-label">Problem Statement <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="problem-statement" name="problem_statement" rows="3" placeholder="What problem does it solve?" required></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="proposed-solution" class="form-label">Proposed Solution <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="proposed-solution" name="proposed_solution" rows="3" placeholder="How does it solve the problem?" required></textarea>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="keywords-tags" class="form-label">Keywords / Tags <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="keywords-tags" name="keywords_tags" placeholder="innovation, tech, startup, solution" required>
+                                    <small class="text-muted">Separate with commas</small>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#basic-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="basic-icon"></i>Optional Information Details
+                                </h6>
+                                <div class="collapse" id="basic-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="tagline" class="form-label">Tagline</label>
+                                            <input type="text" class="form-control" id="tagline" name="tagline" maxlength="100" placeholder="Short one-liner pitch">
+                                            <div class="form-text"><span id="tagline-count">0</span>/100 characters</div>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label for="detailed-description" class="form-label">Detailed Description</label>
+                                            <textarea class="form-control" id="detailed-description" name="detailed_description" rows="5" placeholder="Long explanation: concept, mechanism, story"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="unique-value-proposition" class="form-label">Unique Value Proposition (UVP)</label>
+                                            <textarea class="form-control" id="unique-value-proposition" name="unique_value_proposition" rows="3" placeholder="What makes it different?"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="features-highlights" class="form-label">Features / Highlights</label>
+                                            <textarea class="form-control" id="features-highlights" name="features_highlights" rows="3" placeholder="• Core function 1&#10;• Core function 2&#10;• Core function 3"></textarea>
+                                            <small class="text-muted">Use bullet points for core functions</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Market & Users -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-users me-2"></i>4. Market & Users</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="target-users" class="form-label">Target Users / Customers</label>
+                                    <textarea class="form-control" id="target-users" name="target_users" rows="3" placeholder="Who will use it?"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="user-pain-points" class="form-label">User Needs / Pain Points</label>
+                                    <textarea class="form-control" id="user-pain-points" name="user_pain_points" rows="3" placeholder="Why do they need it?"></textarea>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="market-potential" class="form-label">Market Potential</label>
+                                    <select class="form-select" id="market-potential" name="market_potential">
+                                        <option value="">Select potential...</option>
+                                        <option value="local">Local</option>
+                                        <option value="regional">Regional</option>
+                                        <option value="national">National</option>
+                                        <option value="global">Global</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="competitors" class="form-label">Competitors / Alternatives</label>
+                                    <input type="text" class="form-control" id="competitors" name="competitors" placeholder="Who else is solving this problem?">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="use-cases" class="form-label">Use Cases / Applications</label>
+                                    <textarea class="form-control" id="use-cases" name="use_cases" rows="2" placeholder="Scenarios where it can be applied"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Development & Status -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>5. Development & Status</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="idea-stage" class="form-label">Stage of Idea</label>
+                                    <select class="form-select" id="idea-stage" name="idea_stage">
+                                        <option value="">Select stage...</option>
+                                        <option value="concept">Concept</option>
+                                        <option value="prototype">Prototype</option>
+                                        <option value="mvp">MVP</option>
+                                        <option value="pilot">Pilot</option>
+                                        <option value="scaling">Scaling</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="development-status" class="form-label">Development Status</label>
+                                    <select class="form-select" id="development-status" name="development_status">
+                                        <option value="">Select status...</option>
+                                        <option value="not-started">Not started</option>
+                                        <option value="in-progress">In progress</option>
+                                        <option value="tested">Tested</option>
+                                        <option value="ready-for-launch">Ready for Launch</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="requirements-advance" class="form-label">Requirements to Advance</label>
+                                    <textarea class="form-control" id="requirements-advance" name="requirements_advance" rows="2" placeholder="Skills, funding, resources, partners"></textarea>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="challenges-risks" class="form-label">Challenges / Risks</label>
+                                    <textarea class="form-control" id="challenges-risks" name="challenges_risks" rows="3" placeholder="Optional: potential obstacles or risks"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: Support Needed -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-hands-helping me-2"></i>6. Support Needed</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="funding-needs" class="form-label">Funding Needs</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="funding-needs" name="funding_needs" step="0.01" placeholder="0.00">
+                                        <select class="form-select" name="funding_currency" style="max-width: 100px;">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="AED">AED</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                            <option value="QAR">QAR</option>
+                                            <option value="KWD">KWD</option>
+                                            <option value="BHD">BHD</option>
+                                            <option value="OMR">OMR</option>
+                                            <option value="EGP">EGP</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="support-method" class="form-label">Preferred Support Method</label>
+                                    <select class="form-select" id="support-method" name="support_method">
+                                        <option value="">Select method...</option>
+                                        <option value="direct-investment">Direct Investment</option>
+                                        <option value="crowdfunding">Crowdfunding</option>
+                                        <option value="in-kind-support">In-kind Support</option>
+                                        <option value="grants">Grants</option>
+                                        <option value="partnerships">Partnerships</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Type of Support (select multiple)</label>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-funding" name="support_types" value="funding">
+                                                <label class="form-check-label" for="support-funding">Funding (investment, donations, sponsorship)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-mentorship" name="support_types" value="mentorship">
+                                                <label class="form-check-label" for="support-mentorship">Mentorship & Advice</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-technical" name="support_types" value="technical">
+                                                <label class="form-check-label" for="support-technical">Technical Development</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-marketing" name="support_types" value="marketing">
+                                                <label class="form-check-label" for="support-marketing">Marketing & Outreach</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-partnerships" name="support_types" value="partnerships">
+                                                <label class="form-check-label" for="support-partnerships">Partnerships / Collaboration</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="support-users" name="support_types" value="users">
+                                                <label class="form-check-label" for="support-users">Early Users / Testers</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7: Value & Impact -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-chart-line me-2"></i>7. Value & Impact</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="business-model" class="form-label">Business Model</label>
+                                    <select class="form-select" id="business-model" name="business_model">
+                                        <option value="">Select model...</option>
+                                        <option value="free">Free</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="freemium">Freemium</option>
+                                        <option value="subscription">Subscription</option>
+                                        <option value="donation-based">Donation-based</option>
+                                        <option value="advertising">Advertising</option>
+                                        <option value="marketplace">Marketplace</option>
+                                        <option value="licensing">Licensing</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="impact-type" class="form-label">Impact Type</label>
+                                    <select class="form-select" id="impact-type" name="impact_type">
+                                        <option value="">Select impact...</option>
+                                        <option value="social">Social</option>
+                                        <option value="environmental">Environmental</option>
+                                        <option value="economic">Economic</option>
+                                        <option value="educational">Educational</option>
+                                        <option value="technological">Technological</option>
+                                        <option value="health">Health</option>
+                                        <option value="cultural">Cultural</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="revenue-potential" class="form-label">Revenue Potential</label>
+                                    <input type="text" class="form-control" id="revenue-potential" name="revenue_potential" placeholder="Optional: one-liner">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="expected-benefits" class="form-label">Expected Benefits</label>
+                                    <textarea class="form-control" id="expected-benefits" name="expected_benefits" rows="3" placeholder="For users, communities, businesses"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="sustainability-plan" class="form-label">Sustainability Plan</label>
+                                    <textarea class="form-control" id="sustainability-plan" name="sustainability_plan" rows="3" placeholder="How it continues long-term"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 8: Media & Proofs -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-images me-2"></i>8. Media & Proofs</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="images" class="form-label">Images</label>
+                                    <input type="file" class="form-control mb-2" name="images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links (separate with commas)">
+                                    <small class="text-muted">Concept sketches, mockups, diagrams</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="videos" class="form-label">Videos</label>
+                                    <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="YouTube, Vimeo, etc.">
+                                    <small class="text-muted">Idea pitch, prototype demo</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="documents" class="form-label">Documents / Files</label>
+                                    <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Document links">
+                                    <small class="text-muted">Pitch deck, whitepaper, business plan</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="external-links" class="form-label">External Links</label>
+                                    <textarea class="form-control" id="external-links" name="external_links" rows="3" placeholder="Prototype demo: https://...&#10;GitHub repo: https://...&#10;Website: https://..."></textarea>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="references" class="form-label">References</label>
+                                    <textarea class="form-control" id="references" name="references" rows="3" placeholder="Research papers, statistics, supporting data"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 9: Language & Localization -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-globe me-2"></i>9. Language & Localization</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="languages-supported" class="form-label">Languages Supported</label>
+                                    <input type="text" class="form-control" id="languages-supported" name="languages_supported" placeholder="English, Arabic, French">
+                                    <small class="text-muted">If relevant to idea rollout</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="localization-potential" class="form-label">Localization Potential</label>
+                                    <textarea class="form-control" id="localization-potential" name="localization_potential" rows="2" placeholder="Can it be adapted to other regions/cultures?"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 10: Management & Metadata -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cog me-2"></i>10. Management & Metadata</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="created-date" class="form-label">Created Date</label>
+                                    <input type="date" class="form-control" id="created-date" name="created_date" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="last-updated" class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" id="last-updated" name="last_updated" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="visibility" class="form-label">Visibility</label>
+                                    <select class="form-select" id="visibility" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="invite-only">Invite-only</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="verification-status" class="form-label">Verification Status</label>
+                                    <select class="form-select" id="verification-status" name="verification_status">
+                                        <option value="pending">Pending Review</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="unverified">Unverified</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#metadata-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="metadata-icon"></i>Optional Metadata
+                                </h6>
+                                <div class="collapse" id="metadata-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="idea-expiration" class="form-label">Idea Expiration Date</label>
+                                            <input type="date" class="form-control" id="idea-expiration" name="idea_expiration">
+                                            <small class="text-muted">If limited timeframe</small>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="admin-notes" class="form-label">Admin Notes</label>
+                                            <textarea class="form-control" id="admin-notes" name="admin_notes" rows="2" placeholder="Internal use"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-warning me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-warning">
+                                    <i class="fas fa-lightbulb me-2"></i>Create Idea
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Set current date for created and last updated fields
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created-date').value = today;
+    document.getElementById('last-updated').value = today;
+});
+
+// Character counter for tagline
+document.getElementById('tagline').addEventListener('input', function() {
+    document.getElementById('tagline-count').textContent = this.value.length;
+});
+
+// Idea category change handler
+document.getElementById('idea-category').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-idea-category-container');
+    const subcategorySelect = document.getElementById('idea-subcategory');
+    
+    if (this.value === 'other') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+    
+    // Update subcategories based on main category
+    updateSubcategories(this.value, subcategorySelect);
+});
+
+// Collapse/Expand icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-right');
+                trigger.classList.add('fa-chevron-down');
+            }
+        });
+        
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-down');
+                trigger.classList.add('fa-chevron-right');
+            }
+        });
+    });
+});
+
+// Function to update subcategories based on main category
+function updateSubcategories(category, subcategorySelect) {
+    // Clear existing options
+    subcategorySelect.innerHTML = '<option value="">Select sub-category...</option>';
+    
+    const subcategories = {
+        'tech': ['Fintech', 'Healthtech', 'Edtech', 'AI/ML', 'IoT', 'Blockchain', 'Mobile Apps', 'Web Platforms', 'SaaS', 'Hardware', 'Gaming', 'Cybersecurity'],
+        'social': ['Community Building', 'Social Impact', 'Volunteering', 'Charity', 'Activism', 'Networking', 'Cultural Exchange', 'Social Justice'],
+        'business': ['E-commerce', 'Marketplace', 'B2B Services', 'Consulting', 'Franchise', 'Retail', 'Supply Chain', 'Logistics', 'HR Solutions'],
+        'art': ['Digital Art', 'Music', 'Film & Video', 'Photography', 'Design', 'Performance', 'Literature', 'Crafts', 'Fashion'],
+        'science': ['Research', 'Innovation', 'Lab Equipment', 'Data Analysis', 'Biotechnology', 'Chemistry', 'Physics', 'Environmental Science'],
+        'education': ['Online Learning', 'Skill Development', 'Training Programs', 'Educational Tools', 'Language Learning', 'Professional Development'],
+        'health': ['Healthcare Services', 'Medical Devices', 'Wellness', 'Mental Health', 'Fitness', 'Nutrition', 'Telemedicine', 'Preventive Care'],
+        'environment': ['Green Energy', 'Sustainability', 'Recycling', 'Clean Tech', 'Conservation', 'Climate Change', 'Renewable Resources'],
+        'entertainment': ['Gaming', 'Media', 'Events', 'Sports', 'Tourism', 'Content Creation', 'Streaming', 'Interactive Media'],
+        'lifestyle': ['Food & Beverage', 'Travel', 'Fashion', 'Home & Garden', 'Personal Care', 'Hobbies', 'Relationships', 'Self-improvement']
+    };
+    
+    if (subcategories[category]) {
+        subcategories[category].forEach(function(subcat) {
+            const option = document.createElement('option');
+            option.value = subcat.toLowerCase().replace(/\s+/g, '-').replace(/[&\/]/g, '-');
+            option.textContent = subcat;
+            subcategorySelect.appendChild(option);
+        });
+    }
+}
+</script>
+{% endblock %}

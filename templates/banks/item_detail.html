@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <h1 class="h2 mb-0">{{ item.title }}</h1>
+                        {% if item.is_verified %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check-circle me-1"></i>Verified
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <span class="badge me-2" style="background-color: {{ bank.color if bank else '#17a2b8' }};">{{ item.item_type.name.title() if item.item_type else 'Unknown' }}</span>
+                        <span class="badge bg-secondary me-2">{{ item.category.title() }}</span>
+                        {% if item.subcategory %}
+                        <span class="badge bg-light text-dark me-2">{{ item.subcategory.title() }}</span>
+                        {% endif %}
+                        {% if item.tags %}
+                            {% for tag in item.tags %}
+                            <span class="badge bg-outline-secondary me-1">{{ tag }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p class="lead">{{ item.detailed_description }}</p>
+                    </div>
+                    
+                    <!-- Images Section -->
+                    {% if item.images_media %}
+                    <div class="mb-4">
+                        <h5>Images</h5>
+                        <div class="row">
+                            {% for image in item.images_media %}
+                                {% if image and image.strip() and not image in ['folo', 'momo', 'iphone'] %}
+                                <div class="col-md-3 mb-2">
+                                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
+                                         alt="{{ item.title }}" 
+                                         class="img-fluid rounded shadow-sm"
+                                         style="height: 150px; object-fit: cover; cursor: pointer;"
+                                         onclick="openImageModal('{{ url_for('static', filename='uploads/' + image) }}', '{{ item.title }}')">
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if item.price %}
+                    <div class="mb-4">
+                        <h5>Price</h5>
+                        <h3 class="text-primary">${{ "%.2f"|format(item.price) }}</h3>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Location</h6>
+                            {% if item.location %}
+                                <p><i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ item.location|format_location_cached }}
+                                </p>
+                            {% else %}
+                                <p><i class="fas fa-map-marker-alt me-1"></i>Online</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Created</h6>
+                            <p><i class="fas fa-calendar me-1"></i>{{ item.created_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('deals.create_deal_request', item_id=item.id) }}" class="btn btn-primary">
+                            <i class="fas fa-handshake me-1"></i>Request Deal
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="saveItem({{ item.id }})">
+                            <i class="fas fa-heart me-1"></i>Save
+                        </button>
+                        <button class="btn btn-outline-info" onclick="shareItem({{ item.id }})">
+                            <i class="fas fa-share me-1"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rich Data from Chatbot (if available) -->
+            {% if item.type_data %}
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-comments me-2"></i>Additional Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <script>
+                        // Parse the type_data JSON
+                        try {
+                            var richData = JSON.parse('{{ item.type_data|e }}');
+                            var displayFields = richData.display_fields || {};
+                            
+                            // Display each field
+                            for (var key in displayFields) {
+                                var value = displayFields[key];
+                                if (value && typeof value === 'string' && value.trim()) {
+                                    document.write(`
+                                        <div class="mb-3">
+                                            <h6 class="text-muted">${key}</h6>
+                                            <p>${value}</p>
+                                        </div>
+                                    `);
+                                } else if (value && typeof value === 'object') {
+                                    // Handle complex objects (like images, categories, etc.)
+                                    if (value.files && Array.isArray(value.files)) {
+                                        document.write(`
+                                            <div class="mb-3">
+                                                <h6 class="text-muted">${key}</h6>
+                                                <p>${value.files.length} file(s) uploaded</p>
+                                            </div>
+                                        `);
+                                    } else if (value.category) {
+                                        document.write(`
+                                            <div class="mb-3">
+                                                <h6 class="text-muted">${key}</h6>
+                                                <p>Category: ${value.category}${value.subcategory ? ', Subcategory: ' + value.subcategory : ''}</p>
+                                            </div>
+                                        `);
+                                    } else {
+                                        document.write(`
+                                            <div class="mb-3">
+                                                <h6 class="text-muted">${key}</h6>
+                                                <p>${JSON.stringify(value)}</p>
+                                            </div>
+                                        `);
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // Fallback for invalid JSON
+                            document.write('<p class="text-muted">Additional information is available but could not be parsed.</p>');
+                        }
+                    </script>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Reviews Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Reviews</h5>
+                </div>
+                <div class="card-body">
+                    {% if item.reviews %}
+                        {% for review in item.reviews %}
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</h6>
+                                <div class="text-warning">
+                                    {% for i in range(review.rating) %}
+                                    <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <p class="text-muted small">{{ review.created_at.strftime('%B %d, %Y') }}</p>
+                            {% if review.comment %}
+                            <p>{{ review.comment }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center py-3">No reviews yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Provider Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Provider</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        {% if item.organization_associations %}
+                            {% set org = item.organization_associations[0].organization %}
+                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fas fa-building text-success fs-2"></i>
+                            </div>
+                        {% else %}
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fas fa-user text-primary fs-2"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if item.organization_associations %}
+                        {% set org = item.organization_associations[0].organization %}
+                        <h6>{{ org.name }}</h6>
+                        <p class="text-muted small">{{ org.organization_type.name if org.organization_type else 'Organization' }}</p>
+                        {% if org.location %}
+                        <p class="text-muted small">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ org.location }}
+                        </p>
+                        {% endif %}
+                        <button class="btn btn-outline-success btn-sm" onclick="window.location.href='{{ url_for('organizations.view', slug=org.slug) }}'">
+                            <i class="fas fa-building me-1"></i>View Organization
+                        </button>
+                    {% else %}
+                        <h6>{{ item.profile.name }}</h6>
+                        <p class="text-muted small">{{ item.profile.profile_type.title() }}</p>
+                        {% if item.profile.location %}
+                        <p class="text-muted small">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ item.profile.location }}
+                        </p>
+                        {% endif %}
+                        {% if item.profile.slug %}
+                            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='{{ url_for('profiles.detail_by_slug', slug=item.profile.slug) }}'">
+                        {% else %}
+                            <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='{{ url_for('profiles.detail_by_id', profile_id=item.profile.id) }}'">
+                        {% endif %}
+                            <i class="fas fa-user me-1"></i>View Profile
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Similar Items -->
+            {% if similar_items %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Similar Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% for similar in similar_items %}
+                    <div class="border-bottom p-3">
+                        <h6 class="mb-1">{{ similar.title }}</h6>
+                        <p class="text-muted small mb-2">{{ similar.short_description[:50] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary">{{ similar.category.title() }}</span>
+                            {% if similar.price %}
+                            <span class="fw-bold">${{ "%.2f"|format(similar.price) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Save item functionality
+function saveItem(itemId) {
+    fetch(`/profiles/save-item/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Item saved successfully!', 'success');
+            // Update button state
+            const saveBtn = event.target.closest('button');
+            saveBtn.innerHTML = '<i class="fas fa-heart me-1"></i>Saved';
+            saveBtn.classList.remove('btn-outline-secondary');
+            saveBtn.classList.add('btn-danger');
+            saveBtn.disabled = true;
+        } else {
+            showToast(data.message || 'Failed to save item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving item:', error);
+        showToast('An error occurred while saving the item', 'error');
+    });
+}
+
+// Share item functionality
+function shareItem(itemId) {
+    const itemUrl = window.location.origin + '/banks/item/' + itemId;
+    const itemTitle = document.querySelector('h1')?.textContent || 'Check out this item on BankU';
+    
+    if (navigator.share) {
+        // Use native sharing if available
+        navigator.share({
+            title: itemTitle,
+            text: 'I found this interesting item on BankU',
+            url: itemUrl
+        }).then(() => {
+            showToast('Item shared successfully!', 'success');
+        }).catch((error) => {
+            console.log('Error sharing:', error);
+            fallbackShare(itemUrl);
+        });
+    } else {
+        // Fallback to clipboard copy
+        fallbackShare(itemUrl);
+    }
+}
+
+function fallbackShare(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Item link copied to clipboard!', 'success');
+    }).catch(() => {
+        // Final fallback - show URL in alert
+        prompt('Copy this link to share:', url);
+    });
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Show toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        this.remove();
+    });
+}
+
+function openImageModal(imageSrc, imageTitle) {
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="imageModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${imageTitle}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="${imageSrc}" class="img-fluid" alt="${imageTitle}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('imageModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
+    
+    // Remove modal from DOM when hidden
+    document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+

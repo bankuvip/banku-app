@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}BankU - Revolutionary Product-Need Marketplace{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section position-relative overflow-hidden">
+    <div class="hero-gradient"></div>
+    <div class="container position-relative">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <span class="badge bg-warning text-dark mb-3 px-3 py-2">🚀 Revolutionary Marketplace</span>
+                    <h1 class="fw-bold mb-4 text-white" style="font-size: clamp(1.8rem, 5vw, 3.5rem); line-height: 1.2;">
+                        Where <span class="text-warning">Products</span> Meet <span style="color: #00ff88; text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);">Needs</span>
+                    </h1>
+                    <p class="mb-4 text-white-75" style="font-size: clamp(1rem, 2.5vw, 1.25rem); line-height: 1.5;">
+                        BankU is the world's first <strong>Product-Need Connector</strong> platform. 
+                        Whether you're a maker, thinker, consultant, or need-finder, we connect you with 
+                        exactly what you're looking for while helping you <strong>earn money</strong> doing what you love.
+                    </p>
+                    <div class="hero-stats mb-4">
+                        <div class="row g-2 g-md-3">
+                            <div class="col-4">
+                                <div class="stat-item text-center">
+                                    <div class="stat-number text-warning fw-bold" style="font-size: clamp(1rem, 3vw, 1.5rem); word-wrap: break-word;">Multiple</div>
+                                    <div class="stat-label text-white-75 small" style="font-size: clamp(0.7rem, 2vw, 0.875rem);">Banks</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-item text-center">
+                                    <div class="stat-number text-success fw-bold" style="font-size: clamp(1rem, 3vw, 1.5rem);">∞</div>
+                                    <div class="stat-label text-white-75 small" style="font-size: clamp(0.6rem, 1.8vw, 0.875rem); word-wrap: break-word; hyphens: auto;">Possibilities</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-item text-center">
+                                    <div class="stat-number text-info fw-bold" style="font-size: clamp(1rem, 3vw, 1.5rem);">0%</div>
+                                    <div class="stat-label text-white-75 small" style="font-size: clamp(0.7rem, 2vw, 0.875rem);">Ads</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2 gap-md-3">
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-warning fw-bold px-3 px-md-4 py-2 py-md-3" style="font-size: clamp(0.9rem, 2.2vw, 1.1rem);">
+                            <i class="fas fa-rocket me-2"></i>Start Earning Now
+                        </a>
+                        <a href="{{ url_for('about') }}" class="btn btn-outline-light px-3 px-md-4 py-2 py-md-3" style="font-size: clamp(0.9rem, 2.2vw, 1.1rem);">
+                            <i class="fas fa-play me-2"></i>See How It Works
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-visual text-center">
+                    <div class="connection-diagram">
+                        <div class="node node-product">
+                            <i class="fas fa-box"></i>
+                            <span>Products</span>
+                        </div>
+                        <div class="connection-lines">
+                            <div class="line"></div>
+                            <div class="ai-badge">
+                                <i class="fas fa-brain"></i>
+                                <span>AI Match</span>
+                            </div>
+                        </div>
+                        <div class="node node-need">
+                            <i class="fas fa-heart"></i>
+                            <span>Needs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- What Makes BankU Different -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-4">Why BankU is Revolutionary</h2>
+                <p class="lead text-muted">Unlike traditional marketplaces, BankU operates on a revolutionary principle: 
+                <strong>We only earn when you earn</strong>. No ads, no spam, just pure value creation.</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-handshake text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold">Partnership Model</h5>
+                    <p class="text-muted">We earn only when you succeed. No hidden fees, no subscriptions - just transparent revenue sharing.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-brain text-success"></i>
+                    </div>
+                    <h5 class="fw-bold">AI-Powered Matching</h5>
+                    <p class="text-muted">Our intelligent system finds the perfect matches between your products and needs, saving you time and maximizing opportunities.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-shield-alt text-warning"></i>
+                    </div>
+                    <h5 class="fw-bold">Trust & Verification</h5>
+                    <p class="text-muted">Every transaction goes through verified connectors. Build reputation, ensure quality, and transact with confidence.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-university text-info"></i>
+                    </div>
+                    <h5 class="fw-bold">Centralized Banks</h5>
+                    <p class="text-muted">Organized repositories for Products, Services, Ideas, Projects, Events, and more. Everything you need in one place.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-users text-danger"></i>
+                    </div>
+                    <h5 class="fw-bold">Multiple Roles</h5>
+                    <p class="text-muted">Be a Maker, Thinker, Consultant, Investor, Distributor, or Consumer. Switch roles seamlessly as your needs evolve.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100 text-center p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-globe text-secondary"></i>
+                    </div>
+                    <h5 class="fw-bold">Global Ecosystem</h5>
+                    <p class="text-muted">Connect with users worldwide. Create companies, projects, teams, and collaborate across borders and industries.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- The Banks System -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-4">Explore Our Banks</h2>
+                <p class="lead text-muted">Everything is organized into specialized banks for easy discovery and connection.</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Products</h5>
+                        <p class="bank-description">Physical & digital products from makers worldwide</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-primary">Products</span>
+                            <span class="badge bg-secondary">Digital Goods</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Services</h5>
+                        <p class="bank-description">Professional services and expertise from skilled consultants</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-success">Consulting</span>
+                            <span class="badge bg-info">Expertise</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Ideas</h5>
+                        <p class="bank-description">Innovative concepts and creative solutions waiting to be developed</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-warning">Innovation</span>
+                            <span class="badge bg-dark">Concepts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Projects</h5>
+                        <p class="bank-description">Collaborative projects and team initiatives</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-purple">Collaboration</span>
+                            <span class="badge bg-orange">Teams</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Events</h5>
+                        <p class="bank-description">Organized gatherings, workshops, and networking events</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-red">Networking</span>
+                            <span class="badge bg-green">Workshops</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="bank-card h-100">
+                    <div class="bank-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <div class="bank-content">
+                        <h5 class="bank-title">Bank of Auctions</h5>
+                        <p class="bank-description">Competitive bidding and exclusive opportunities</p>
+                        <div class="bank-stats">
+                            <span class="badge bg-danger">Bidding</span>
+                            <span class="badge bg-warning">Exclusive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How You Can Earn -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-4">Multiple Ways to Earn</h2>
+                <p class="lead text-muted">BankU offers various income streams. The more you contribute, the more you earn.</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="earning-card h-100">
+                    <div class="earning-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="earning-content">
+                        <h5 class="earning-title">Service Providers</h5>
+                        <p class="earning-description">Offer your skills and expertise. Set your rates and get matched with clients who need your services.</p>
+                        <ul class="earning-benefits">
+                            <li><i class="fas fa-check text-success"></i> Create detailed service profiles</li>
+                            <li><i class="fas fa-check text-success"></i> Set competitive rates</li>
+                            <li><i class="fas fa-check text-success"></i> Get matched automatically</li>
+                            <li><i class="fas fa-check text-success"></i> Build reputation through reviews</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="earning-card h-100">
+                    <div class="earning-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="earning-content">
+                        <h5 class="earning-title">Product Creators</h5>
+                        <p class="earning-description">Sell your physical or digital products through our marketplace. Reach customers worldwide.</p>
+                        <ul class="earning-benefits">
+                            <li><i class="fas fa-check text-success"></i> List in our product bank</li>
+                            <li><i class="fas fa-check text-success"></i> Manage inventory efficiently</li>
+                            <li><i class="fas fa-check text-success"></i> Track sales and analytics</li>
+                            <li><i class="fas fa-check text-success"></i> Global customer reach</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="earning-card h-100">
+                    <div class="earning-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="earning-content">
+                        <h5 class="earning-title">Idea Generators</h5>
+                        <p class="earning-description">Share your innovative ideas and earn a percentage when they become successful ventures.</p>
+                        <ul class="earning-benefits">
+                            <li><i class="fas fa-check text-success"></i> Share innovative concepts</li>
+                            <li><i class="fas fa-check text-success"></i> Find collaborators</li>
+                            <li><i class="fas fa-check text-success"></i> Earn from successful projects</li>
+                            <li><i class="fas fa-check text-success"></i> Build intellectual property</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="earning-card h-100">
+                    <div class="earning-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div class="earning-content">
+                        <h5 class="earning-title">Connectors</h5>
+                        <p class="earning-description">Become a connector and earn by matching needs with solutions. Be the bridge that creates value.</p>
+                        <ul class="earning-benefits">
+                            <li><i class="fas fa-check text-success"></i> Match needs with products</li>
+                            <li><i class="fas fa-check text-success"></i> Earn commission on deals</li>
+                            <li><i class="fas fa-check text-success"></i> Build valuable networks</li>
+                            <li><i class="fas fa-check text-success"></i> Help others succeed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Success Stories -->
+<section class="py-5 bg-gradient-primary">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-4 text-dark">Join the Revolution</h2>
+                <p class="lead mb-4 text-dark">Thousands of users are already connecting and earning on BankU. 
+                Be part of the future of commerce where everyone wins.</p>
+            </div>
+        </div>
+        
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="stat-highlight">
+                    <div class="stat-number display-4 fw-bold text-warning">0%</div>
+                    <div class="stat-label">Advertising</div>
+                    <div class="stat-description">Pure value, no spam</div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="stat-highlight">
+                    <div class="stat-number display-4 fw-bold text-success">∞</div>
+                    <div class="stat-label">Possibilities</div>
+                    <div class="stat-description">Unlimited earning potential</div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="stat-highlight">
+                    <div class="stat-number display-4 fw-bold text-info">100%</div>
+                    <div class="stat-label">Partnership</div>
+                    <div class="stat-description">We succeed together</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-dark text-white">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-5 fw-bold mb-4">Ready to Start Your Journey?</h2>
+                <p class="lead mb-4">Join BankU today and discover a new way to connect, create, and earn. 
+                Your success is our success.</p>
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-warning btn-lg px-5 py-3 fw-bold">
+                        <i class="fas fa-rocket me-2"></i>Join BankU Now
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg px-5 py-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Already a Member?
+                    </a>
+                </div>
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="fas fa-lock me-1"></i>
+                        Free to join • No credit card required • Start earning immediately
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+/* Hero Section Styles */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    position: relative;
+}
+
+.hero-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+}
+
+.text-white-75 {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.hero-stats .stat-item {
+    padding: 1rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Connection Diagram */
+.connection-diagram {
+    position: relative;
+    padding: 2rem;
+}
+
+.node {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    margin: 0 1rem;
+    min-width: 120px;
+}
+
+.node-product {
+    background: linear-gradient(135deg, #ffc107, #ff8c00);
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.3);
+}
+
+.node-need {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+}
+
+.node i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.connection-lines {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 4px;
+}
+
+.line {
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #ffc107, #28a745);
+    border-radius: 2px;
+    position: relative;
+}
+
+.ai-badge {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Feature Cards */
+.feature-card {
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+}
+
+.feature-icon i {
+    font-size: 3rem;
+    padding: 1rem;
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+/* Bank Cards */
+.bank-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.bank-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+.bank-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 2rem;
+}
+
+.bank-title {
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.bank-description {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.bank-stats .badge {
+    margin: 0.2rem;
+    font-size: 0.8rem;
+}
+
+/* Earning Cards */
+.earning-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.earning-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.earning-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    font-size: 1.8rem;
+}
+
+.earning-title {
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.earning-description {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.earning-benefits {
+    list-style: none;
+    padding: 0;
+}
+
+.earning-benefits li {
+    padding: 0.3rem 0;
+    color: #555;
+}
+
+/* Stats */
+.stat-highlight {
+    padding: 2rem;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.stat-description {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: auto;
+        padding: 4rem 0;
+    }
+    
+    .connection-diagram {
+        margin-top: 3rem;
+    }
+    
+    .node {
+        margin: 0.5rem;
+        padding: 1.5rem;
+        min-width: 100px;
+    }
+    
+    .node i {
+        font-size: 2rem;
+    }
+    
+    .hero-stats .stat-item {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}

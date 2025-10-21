@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-users me-2"></i>Manage Users
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="refreshUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <form method="GET" class="row g-3 align-items-end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search users...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select" id="role" name="role">
+                                <option value="">All Roles</option>
+                                {% for role in roles %}
+                                <option value="{{ role.name }}" {{ 'selected' if role_filter == role.name else '' }}>{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="verification" class="form-label">Verification</label>
+                            <select class="form-select" id="verification" name="verification">
+                                <option value="">All</option>
+                                <option value="verified" {{ 'selected' if verification_filter == 'verified' else '' }}>Verified</option>
+                                <option value="pending" {{ 'selected' if verification_filter == 'pending' else '' }}>Pending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Verification</th>
+                                    <th>Roles</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        {% if user.email_verified %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Verified
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-circle me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for role in user.roles %}
+                                        <span class="badge bg-{{ 'primary' if role.is_internal else 'secondary' }} me-1">{{ role.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                            {{ 'Active' if user.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%m/%d/%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-{{ 'danger' if user.is_active else 'success' }}" 
+                                                    onclick="toggleUserStatus({{ user.id }})"
+                                                    title="{{ 'Deactivate' if user.is_active else 'Activate' }} User">
+                                                <i class="fas fa-{{ 'ban' if user.is_active else 'check' }}"></i>
+                                            </button>
+                                            {% if not user.email_verified %}
+                                            <button class="btn btn-sm btn-outline-success" 
+                                                    onclick="verifyUserEmail({{ user.id }}, '{{ user.email }}')"
+                                                    title="Verify Email">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="manageRoles({{ user.id }})"
+                                                    title="Manage Roles">
+                                                <i class="fas fa-user-tag"></i>
+                                            </button>
+                                            {% set is_super_admin = false %}
+                                            {% for role in user.roles %}
+                                                {% if role.name == 'Super Admin' %}
+                                                    {% set is_super_admin = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <button class="btn btn-sm btn-outline-danger delete-button" 
+                                                    onclick="deleteUser({{ user.id }}, '{{ user.username }}')"
+                                                    {{ 'disabled' if user.id == current_user.id or is_super_admin else '' }}
+                                                    title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-users text-muted fs-1 mb-3"></i>
+                                        <h5 class="text-muted">No users found</h5>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if users.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Users pagination">
+                <ul class="pagination justify-content-center">
+                    {% if users.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.users', page=users.prev_num, search=search, role=role_filter, verification=verification_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in users.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != users.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.users', page=page_num, search=search, role=role_filter, verification=verification_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.users', page=users.next_num, search=search, role=role_filter, verification=verification_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Role Management Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage User Roles</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <input type="hidden" id="userId" name="user_id">
+                    <div class="mb-3">
+                        <label class="form-label">Available Roles</label>
+                        <div id="rolesList">
+                            <!-- Roles will be populated here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRoles()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete User Account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>You are about to permanently delete the user account for:</p>
+                <div class="bg-light p-3 rounded mb-3">
+                    <strong id="deleteUserName"></strong>
+                </div>
+                <p class="text-muted">This will delete:</p>
+                <ul class="text-muted">
+                    <li>User account and profile information</li>
+                    <li>All associated data (deals, items, needs, etc.)</li>
+                    <li>User roles and permissions</li>
+                    <li>All activity history</li>
+                </ul>
+                <p class="text-danger fw-bold">Are you absolutely sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-1"></i>Yes, Delete Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-outline-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.delete-button {
+    transition: all 0.2s ease;
+}
+
+.delete-button:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+/* Icon-only button styling */
+.btn-group .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.btn-group .btn i {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert {
+    animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleUserStatus(userId) {
+    if (confirm('Are you sure you want to change this user\'s status?')) {
+        fetch(`/admin/users/${userId}/toggle-status`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+}
+
+function manageRoles(userId) {
+    document.getElementById('userId').value = userId;
+    
+    // Show loading state
+    const rolesList = document.getElementById('rolesList');
+    rolesList.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading roles...</div>';
+    
+    // Show modal first
+    const modal = new bootstrap.Modal(document.getElementById('roleModal'));
+    modal.show();
+    
+    // Fetch user roles and available roles
+    fetch(`/admin/users/${userId}/roles`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateRolesList(data.user_roles, data.available_roles, userId);
+            } else {
+                rolesList.innerHTML = '<div class="alert alert-danger">Error loading roles: ' + data.message + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            rolesList.innerHTML = '<div class="alert alert-danger">Failed to load roles. Please try again.</div>';
+        });
+}
+
+function populateRolesList(userRoles, availableRoles, userId) {
+    const rolesList = document.getElementById('rolesList');
+    rolesList.innerHTML = '';
+    
+    // Create a map of user role IDs for quick lookup
+    const userRoleIds = new Set(userRoles.map(role => role.id));
+    
+    // Display current roles
+    if (userRoles.length > 0) {
+        const currentRolesDiv = document.createElement('div');
+        currentRolesDiv.innerHTML = '<h6 class="text-primary mb-3"><i class="fas fa-user-tag me-2"></i>Current Roles</h6>';
+        
+        userRoles.forEach(role => {
+            const roleItem = document.createElement('div');
+            roleItem.className = 'd-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded';
+            roleItem.innerHTML = `
+                <div>
+                    <strong>${role.name}</strong>
+                    <small class="text-muted d-block">${role.description || 'No description'}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeRole(${userId}, ${role.id}, '${role.name}')">
+                    <i class="fas fa-times me-1"></i>Remove
+                </button>
+            `;
+            currentRolesDiv.appendChild(roleItem);
+        });
+        
+        rolesList.appendChild(currentRolesDiv);
+    }
+    
+    // Display available roles to assign
+    const availableRolesDiv = document.createElement('div');
+    availableRolesDiv.innerHTML = '<h6 class="text-success mb-3"><i class="fas fa-plus-circle me-2"></i>Available Roles</h6>';
+    
+    const rolesToShow = availableRoles.filter(role => !userRoleIds.has(role.id));
+    
+    if (rolesToShow.length > 0) {
+        rolesToShow.forEach(role => {
+            const roleItem = document.createElement('div');
+            roleItem.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+            roleItem.innerHTML = `
+                <div>
+                    <strong>${role.name}</strong>
+                    <small class="text-muted d-block">${role.description || 'No description'}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-success" onclick="assignRole(${userId}, ${role.id}, '${role.name}')">
+                    <i class="fas fa-plus me-1"></i>Assign
+                </button>
+            `;
+            availableRolesDiv.appendChild(roleItem);
+        });
+    } else {
+        availableRolesDiv.innerHTML += '<p class="text-muted">No additional roles available to assign.</p>';
+    }
+    
+    rolesList.appendChild(availableRolesDiv);
+}
+
+function assignRole(userId, roleId, roleName) {
+    if (!confirm(`Assign role "${roleName}" to this user?`)) {
+        return;
+    }
+    
+    fetch(`/admin/users/${userId}/assign-role`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            role_id: roleId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            // Refresh the roles list
+            manageRoles(userId);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to assign role. Please try again.');
+    });
+}
+
+function removeRole(userId, roleId, roleName) {
+    if (!confirm(`Remove role "${roleName}" from this user?`)) {
+        return;
+    }
+    
+    fetch(`/admin/users/${userId}/remove-role`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            role_id: roleId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            // Refresh the roles list
+            manageRoles(userId);
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to remove role. Please try again.');
+    });
+}
+
+function saveRoles() {
+    // This function is no longer needed as we handle roles individually
+    // But keeping it for backward compatibility
+    showAlert('info', 'Roles are managed individually. Use the Assign/Remove buttons.');
+}
+
+function refreshUsers() {
+    location.reload();
+}
+
+function verifyUserEmail(userId, userEmail) {
+    if (!confirm(`Manually verify email for ${userEmail}?`)) {
+        return;
+    }
+    
+    fetch(`/admin/users/${userId}/verify-email`, {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            location.reload();
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to verify email. Please try again.');
+    });
+}
+
+let deleteUserId = null;
+let deleteButton = null;
+
+function deleteUser(userId, username) {
+    deleteUserId = userId;
+    deleteButton = event.target.closest('button');
+    
+    // Set the username in the modal
+    document.getElementById('deleteUserName').textContent = username;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Handle the actual deletion when confirmed
+// Remove any existing event listeners first
+const confirmBtn = document.getElementById('confirmDeleteBtn');
+confirmBtn.removeEventListener('click', handleDeleteConfirmation);
+confirmBtn.addEventListener('click', handleDeleteConfirmation);
+
+function handleDeleteConfirmation() {
+    console.log('Delete confirmation clicked', { deleteUserId, deleteButton });
+    
+    if (!deleteUserId || !deleteButton) {
+        console.error('Delete button or user ID not found');
+        return;
+    }
+    
+    // Show loading state
+    const originalText = deleteButton.innerHTML;
+    if (deleteButton) {
+        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+        deleteButton.disabled = true;
+    }
+    
+    fetch(`/admin/users/${deleteUserId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Delete response received:', data);
+        if (data.success) {
+            // Show success message
+            showAlert('success', data.message);
+            // Remove the row from the table
+            const row = deleteButton.closest('tr');
+            row.style.transition = 'opacity 0.3s ease';
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.remove();
+            }, 300);
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+        } else {
+            // Show error message
+            showAlert('error', data.message);
+            // Restore button state
+            if (deleteButton) {
+                deleteButton.innerHTML = originalText;
+                deleteButton.disabled = false;
+            }
+        }
+        
+        // Reset variables after processing response
+        deleteUserId = null;
+        deleteButton = null;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to delete user. Please try again.');
+        // Restore button state
+        if (deleteButton) {
+            deleteButton.innerHTML = originalText;
+            deleteButton.disabled = false;
+        }
+        
+        // Reset variables after error handling
+        deleteUserId = null;
+        deleteButton = null;
+    });
+}
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => alert.remove(), 5000);
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

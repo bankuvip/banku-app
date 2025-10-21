@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Scoring System Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>Scoring System Management
+                </h1>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="recalculateAllScores()">
+                        <i class="fas fa-sync-alt me-1"></i>Recalculate All Scores
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-eye fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Visibility Scoring</h5>
+                    <p class="card-text text-muted">Manage data completeness scoring based on chatbot questions</p>
+                    <a href="{{ url_for('scoring_admin.visibility_scoring_management') }}" class="btn btn-primary">
+                        <i class="fas fa-cog me-1"></i>Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-shield-alt fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Credibility Scoring</h5>
+                    <p class="card-text text-muted">Manage user verification and trust scoring</p>
+                    <a href="{{ url_for('scoring_admin.credibility_scoring_management') }}" class="btn btn-success">
+                        <i class="fas fa-cog me-1"></i>Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-star fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Review Scoring</h5>
+                    <p class="card-text text-muted">Manage review and rating scoring system</p>
+                    <a href="{{ url_for('scoring_admin.review_scoring_management') }}" class="btn btn-warning">
+                        <i class="fas fa-cog me-1"></i>Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>System Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="h4 text-primary mb-1" id="total-items">-</div>
+                            <div class="text-muted">Total Items</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="h4 text-success mb-1" id="avg-visibility">-</div>
+                            <div class="text-muted">Avg Visibility</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="h4 text-info mb-1" id="avg-credibility">-</div>
+                            <div class="text-muted">Avg Credibility</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="h4 text-warning mb-1" id="avg-review">-</div>
+                            <div class="text-muted">Avg Review</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Visibility Scoring</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Set points for each chatbot question</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Configure essential vs additional field weights</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Adjust media and detail scoring</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>System Management</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Recalculate all item scores</li>
+                                <li><i class="fas fa-check text-success me-2"></i>View scoring statistics and trends</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Export scoring data for analysis</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function recalculateAllScores() {
+    if (!confirm('This will recalculate scores for all items. This may take a few minutes. Continue?')) {
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Recalculating...';
+    btn.disabled = true;
+    
+    fetch('/admin/api/scoring/recalculate-all-scores', {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Success: ' + data.message);
+            loadStatistics();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while recalculating scores.');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function loadStatistics() {
+    // This would load real statistics from the API
+    // For now, we'll show placeholder data
+    document.getElementById('total-items').textContent = '6';
+    document.getElementById('avg-visibility').textContent = '15%';
+    document.getElementById('avg-credibility').textContent = '8%';
+    document.getElementById('avg-review').textContent = '0%';
+}
+
+// Load statistics on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+});
+</script>
+{% endblock %}

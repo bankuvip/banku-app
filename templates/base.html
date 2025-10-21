@@ -1,0 +1,647 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}BankU - Modern Banking Platform{% endblock %}</title>
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- Font Awesome Fallback -->
+    <script>
+        // Check if Font Awesome loaded
+        setTimeout(function() {
+            if (!document.querySelector('.fa, .fas, .far, .fab')) {
+                console.log('Font Awesome not loaded, trying fallback...');
+                // Try alternative CDN
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://use.fontawesome.com/releases/v6.0.0/css/all.css';
+                document.head.appendChild(link);
+            }
+        }, 1000);
+    </script>
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="alternate icon" href="{{ url_for('static', filename='favicon.svg') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="animate-fadeInUp">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid px-0" style="margin-top: 80px; position: relative; z-index: 1000;">
+                <div class="container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mt-2" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-university me-2"></i>BankU
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard.index') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        
+                        <!-- Banks Menu -->
+                        {% set ns = namespace(has_banks_read=false) %}
+                        {% for role in current_user.roles %}
+                            {% if role.permissions and 'banks' in role.permissions and ('read' in role.permissions['banks'] or 'view' in role.permissions['banks']) %}
+                                {% set ns.has_banks_read = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_banks_read %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('banks.index') }}">
+                                    <i class="fas fa-university me-1"></i>Banks
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- AI Matcher Menu -->
+                        {% set ns = namespace(has_ai_access=false) %}
+                        {% for role in current_user.roles %}
+                            {% if role.permissions and 'ai_matching' in role.permissions and 'access_dashboard' in role.permissions['ai_matching'] %}
+                                {% set ns.has_ai_access = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_ai_access %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="aiMatcherDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-brain me-1"></i>AI Matcher
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('ai_matching.dashboard') }}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Matcher Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('ai_matching.ai_engine') }}">
+                                        <i class="fas fa-cogs me-2"></i>AI Engine
+                                    </a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Organizations Menu -->
+                        {% set ns = namespace(has_organizations_read=false) %}
+                        {% for role in current_user.roles %}
+                            {% if role.permissions and 'organizations' in role.permissions and ('read' in role.permissions['organizations'] or 'view' in role.permissions['organizations']) %}
+                                {% set ns.has_organizations_read = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_organizations_read %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('organizations.index') }}">
+                                    <i class="fas fa-building me-1"></i>Organizations
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Profiles Menu -->
+                        {% set ns = namespace(has_profiles_read=false) %}
+                        {% for role in current_user.roles %}
+                            {% if role.permissions and 'profiles' in role.permissions and ('read' in role.permissions['profiles'] or 'view' in role.permissions['profiles'] or 'create' in role.permissions['profiles'] or 'manage' in role.permissions['profiles']) %}
+                                {% set ns.has_profiles_read = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_profiles_read %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('profiles.index') }}">
+                                    <i class="fas fa-user-circle me-1"></i>My Profiles
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Deals Menu -->
+                        {% set ns = namespace(has_deals_read=false, has_deals_create=false) %}
+                        {% for role in current_user.roles %}
+                            {% if role.permissions and 'deals' in role.permissions %}
+                                {% if 'read' in role.permissions['deals'] or 'view' in role.permissions['deals'] %}
+                                    {% set ns.has_deals_read = true %}
+                                {% endif %}
+                                {% if 'create' in role.permissions['deals'] %}
+                                    {% set ns.has_deals_create = true %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_deals_read or ns.has_deals_create %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="dealsDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-university me-1"></i>Deals
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <!-- Deal Requests - Available to all users -->
+                                    <li><a class="dropdown-item" href="{{ url_for('deals.my_deal_requests') }}">
+                                        <i class="fas fa-handshake me-2"></i>My Deal Requests
+                                    </a></li>
+                                    
+                                    {% if ns.has_deals_read %}
+                                        <li><a class="dropdown-item" href="{{ url_for('deals.index') }}">
+                                            <i class="fas fa-list me-2"></i>My Deals
+                                        </a></li>
+                                    {% endif %}
+                                    
+                                    <!-- Deal Requests (Staff) - Only for connectors/staff -->
+                                    {% if ns.has_deals_read %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('deals.all_deal_requests') }}">
+                                            <i class="fas fa-clipboard-list me-2"></i>Deal Requests
+                                            <span class="badge bg-info ms-2">Staff</span>
+                                        </a></li>
+                                    {% endif %}
+                                    
+                                    {% if ns.has_deals_create %}
+                                        <li><a class="dropdown-item" href="{{ url_for('deals.create') }}">
+                                            <i class="fas fa-plus me-2"></i>Create Deal
+                                        </a></li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% else %}
+                            <!-- Show deal requests even if user has no deal permissions -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('deals.my_deal_requests') }}">
+                                    <i class="fas fa-handshake me-1"></i>My Deal Requests
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if current_user.roles %}
+                            {% for role in current_user.roles %}
+                                {% if role.is_internal %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{{ url_for('admin.index') }}">
+                                            <i class="fas fa-cog me-1"></i>Admin
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-bell me-1"></i>
+                                {% if current_user.notifications %}
+                                    <span class="badge bg-danger">{{ current_user.notifications|selectattr('is_read', 'equalto', False)|list|length }}</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Notifications</h6></li>
+                                {% for notification in current_user.notifications[:5] %}
+                                    <li>
+                                        <a class="dropdown-item {% if not notification.is_read %}fw-bold{% endif %}" href="#">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <small>{{ notification.title }}</small>
+                                                <small class="text-muted">{{ notification.created_at.strftime('%H:%M') }}</small>
+                                            </div>
+                                            <small class="text-muted">{{ notification.message[:50] }}...</small>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center" href="{{ url_for('dashboard.notifications') }}">View All</a></li>
+                            </ul>
+                        </li>
+                        <!-- Dark Mode Toggle -->
+                        <li class="nav-item">
+                            <button type="button" class="btn dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">
+                                <i class="fas fa-moon" id="darkModeIcon"></i>
+                            </button>
+                        </li>
+                        
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                {% if current_user.avatar %}
+                                    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" 
+                                         alt="Profile Photo" class="rounded-circle me-2" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                    <i class="fas fa-user-circle me-1"></i>
+                                {% endif %}
+                                {{ current_user.first_name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('wallet.index') }}">
+                                    <i class="fas fa-wallet me-2"></i>My Wallet
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.settings') }}">
+                                    <i class="fas fa-cog me-2"></i>Settings
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.verification') }}">
+                                    <i class="fas fa-shield-alt me-2"></i>Verification
+                                    {% if not current_user.email_verified %}
+                                        <span class="badge bg-warning ms-1">!</span>
+                                    {% endif %}
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid" style="margin-top: 80px;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>BankU</h5>
+                    <p>Your comprehensive banking and financial services platform.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2025 BankU. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Dark Mode & Animations Script -->
+    <script>
+        // Dark Mode Toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeIcon = document.getElementById('darkModeIcon');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to light mode
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-theme', currentTheme);
+            
+            // Update icon based on current theme (only if elements exist)
+            if (darkModeIcon) {
+                if (currentTheme === 'dark') {
+                    darkModeIcon.className = 'fas fa-sun';
+                } else {
+                    darkModeIcon.className = 'fas fa-moon';
+                }
+            }
+            
+            // Toggle dark mode (only if toggle exists)
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', function() {
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    
+                    // Update icon (only if icon exists)
+                    if (darkModeIcon) {
+                        if (newTheme === 'dark') {
+                            darkModeIcon.className = 'fas fa-sun';
+                        } else {
+                            darkModeIcon.className = 'fas fa-moon';
+                        }
+                    }
+                    
+                    // Add transition effect
+                    html.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+                    setTimeout(() => {
+                        html.style.transition = '';
+                    }, 300);
+                });
+            }
+        });
+        
+        // Smooth animations on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fadeInUp');
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all cards and action elements
+        document.addEventListener('DOMContentLoaded', function() {
+            const elementsToAnimate = document.querySelectorAll('.card, .action-card, .stat-card');
+            elementsToAnimate.forEach(el => {
+                observer.observe(el);
+            });
+        });
+        
+        // Add loading states to buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.btn:not(.dark-mode-toggle)')) {
+                e.target.classList.add('loading');
+                setTimeout(() => {
+                    e.target.classList.remove('loading');
+                }, 1000);
+            }
+        });
+    </script>
+    
+    <!-- Floating Feedback Button -->
+    <div class="feedback-floating-btn" id="feedbackBtn" onclick="openFeedbackModal()">
+        <i class="fas fa-comment-dots"></i>
+        <span class="feedback-tooltip">Send Feedback</span>
+    </div>
+    
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="feedbackModalLabel">
+                        <i class="fas fa-comment-dots me-2"></i>Send Feedback
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="feedbackForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="feedbackType" class="form-label fw-bold">Type *</label>
+                                <select class="form-select" id="feedbackType" name="type" required>
+                                    <option value="">Select feedback type</option>
+                                    <option value="suggestion">💡 Suggestion</option>
+                                    <option value="problem">🐛 Report Problem</option>
+                                    <option value="request_deals">🤝 Request Make Deals on App</option>
+                                    <option value="request_call">📞 Request Call from Customer Service</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="feedbackPriority" class="form-label fw-bold">Priority</label>
+                                <select class="form-select" id="feedbackPriority" name="priority">
+                                    <option value="low">🟢 Low</option>
+                                    <option value="medium" selected>🟡 Medium</option>
+                                    <option value="high">🟠 High</option>
+                                    <option value="urgent">🔴 Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="feedbackSubject" class="form-label fw-bold">Subject *</label>
+                            <input type="text" class="form-control" id="feedbackSubject" name="subject" 
+                                   placeholder="Brief description of your feedback" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="feedbackMessage" class="form-label fw-bold">Message *</label>
+                            <textarea class="form-control" id="feedbackMessage" name="message" rows="5" 
+                                      placeholder="Please provide detailed information about your feedback..." required></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Thank you for your feedback!</strong> Your input helps us improve the app, fix issues, and better serve your needs.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="submitFeedback()">
+                        <i class="fas fa-paper-plane me-1"></i>Send Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Feedback Styles -->
+    <style>
+        .feedback-floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+        
+        .feedback-floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 123, 255, 0.4);
+        }
+        
+        .feedback-floating-btn i {
+            color: white;
+            font-size: 24px;
+        }
+        
+        .feedback-tooltip {
+            position: absolute;
+            right: 70px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .feedback-tooltip::after {
+            content: '';
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: #333;
+        }
+        
+        .feedback-floating-btn:hover .feedback-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3); }
+            50% { box-shadow: 0 4px 20px rgba(0, 123, 255, 0.6); }
+            100% { box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3); }
+        }
+        
+        .feedback-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+        
+        .feedback-error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+    </style>
+    
+    <!-- Feedback JavaScript -->
+    <script>
+        function openFeedbackModal() {
+            const modal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+            modal.show();
+        }
+        
+        function submitFeedback() {
+            const form = document.getElementById('feedbackForm');
+            const formData = new FormData(form);
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.querySelector('#feedbackModal .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+            submitBtn.disabled = true;
+            
+            // Submit feedback
+            fetch('/feedback/submit', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Success feedback
+                    const floatingBtn = document.getElementById('feedbackBtn');
+                    floatingBtn.classList.add('feedback-success');
+                    floatingBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    
+                    // Show success message
+                    showFeedbackMessage('Thank you! Your feedback has been sent successfully.', 'success');
+                    
+                    // Reset form
+                    form.reset();
+                    form.classList.remove('was-validated');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+                    modal.hide();
+                    
+                    // Reset button after 3 seconds
+                    setTimeout(() => {
+                        floatingBtn.classList.remove('feedback-success');
+                        floatingBtn.innerHTML = '<i class="fas fa-comment-dots"></i><span class="feedback-tooltip">Send Feedback</span>';
+                    }, 3000);
+                } else {
+                    showFeedbackMessage(data.message || 'Error sending feedback. Please try again.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showFeedbackMessage('Error sending feedback. Please try again.', 'error');
+            })
+            .finally(() => {
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function showFeedbackMessage(message, type) {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Show toast
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Remove after hiding
+            toast.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toast);
+            });
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

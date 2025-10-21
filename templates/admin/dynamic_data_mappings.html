@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Data Storage Mappings - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-database me-2"></i>Data Storage Mappings</h2>
+                <a href="{{ url_for('admin.create_data_mapping') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create New Mapping
+                </a>
+            </div>
+
+            <!-- Mappings List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Data Flow Mappings</h5>
+                </div>
+                <div class="card-body">
+                    {% if mappings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Item Type</th>
+                                        <th>Chatbot</th>
+                                        <th>Storage Bank</th>
+                                        <th>Data Mapping</th>
+                                        <th>Validation Rules</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mapping in mappings %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ mapping.item_type.display_name }}</strong>
+                                            <br><small class="text-muted">{{ mapping.item_type.name }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ mapping.chatbot.name }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning">{{ mapping.bank.name }}</span>
+                                        </td>
+                                        <td>
+                                            {% if mapping.data_mapping %}
+                                                <span class="badge bg-info">{{ mapping.data_mapping|length }} fields</span>
+                                            {% else %}
+                                                <span class="text-muted">No mapping</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if mapping.validation_rules %}
+                                                <span class="badge bg-primary">{{ mapping.validation_rules|length }} rules</span>
+                                            {% else %}
+                                                <span class="text-muted">No rules</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if mapping.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ mapping.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" 
+                                                        class="btn btn-outline-info view-btn" 
+                                                        data-mapping-id="{{ mapping.id }}"
+                                                        title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a href="{{ url_for('admin.edit_data_mapping', mapping_id=mapping.id) }}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="Edit Mapping">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger delete-btn" 
+                                                        data-mapping-id="{{ mapping.id }}" 
+                                                        data-mapping-name="{{ mapping.item_type.display_name }} → {{ mapping.chatbot.name }}"
+                                                        title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No data mappings configured</h5>
+                            <p class="text-muted">Create mappings to connect chatbots with storage banks.</p>
+                            <a href="{{ url_for('admin.create_data_mapping') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Mapping
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Details Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mapping Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="mappingDetails">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the mapping <strong id="deleteMappingName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete Mapping</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let deleteMappingId = null;
+    
+    // Handle view button clicks
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const mappingId = this.dataset.mappingId;
+            loadMappingDetails(mappingId);
+        });
+    });
+    
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteMappingId = this.dataset.mappingId;
+            document.getElementById('deleteMappingName').textContent = this.dataset.mappingName;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (deleteMappingId) {
+            fetch(`/admin/dynamic/data-mappings/${deleteMappingId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the mapping.');
+            });
+        }
+    });
+    
+    function loadMappingDetails(mappingId) {
+        // This would typically fetch details from the server
+        // For now, we'll show a placeholder
+        document.getElementById('mappingDetails').innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                <p class="text-muted">Loading mapping details...</p>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('viewModal')).show();
+        
+        // Simulate loading (replace with actual API call)
+        setTimeout(() => {
+            document.getElementById('mappingDetails').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Item Type</h6>
+                        <p class="text-muted">Mapping ID: ${mappingId}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Configuration</h6>
+                        <p class="text-muted">Details would be loaded here</p>
+                    </div>
+                </div>
+            `;
+        }, 1000);
+    }
+});
+</script>
+{% endblock %}

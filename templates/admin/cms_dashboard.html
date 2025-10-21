@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Content Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-edit me-2"></i>Content Management System
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.cms_pages') }}" class="btn btn-primary">
+                        <i class="fas fa-file-alt me-2"></i>Manage Pages
+                    </a>
+                    <a href="{{ url_for('admin.cms_blocks') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-cube me-2"></i>Content Blocks
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CMS Stats -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-file-alt text-primary fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_pages }}</h3>
+                    <p class="card-text text-muted">Total Pages</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-eye text-success fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.published_pages }}</h3>
+                    <p class="card-text text-muted">Published</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-cube text-info fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_blocks }}</h3>
+                    <p class="card-text text-muted">Content Blocks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-bars text-warning fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_menus }}</h3>
+                    <p class="card-text text-muted">Menu Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-cog text-secondary fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_settings }}</h3>
+                    <p class="card-text text-muted">Settings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-envelope text-danger fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ stats.total_templates }}</h3>
+                    <p class="card-text text-muted">Email Templates</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.cms_create_page') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Create Page
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.cms_create_block') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-cube me-2"></i>Add Content Block
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.cms_navigation') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-bars me-2"></i>Manage Navigation
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.cms_settings') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-cog me-2"></i>Site Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <!-- Recent Pages -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Recent Pages</h5>
+                        <a href="{{ url_for('admin.cms_pages') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if recent_pages %}
+                        {% for page in recent_pages %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('admin.cms_view_page', page_id=page.id) }}" class="text-decoration-none">
+                                        {{ page.title }}
+                                    </a>
+                                </h6>
+                                <p class="text-muted small mb-1">{{ page.slug }}</p>
+                                <div class="d-flex gap-2">
+                                    {% if page.is_published %}
+                                        <span class="badge bg-success">Published</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% endif %}
+                                    {% if page.is_homepage %}
+                                        <span class="badge bg-primary">Homepage</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ page.updated_at.strftime('%m/%d/%Y') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No pages yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Content Blocks -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Recent Content Blocks</h5>
+                        <a href="{{ url_for('admin.cms_blocks') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if recent_blocks %}
+                        {% for block in recent_blocks %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ block.title or 'Untitled Block' }}</h6>
+                                <p class="text-muted small mb-1">{{ block.block_type|title }}</p>
+                                <div class="d-flex gap-2">
+                                    {% if block.is_published %}
+                                        <span class="badge bg-success">Published</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% endif %}
+                                    {% if block.page %}
+                                        <span class="badge bg-info">{{ block.page.title }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Global</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ block.updated_at.strftime('%m/%d/%Y') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No content blocks yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

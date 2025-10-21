@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ flow.name }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit {{ flow.name }}
+                </h1>
+                <a href="{{ url_for('admin.view_chatbot', flow_id=flow.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Flow
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Edit Chatbot Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="chatbotForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="flowName" class="form-label">Chatbot Name *</label>
+                                <input type="text" class="form-control" id="flowName" name="name" 
+                                       value="{{ flow.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="flowDescription" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="flowDescription" name="description"
+                                       value="{{ flow.description or '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Questions Section -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Questions</h5>
+                                <button type="button" class="btn btn-primary btn-sm" id="addQuestion">
+                                    <i class="fas fa-plus me-2"></i>Add Question
+                                </button>
+                            </div>
+                            
+                            <div id="questionsContainer">
+                                <!-- Questions will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.view_chatbot', flow_id=flow.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Chatbot
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Question Template -->
+<template id="questionTemplate">
+    <div class="question-item card mb-3" data-question-index="">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Question <span class="question-number">1</span></h6>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary move-up" title="Move Up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary move-down" title="Move Down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger remove-question" title="Remove">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <label class="form-label">Question Text *</label>
+                    <input type="text" class="form-control question-text" name="question_text" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Question Type *</label>
+                    <select class="form-select question-type" name="question_type" required>
+                        <option value="text">Text Input</option>
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="select">Dropdown</option>
+                        <option value="radio">Radio Buttons</option>
+                        <option value="checkbox">Checkboxes</option>
+                        <option value="file">File Upload</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Placeholder</label>
+                    <input type="text" class="form-control" name="placeholder">
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="is_required" checked>
+                        <label class="form-check-label">Required</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <label class="form-label">Help Text</label>
+                <textarea class="form-control" name="help_text" rows="2"></textarea>
+            </div>
+            
+            <!-- Options for select/radio/checkbox -->
+            <div class="options-section mt-3" style="display: none;">
+                <label class="form-label">Options (one per line)</label>
+                <textarea class="form-control options-textarea" name="options" rows="3" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+            </div>
+            
+            <!-- Validation Rules -->
+            <div class="validation-section mt-3">
+                <label class="form-label">Validation Rules</label>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Min Length</label>
+                        <input type="number" class="form-control" name="min_length" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Max Length</label>
+                        <input type="number" class="form-control" name="max_length" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Pattern (Regex)</label>
+                        <input type="text" class="form-control" name="pattern" placeholder="^[a-zA-Z0-9]+$">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let questionIndex = 0;
+    const questionsContainer = document.getElementById('questionsContainer');
+    const questionTemplate = document.getElementById('questionTemplate');
+    
+    // Load existing questions
+    loadExistingQuestions();
+    
+    // Add question button
+    document.getElementById('addQuestion').addEventListener('click', addQuestion);
+    
+    // Form submission
+    document.getElementById('chatbotForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm();
+    });
+    
+    function loadExistingQuestions() {
+        const questions = {{ flow.questions|tojson }};
+        
+        if (questions.length === 0) {
+            addQuestion();
+        } else {
+            questions.forEach(question => {
+                addQuestion(question);
+            });
+        }
+    }
+    
+    function addQuestion(questionData = null) {
+        questionIndex++;
+        const questionElement = questionTemplate.content.cloneNode(true);
+        const questionDiv = questionElement.querySelector('.question-item');
+        questionDiv.dataset.questionIndex = questionIndex;
+        questionDiv.querySelector('.question-number').textContent = questionIndex;
+        
+        // Populate with existing data if provided
+        if (questionData) {
+            questionDiv.querySelector('.question-text').value = questionData.question_text || '';
+            questionDiv.querySelector('.question-type').value = questionData.question_type || 'text';
+            questionDiv.querySelector('input[name="placeholder"]').value = questionData.placeholder || '';
+            questionDiv.querySelector('input[name="is_required"]').checked = questionData.is_required !== false;
+            questionDiv.querySelector('textarea[name="help_text"]').value = questionData.help_text || '';
+            
+            // Set options
+            if (questionData.options && Array.isArray(questionData.options)) {
+                questionDiv.querySelector('.options-textarea').value = questionData.options.join('\n');
+            }
+            
+            // Set validation rules
+            if (questionData.validation_rules) {
+                questionDiv.querySelector('input[name="min_length"]').value = questionData.validation_rules.min_length || '';
+                questionDiv.querySelector('input[name="max_length"]').value = questionData.validation_rules.max_length || '';
+                questionDiv.querySelector('input[name="pattern"]').value = questionData.validation_rules.pattern || '';
+            }
+        }
+        
+        // Add event listeners
+        addQuestionEventListeners(questionDiv);
+        
+        questionsContainer.appendChild(questionElement);
+        updateQuestionNumbers();
+        
+        // Show/hide options section based on question type
+        const questionType = questionDiv.querySelector('.question-type').value;
+        const optionsSection = questionDiv.querySelector('.options-section');
+        if (['select', 'radio', 'checkbox'].includes(questionType)) {
+            optionsSection.style.display = 'block';
+        }
+    }
+    
+    function addQuestionEventListeners(questionDiv) {
+        // Question type change
+        questionDiv.querySelector('.question-type').addEventListener('change', function() {
+            const optionsSection = questionDiv.querySelector('.options-section');
+            const type = this.value;
+            
+            if (['select', 'radio', 'checkbox'].includes(type)) {
+                optionsSection.style.display = 'block';
+            } else {
+                optionsSection.style.display = 'none';
+            }
+        });
+        
+        // Remove question
+        questionDiv.querySelector('.remove-question').addEventListener('click', function() {
+            questionDiv.remove();
+            updateQuestionNumbers();
+        });
+        
+        // Move up
+        questionDiv.querySelector('.move-up').addEventListener('click', function() {
+            const prev = questionDiv.previousElementSibling;
+            if (prev) {
+                questionDiv.parentNode.insertBefore(questionDiv, prev);
+                updateQuestionNumbers();
+            }
+        });
+        
+        // Move down
+        questionDiv.querySelector('.move-down').addEventListener('click', function() {
+            const next = questionDiv.nextElementSibling;
+            if (next) {
+                questionDiv.parentNode.insertBefore(next, questionDiv);
+                updateQuestionNumbers();
+            }
+        });
+    }
+    
+    function updateQuestionNumbers() {
+        const questions = questionsContainer.querySelectorAll('.question-item');
+        questions.forEach((question, index) => {
+            question.querySelector('.question-number').textContent = index + 1;
+        });
+    }
+    
+    function submitForm() {
+        const formData = new FormData(document.getElementById('chatbotForm'));
+        const questions = [];
+        
+        // Collect questions data
+        const questionElements = questionsContainer.querySelectorAll('.question-item');
+        questionElements.forEach((questionElement, index) => {
+            const questionData = {
+                question_text: questionElement.querySelector('.question-text').value,
+                question_type: questionElement.querySelector('.question-type').value,
+                placeholder: questionElement.querySelector('input[name="placeholder"]').value,
+                is_required: questionElement.querySelector('input[name="is_required"]').checked,
+                help_text: questionElement.querySelector('textarea[name="help_text"]').value,
+                validation_rules: {
+                    min_length: questionElement.querySelector('input[name="min_length"]').value || null,
+                    max_length: questionElement.querySelector('input[name="max_length"]').value || null,
+                    pattern: questionElement.querySelector('input[name="pattern"]').value || null
+                }
+            };
+            
+            // Add options if applicable
+            const optionsText = questionElement.querySelector('.options-textarea').value;
+            if (optionsText && ['select', 'radio', 'checkbox'].includes(questionData.question_type)) {
+                questionData.options = optionsText.split('\n').filter(opt => opt.trim());
+            }
+            
+            questions.push(questionData);
+        });
+        
+        const data = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            questions: questions,
+            flow_config: {}
+        };
+        
+        // Submit to server
+        fetch('/admin/chatbots/{{ flow.id }}/edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/admin/chatbots/{{ flow.id }}';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the chatbot.');
+        });
+    }
+});
+</script>
+{% endblock %}
+
+
+
+

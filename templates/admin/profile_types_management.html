@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Profile Types - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-tag me-2"></i>Profile Type Management</h2>
+                <a href="{{ url_for('admin.create_profile_type') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create New Profile Type
+                </a>
+            </div>
+
+            <!-- Profile Types List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Configured Profile Types</h5>
+                </div>
+                <div class="card-body">
+                    {% if profile_types %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Name</th>
+                                        <th>Display Name</th>
+                                        <th>Icon & Color</th>
+                                        <th>Verification</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for profile_type in profile_types %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ profile_type.order_index }}</span>
+                                        </td>
+                                        <td>
+                                            <code>{{ profile_type.name }}</code>
+                                        </td>
+                                        <td>
+                                            <strong>{{ profile_type.display_name }}</strong>
+                                            {% if profile_type.description %}
+                                                <br><small class="text-muted">{{ profile_type.description[:50] }}{% if profile_type.description|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <i class="{{ profile_type.icon_class }} text-{{ profile_type.color_class }} me-2"></i>
+                                            <span class="badge bg-{{ profile_type.color_class }}">{{ profile_type.color_class }}</span>
+                                        </td>
+                                        <td>
+                                            {% if profile_type.requires_verification %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-shield-alt me-1"></i>Required
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Not Required
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if profile_type.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ url_for('admin.edit_profile_type', profile_type_id=profile_type.id) }}" 
+                                                   class="btn btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form method="POST" action="{{ url_for('admin.delete_profile_type', profile_type_id=profile_type.id) }}" 
+                                                      class="d-inline" onsubmit="return confirm('Are you sure you want to delete this profile type?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No profile types found. <a href="{{ url_for('admin.create_profile_type') }}">Create the first one</a>.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Total Types</h5>
+                                    <h2 class="mb-0">{{ profile_types|length }}</h2>
+                                </div>
+                                <div class="ms-3">
+                                    <i class="fas fa-user-tag fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Active Types</h5>
+                                    <h2 class="mb-0">{{ profile_types|selectattr('is_active')|list|length }}</h2>
+                                </div>
+                                <div class="ms-3">
+                                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Need Verification</h5>
+                                    <h2 class="mb-0">{{ profile_types|selectattr('requires_verification')|list|length }}</h2>
+                                </div>
+                                <div class="ms-3">
+                                    <i class="fas fa-shield-alt fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Total Profiles</h5>
+                                    <h2 class="mb-0">
+                                        {% set total_profiles = 0 %}
+                                        {% for pt in profile_types %}
+                                            {% set total_profiles = total_profiles + pt.profiles|length %}
+                                        {% endfor %}
+                                        {{ total_profiles }}
+                                    </h2>
+                                </div>
+                                <div class="ms-3">
+                                    <i class="fas fa-users fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('admin.profiles_management') }}" class="btn btn-primary">
+                                            <i class="fas fa-users me-2"></i>View All Profiles
+                                        </a>
+                                        <a href="{{ url_for('admin.create_profile_type') }}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Add New Profile Type
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Back to Admin Dashboard
+                                        </a>
+                                        <a href="{{ url_for('admin.organization_types_management') }}" class="btn btn-outline-info">
+                                            <i class="fas fa-building me-2"></i>Manage Organization Types
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

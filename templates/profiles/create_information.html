@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Create Information{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Share Information</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- 1. Category & Classification -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">1. Category & Classification</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="information">Information</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="information_type" required>
+                                        <option value="">Select Information Type</option>
+                                        <option value="market">Market Research</option>
+                                        <option value="technical">Technical Knowledge</option>
+                                        <option value="business">Business Intelligence</option>
+                                        <option value="industry">Industry Insights</option>
+                                        <option value="tutorial">Tutorial/Guide</option>
+                                        <option value="news">News/Updates</option>
+                                        <option value="analysis">Analysis/Report</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tags & Keywords</label>
+                                    <input type="text" class="form-control" name="tags" placeholder="Separate with commas">
+                                    <div class="form-text">e.g. research, data, insights, guide</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Ownership & Creator -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">2. Ownership & Creator</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Creator <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="creator" required placeholder="Creator name">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Owner <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="owner_name" required placeholder="Owner name">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Ownership Type</label>
+                                    <select class="form-select" name="owner_type">
+                                        <option value="individual">Individual</option>
+                                        <option value="organization">Organization</option>
+                                        <option value="shared">Shared</option>
+                                        <option value="research_team">Research Team</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Creator Link/Profile</label>
+                                    <input type="url" class="form-control" name="creator_link" placeholder="https://...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Owner Link/Profile</label>
+                                    <input type="url" class="form-control" name="owner_link" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">3. Basic Information</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Title / Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Short Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="short_description" rows="3" maxlength="200" required placeholder="Brief description (max 200 characters)"></textarea>
+                                <div class="form-text"><span id="char-count">0</span>/200 characters</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Detailed Description</label>
+                                <textarea class="form-control" name="detailed_description" rows="5" placeholder="Detailed information content"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Key Points / Summary</label>
+                                <textarea class="form-control" name="key_features" rows="4" placeholder="• Key point 1&#10;• Key point 2&#10;• Important insight"></textarea>
+                                <div class="form-text">Use bullet points (•) for each key point</div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Condition & Status -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">4. Condition & Status</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Reliability Score <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="reliability_score" required>
+                                        <option value="">Select Reliability</option>
+                                        <option value="10">10 - Highly Reliable</option>
+                                        <option value="9">9 - Very Reliable</option>
+                                        <option value="8">8 - Reliable</option>
+                                        <option value="7">7 - Mostly Reliable</option>
+                                        <option value="6">6 - Moderately Reliable</option>
+                                        <option value="5">5 - Average</option>
+                                        <option value="4">4 - Below Average</option>
+                                        <option value="3">3 - Questionable</option>
+                                        <option value="2">2 - Low Reliability</option>
+                                        <option value="1">1 - Very Low Reliability</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Value & Availability -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">5. Value & Availability</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Source</label>
+                                    <input type="text" class="form-control" name="source" placeholder="Original source of information">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" name="last_updated">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Pricing Model</label>
+                                    <select class="form-select" name="pricing_type">
+                                        <option value="free">Free</option>
+                                        <option value="paid">Premium Content</option>
+                                        <option value="subscription">Subscription</option>
+                                        <option value="consultation">Consultation Available</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Logistics & Delivery -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">6. Logistics & Delivery</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Delivery Method</label>
+                                    <select class="form-select" name="delivery_method">
+                                        <option value="digital">Digital Document</option>
+                                        <option value="presentation">Presentation</option>
+                                        <option value="consultation">Consultation</option>
+                                        <option value="workshop">Workshop</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="location" placeholder="City, Country or Online">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Availability Region</label>
+                                    <select class="form-select" name="availability_region">
+                                        <option value="local">Local</option>
+                                        <option value="national">National</option>
+                                        <option value="international">International</option>
+                                        <option value="global">Global</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Media & Proof -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">7. Media & Proof</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Images</label>
+                                    <input type="file" class="form-control mb-2" name="images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links (separate with commas)">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Videos</label>
+                                    <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="Or paste video links (YouTube, Vimeo, etc.)">
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Documents / Files</label>
+                                    <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Or paste document links">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Links / References</label>
+                                    <textarea class="form-control" name="reference_links" rows="3" placeholder="Source: https://...&#10;Research: https://...&#10;Related: https://..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Management -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-dark">8. Management</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Expiration Date</label>
+                                    <input type="date" class="form-control" name="expiration_date">
+                                    <div class="form-text">Leave empty if information doesn't expire</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Visibility</label>
+                                    <select class="form-select" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="restricted">Restricted</option>
+                                        <option value="members_only">Members-only</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-dark me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-dark">
+                                    <i class="fas fa-check me-2"></i>Share Information
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter for short description
+document.querySelector('[name="short_description"]').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length;
+});
+</script>
+{% endblock %}

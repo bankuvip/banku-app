@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}I Need - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-hand-holding-heart me-2"></i>I Need Something
+                    </h4>
+                    <p class="text-muted mb-0">Describe what you need and find the right provider</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Step 1: Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info me-2"></i>Step 1: What Do You Need?
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required>
+                                    <div class="invalid-feedback">Please provide a title.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select category...</option>
+                                        <option value="products">Products</option>
+                                        <option value="services">Services</option>
+                                        <option value="experiences">Experiences</option>
+                                        <option value="opportunities">Opportunities</option>
+                                        <option value="events">Events</option>
+                                        <option value="informations">Information</option>
+                                        <option value="observations">Observations</option>
+                                        <option value="hidden_gems">Hidden Gems</option>
+                                        <option value="funders">Funders</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a category.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="short_description" class="form-label">Short Description *</label>
+                                    <textarea class="form-control" id="short_description" name="short_description" rows="2" maxlength="500" required></textarea>
+                                    <div class="form-text">Brief description of what you need (max 500 characters)</div>
+                                    <div class="invalid-feedback">Please provide a short description.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" placeholder="e.g., New York, NY or Remote">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="detailed_description" class="form-label">Detailed Description *</label>
+                                <textarea class="form-control" id="detailed_description" name="detailed_description" rows="4" required></textarea>
+                                <div class="invalid-feedback">Please provide a detailed description.</div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Need Specifics -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Step 2: Need Specifics
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="urgency_level" class="form-label">Urgency Level *</label>
+                                    <select class="form-select" id="urgency_level" name="urgency_level" required>
+                                        <option value="">Select urgency...</option>
+                                        <option value="low">Low - Flexible timeline</option>
+                                        <option value="medium">Medium - Within a few weeks</option>
+                                        <option value="high">High - Within a week</option>
+                                        <option value="urgent">Urgent - ASAP</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select urgency level.</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="budget_min" class="form-label">Minimum Budget</label>
+                                    <input type="number" class="form-control" id="budget_min" name="budget_min" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="budget_max" class="form-label">Maximum Budget</label>
+                                    <input type="number" class="form-control" id="budget_max" name="budget_max" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="currency" class="form-label">Currency</label>
+                                    <select class="form-select" id="currency" name="currency">
+                                        <option value="USD">USD</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                        <option value="CAD">CAD</option>
+                                        <option value="AUD">AUD</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="deadline" class="form-label">Deadline</label>
+                                    <input type="date" class="form-control" id="deadline" name="deadline">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="contact_preference" class="form-label">Contact Preference</label>
+                                    <select class="form-select" id="contact_preference" name="contact_preference">
+                                        <option value="email">Email</option>
+                                        <option value="phone">Phone</option>
+                                        <option value="message">Platform Message</option>
+                                        <option value="any">Any method</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Requirements -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-list-check me-2"></i>Step 3: Requirements & Specifications
+                            </h5>
+                            <div class="mb-3">
+                                <label for="requirements" class="form-label">Detailed Requirements</label>
+                                <textarea class="form-control" id="requirements" name="requirements" rows="3" placeholder="Be as specific as possible about what you need..."></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="must_have" class="form-label">Must Have</label>
+                                    <textarea class="form-control" id="must_have" name="must_have" rows="2" placeholder="Features or qualities that are absolutely required..."></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="nice_to_have" class="form-label">Nice to Have</label>
+                                    <textarea class="form-control" id="nice_to_have" name="nice_to_have" rows="2" placeholder="Features or qualities that would be beneficial but not essential..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="deal_breakers" class="form-label">Deal Breakers</label>
+                                <textarea class="form-control" id="deal_breakers" name="deal_breakers" rows="2" placeholder="Things that would disqualify a provider or solution..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Additional Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-tags me-2"></i>Step 4: Additional Information
+                            </h5>
+                            <div class="mb-3">
+                                <label for="tags" class="form-label">Tags / Keywords (comma-separated)</label>
+                                <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g., web development, urgent, remote work">
+                                <div class="form-text">Separate multiple tags with commas</div>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                                <label class="form-check-label" for="is_public">
+                                    Make this need public (others can see and respond)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            {% if profile.slug %}
+                                <a href="{{ url_for('profiles.detail_by_slug', slug=profile.slug) }}" class="btn btn-outline-secondary">
+                            {% else %}
+                                <a href="{{ url_for('profiles.detail_by_id', profile_id=profile.id) }}" class="btn btn-outline-secondary">
+                            {% endif %}
+                                <i class="fas fa-arrow-left me-1"></i>Back to Profile
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-hand-holding-heart me-1"></i>Post My Need
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.getElementsByClassName('needs-validation');
+    const validation = Array.prototype.filter.call(forms, function(form) {
+        form.addEventListener('submit', function(event) {
+            if (form.checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

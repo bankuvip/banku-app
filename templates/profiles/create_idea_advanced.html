@@ -1,0 +1,1561 @@
+{% extends "base.html" %}
+
+{% block title %}Create Idea - Advanced{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Create Idea - Advanced</h4>
+                <a href="{{ url_for('profiles.create_idea') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Simple Form
+                </a>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">Progress</span>
+                        <span id="progress-text" class="text-muted">Step 1 of 15</span>
+                    </div>
+                    <div class="progress">
+                        <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 6.67%" aria-valuenow="1" aria-valuemin="0" aria-valuemax="15"></div>
+                    </div>
+                    <div class="row mt-2 text-center small">
+                        <div class="col">Category</div>
+                        <div class="col">Creator</div>
+                        <div class="col">Basic Info</div>
+                        <div class="col">Stage</div>
+                        <div class="col">Audience</div>
+                        <div class="col">Media</div>
+                        <div class="col">Business</div>
+                        <div class="col">Impact</div>
+                        <div class="col">Support</div>
+                        <div class="col">IP</div>
+                        <div class="col">Risks</div>
+                        <div class="col">Market</div>
+                        <div class="col">Team</div>
+                        <div class="col">Languages</div>
+                        <div class="col">Meta</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-body">
+                    <form id="advanced-form" method="POST" action="{{ url_for('profiles.create_idea_form', path_type='advanced') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Debug info -->
+                        <input type="hidden" name="debug" value="1">
+                        
+                        <!-- Step 1: Category & Classification -->
+                        <div class="step-content" id="step-1">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-tags fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 1 — Category & Classification</h4>
+                                <p class="text-muted">Categorize your innovative idea</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Sector <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="sector" id="sector" required>
+                                            <option value="">Select sector...</option>
+                                            <option value="technology">Technology</option>
+                                            <option value="healthcare">Healthcare</option>
+                                            <option value="education">Education</option>
+                                            <option value="finance">Finance</option>
+                                            <option value="energy">Energy</option>
+                                            <option value="environment">Environment</option>
+                                            <option value="lifestyle">Lifestyle</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Sub-sector (optional)</label>
+                                        <input type="text" class="form-control" name="sub_sector" placeholder="e.g., AI/ML, Fintech, EdTech...">
+                                        <div class="form-text">More specific area within the sector</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Tags</label>
+                                        <div id="tags-list">
+                                            <div class="tag-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="tags[]" placeholder="Add a tag">
+                                                    <button type="button" class="btn btn-outline-danger remove-tag" onclick="removeTag(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-tag" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another tag
+                                        </button>
+                                        <div class="form-text">Keywords that describe your idea</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Creator & Ownership -->
+                        <div class="step-content" id="step-2" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-user-tie fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 2 — Creator & Ownership</h4>
+                                <p class="text-muted">Who created this idea and who owns it?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <h6>Creator Information</h6>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Creator Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required placeholder="Your name, team, organization, company, or 'Unknown'">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Creator Type</label>
+                                        <select class="form-select" name="creator_type">
+                                            <option value="">Select type...</option>
+                                            <option value="individual">Individual</option>
+                                            <option value="team">Team</option>
+                                            <option value="startup">Startup</option>
+                                            <option value="company">Company</option>
+                                            <option value="organization">Organization</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Creator Link (optional)</label>
+                                        <input type="url" class="form-control" name="creator_link" placeholder="Website, LinkedIn, etc.">
+                                    </div>
+
+                                    <hr class="my-4">
+                                    <h6>Ownership Information</h6>
+
+                                    <div class="mb-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="owner_is_creator" id="owner-is-creator">
+                                            <label class="form-check-label fs-5" for="owner-is-creator">
+                                                Owner is the creator
+                                            </label>
+                                            <div class="form-text">Check this if the owner and creator are the same</div>
+                                        </div>
+                                    </div>
+
+                                    <div id="different-owner-details" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner Name</label>
+                                            <input type="text" class="form-control" name="owner_name" placeholder="Owner's name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner Type</label>
+                                            <select class="form-select" name="owner_type">
+                                                <option value="">Select type...</option>
+                                                <option value="individual">Individual</option>
+                                                <option value="company">Company</option>
+                                                <option value="organization">Organization</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Owner Link (optional)</label>
+                                            <input type="url" class="form-control" name="owner_link" placeholder="Website, LinkedIn, etc.">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Ownership Type</label>
+                                            <select class="form-select" name="ownership_type" id="ownership-type">
+                                                <option value="">Select ownership type...</option>
+                                                <option value="sole">Sole</option>
+                                                <option value="partner">Partner</option>
+                                                <option value="llc">LLC</option>
+                                                <option value="corporation">Corporation</option>
+                                            </select>
+                                        </div>
+
+                                        <div id="partner-details-section" style="display: none;">
+                                            <label class="form-label">Partner Details</label>
+                                            <div id="partners-list">
+                                                <div class="partner-entry mb-2">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <input type="text" class="form-control" name="partner_names[]" placeholder="Partner name">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <input type="url" class="form-control" name="partner_links[]" placeholder="Partner link (optional)">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" id="add-partner" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Add another partner
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Basic Information -->
+                        <div class="step-content" id="step-3" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 3 — Basic Information</h4>
+                                <p class="text-muted">Core details about your idea</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Idea Title <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required placeholder="Give your idea a compelling title">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Short Description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" required placeholder="Brief overview of your idea (1-2 sentences)"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Detailed Description</label>
+                                        <textarea class="form-control" name="detailed_description" rows="5" placeholder="Comprehensive description of your idea"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Problem Statement <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="problem_statement" rows="4" required placeholder="What problem does your idea solve?"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Proposed Solution <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="proposed_solution" rows="4" required placeholder="How does your idea solve the problem?"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Value Proposition</label>
+                                        <input type="text" class="form-control" name="value_proposition" placeholder="What unique value does your idea provide?">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Unique Selling Points / Highlights</label>
+                                        <div id="highlights-list">
+                                            <div class="highlight-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="highlights[]" placeholder="Add a unique selling point">
+                                                    <button type="button" class="btn btn-outline-danger remove-highlight" onclick="removeHighlight(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-highlight" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another highlight
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Development Stage -->
+                        <div class="step-content" id="step-4" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-rocket fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 4 — Development Stage</h4>
+                                <p class="text-muted">Current stage and progress of your idea</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Development Stage</label>
+                                        <select class="form-select form-select-lg" name="development_stage">
+                                            <option value="">Select stage...</option>
+                                            <option value="concept">Concept</option>
+                                            <option value="prototype">Prototype</option>
+                                            <option value="pilot">Pilot</option>
+                                            <option value="launched">Launched</option>
+                                            <option value="scaling">Scaling</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Timeline</label>
+                                        <input type="text" class="form-control" name="timeline" placeholder="e.g., 6 months to prototype, Q1 2025 launch">
+                                        <div class="form-text">Expected timeline or date range</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Progress Updates</label>
+                                        <div id="progress-updates-list">
+                                            <div class="progress-update-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="progress_updates[]" placeholder="Add a progress update">
+                                                    <button type="button" class="btn btn-outline-danger remove-progress-update" onclick="removeProgressUpdate(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-progress-update" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another update
+                                        </button>
+                                        <div class="form-text">Key milestones and achievements</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Target Audience -->
+                        <div class="step-content" id="step-5" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 5 — Target Audience</h4>
+                                <p class="text-muted">Who will benefit from your idea?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Audience Type</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="b2b" id="audience-b2b">
+                                                    <label class="form-check-label" for="audience-b2b">B2B (Business to Business)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="b2c" id="audience-b2c">
+                                                    <label class="form-check-label" for="audience-b2c">B2C (Business to Consumer)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="government" id="audience-government">
+                                                    <label class="form-check-label" for="audience-government">Government</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="ngos" id="audience-ngos">
+                                                    <label class="form-check-label" for="audience-ngos">NGOs</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="community" id="audience-community">
+                                                    <label class="form-check-label" for="audience-community">Community</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="audience_types" value="general" id="audience-general">
+                                                    <label class="form-check-label" for="audience-general">General Public</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Use Cases</label>
+                                        <div id="use-cases-list">
+                                            <div class="use-case-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="use_cases[]" placeholder="Describe a use case">
+                                                    <button type="button" class="btn btn-outline-danger remove-use-case" onclick="removeUseCase(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-use-case" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another use case
+                                        </button>
+                                        <div class="form-text">How will different audiences use your idea?</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Geographic Focus</label>
+                                        <select class="form-select" name="geographic_focus">
+                                            <option value="">Select focus...</option>
+                                            <option value="local">Local</option>
+                                            <option value="national">National</option>
+                                            <option value="global">Global</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 6: Media -->
+                        <div class="step-content" id="step-6" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-images fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 6 — Media</h4>
+                                <p class="text-muted">Visual and supporting materials for your idea</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Select media types to include:</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="images" id="media-images">
+                                                    <label class="form-check-label" for="media-images">Images</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="videos" id="media-videos">
+                                                    <label class="form-check-label" for="media-videos">Videos</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="documents" id="media-documents">
+                                                    <label class="form-check-label" for="media-documents">Documents</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="proofs" id="media-proofs">
+                                                    <label class="form-check-label" for="media-proofs">Proofs</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="media_types" value="external_links" id="media-external-links">
+                                                    <label class="form-check-label" for="media-external-links">External Links</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Images Section -->
+                                    <div class="media-section mb-4" id="images-section" style="display: none;">
+                                        <h5><i class="fas fa-image me-2"></i>Images</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload images</label>
+                                                    <input type="file" class="form-control" name="images" multiple accept="image/*">
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Image URLs</label>
+                                                    <input type="url" class="form-control" name="image_urls" placeholder="Paste image URLs (separate multiple with commas)">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Videos Section -->
+                                    <div class="media-section mb-4" id="videos-section" style="display: none;">
+                                        <h5><i class="fas fa-video me-2"></i>Videos</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload video (future feature)</label>
+                                                    <input type="file" class="form-control" name="videos" multiple accept="video/*" disabled>
+                                                    <div class="form-text">Video upload coming soon</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Video URLs</label>
+                                                    <input type="url" class="form-control" name="video_urls" placeholder="YouTube, Vimeo, or other video links">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Documents Section -->
+                                    <div class="media-section mb-4" id="documents-section" style="display: none;">
+                                        <h5><i class="fas fa-file-alt me-2"></i>Documents</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload documents</label>
+                                                    <input type="file" class="form-control" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                                    <div class="form-text">Pitch deck, proposal, business plan, etc.</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Document URLs</label>
+                                                    <input type="url" class="form-control" name="document_urls" placeholder="Links to documents">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Proofs Section -->
+                                    <div class="media-section mb-4" id="proofs-section" style="display: none;">
+                                        <h5><i class="fas fa-certificate me-2"></i>Proofs</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload proofs</label>
+                                                    <input type="file" class="form-control" name="proofs" multiple accept=".pdf,.jpg,.jpeg,.png">
+                                                    <div class="form-text">Certificates, approvals, patents, etc.</div>
+                                                </div>
+                                                <div class="text-center my-2 text-muted">OR</div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Proof URLs</label>
+                                                    <input type="url" class="form-control" name="proof_urls" placeholder="Links to certificates, approvals, etc.">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- External Links Section -->
+                                    <div class="media-section mb-4" id="external-links-section" style="display: none;">
+                                        <h5><i class="fas fa-external-link-alt me-2"></i>External Links</h5>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div id="external-links-list">
+                                                    <div class="external-link-entry mb-2">
+                                                        <div class="input-group">
+                                                            <input type="url" class="form-control" name="external_links[]" placeholder="Demo, landing page, reference">
+                                                            <button type="button" class="btn btn-outline-danger remove-link" onclick="removeExternalLink(this)" style="display: none;">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="add-external-link" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-plus me-1"></i>Add another link
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 7: Business Model -->
+                        <div class="step-content" id="step-7" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 7 — Business Model</h4>
+                                <p class="text-muted">How will your idea create value?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Business Model Type</label>
+                                        <select class="form-select form-select-lg" name="business_model_type">
+                                            <option value="">Select model type...</option>
+                                            <option value="nonprofit">Nonprofit</option>
+                                            <option value="freemium">Freemium</option>
+                                            <option value="subscription">Subscription</option>
+                                            <option value="licensing">Licensing</option>
+                                            <option value="marketplace">Marketplace</option>
+                                            <option value="transaction_based">Transaction-based</option>
+                                            <option value="hybrid">Hybrid</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Revenue Streams</label>
+                                        <div id="revenue-streams-list">
+                                            <div class="revenue-stream-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="revenue_streams[]" placeholder="Describe a revenue stream">
+                                                    <button type="button" class="btn btn-outline-danger remove-revenue-stream" onclick="removeRevenueStream(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-revenue-stream" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another revenue stream
+                                        </button>
+                                        <div class="form-text">How will you generate income?</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Cost Structure</label>
+                                        <textarea class="form-control" name="cost_structure" rows="4" placeholder="Describe your main costs and expenses"></textarea>
+                                        <div class="form-text">Key resources, activities, and partnerships costs</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 8: Impact -->
+                        <div class="step-content" id="step-8" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-globe fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 8 — Impact</h4>
+                                <p class="text-muted">What impact will your idea have?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Impact Area</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="impact_areas" value="social" id="impact-social">
+                                                    <label class="form-check-label" for="impact-social">Social</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="impact_areas" value="economic" id="impact-economic">
+                                                    <label class="form-check-label" for="impact-economic">Economic</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="impact_areas" value="environmental" id="impact-environmental">
+                                                    <label class="form-check-label" for="impact-environmental">Environmental</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="impact_areas" value="cultural" id="impact-cultural">
+                                                    <label class="form-check-label" for="impact-cultural">Cultural</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="impact_areas" value="technological" id="impact-technological">
+                                                    <label class="form-check-label" for="impact-technological">Technological</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Metrics of Impact</label>
+                                        <div id="impact-metrics-list">
+                                            <div class="impact-metric-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="impact_metrics[]" placeholder="How will you measure impact?">
+                                                    <button type="button" class="btn btn-outline-danger remove-impact-metric" onclick="removeImpactMetric(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-impact-metric" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another metric
+                                        </button>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">UN SDG Alignment</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg1" id="sdg1"><label class="form-check-label" for="sdg1">SDG 1: No Poverty</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg2" id="sdg2"><label class="form-check-label" for="sdg2">SDG 2: Zero Hunger</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg3" id="sdg3"><label class="form-check-label" for="sdg3">SDG 3: Good Health</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg4" id="sdg4"><label class="form-check-label" for="sdg4">SDG 4: Quality Education</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg5" id="sdg5"><label class="form-check-label" for="sdg5">SDG 5: Gender Equality</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg6" id="sdg6"><label class="form-check-label" for="sdg6">SDG 6: Clean Water</label></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg7" id="sdg7"><label class="form-check-label" for="sdg7">SDG 7: Affordable Energy</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg8" id="sdg8"><label class="form-check-label" for="sdg8">SDG 8: Decent Work</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg9" id="sdg9"><label class="form-check-label" for="sdg9">SDG 9: Innovation</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg10" id="sdg10"><label class="form-check-label" for="sdg10">SDG 10: Reduced Inequalities</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg11" id="sdg11"><label class="form-check-label" for="sdg11">SDG 11: Sustainable Cities</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg12" id="sdg12"><label class="form-check-label" for="sdg12">SDG 12: Responsible Consumption</label></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg13" id="sdg13"><label class="form-check-label" for="sdg13">SDG 13: Climate Action</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg14" id="sdg14"><label class="form-check-label" for="sdg14">SDG 14: Life Below Water</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg15" id="sdg15"><label class="form-check-label" for="sdg15">SDG 15: Life on Land</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg16" id="sdg16"><label class="form-check-label" for="sdg16">SDG 16: Peace & Justice</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="sdg_alignment" value="sdg17" id="sdg17"><label class="form-check-label" for="sdg17">SDG 17: Partnerships</label></div>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Select UN Sustainable Development Goals your idea supports</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 9: Support Needed -->
+                        <div class="step-content" id="step-9" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-hands-helping fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 9 — Support Needed</h4>
+                                <p class="text-muted">What support do you need to realize your idea?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <h6>Funding</h6>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label">Funding Needed?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="funding_needed" id="funding-yes" value="yes">
+                                                    <label class="form-check-label" for="funding-yes">Yes</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="funding_needed" id="funding-no" value="no">
+                                                    <label class="form-check-label" for="funding-no">No</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="funding-details" style="display: none;">
+                                        <div class="mb-4">
+                                            <label class="form-label">Funding Amount</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="funding_amount" placeholder="0" min="0">
+                                                <select class="form-select" name="funding_currency" style="max-width: 120px;">
+                                                    <option value="USD">USD</option>
+                                                    <option value="EUR">EUR</option>
+                                                    <option value="GBP">GBP</option>
+                                                    <option value="JPY">JPY</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <label class="form-label">Funding Type</label>
+                                            <select class="form-select" name="funding_type">
+                                                <option value="">Select funding type...</option>
+                                                <option value="grant">Grant</option>
+                                                <option value="equity">Equity</option>
+                                                <option value="loan">Loan</option>
+                                                <option value="crowdfunding">Crowdfunding</option>
+                                                <option value="partnership">Partnership</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Skills Support Needed</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="skills_support" value="marketing" id="skill-marketing">
+                                                    <label class="form-check-label" for="skill-marketing">Marketing</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="skills_support" value="technology" id="skill-technology">
+                                                    <label class="form-check-label" for="skill-technology">Technology</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="skills_support" value="legal" id="skill-legal">
+                                                    <label class="form-check-label" for="skill-legal">Legal</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="skills_support" value="operations" id="skill-operations">
+                                                    <label class="form-check-label" for="skill-operations">Operations</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="skills_support" value="other" id="skill-other">
+                                                    <label class="form-check-label" for="skill-other">Other</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Partnerships Needed</label>
+                                        <div id="partnerships-list">
+                                            <div class="partnership-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="partnerships[]" placeholder="Describe needed partnership">
+                                                    <button type="button" class="btn btn-outline-danger remove-partnership" onclick="removePartnership(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-partnership" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another partnership
+                                        </button>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Resources Needed</label>
+                                        <div id="resources-list">
+                                            <div class="resource-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="resources[]" placeholder="Describe needed resource">
+                                                    <button type="button" class="btn btn-outline-danger remove-resource" onclick="removeResource(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-resource" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another resource
+                                        </button>
+                                        <div class="form-text">Equipment, facilities, tools, etc.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 10: Intellectual Property -->
+                        <div class="step-content" id="step-10" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 10 — Intellectual Property</h4>
+                                <p class="text-muted">Protect your innovative ideas</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Patent Status</label>
+                                        <select class="form-select" name="patent_status">
+                                            <option value="">Select patent status...</option>
+                                            <option value="not_applied">Not Applied</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="granted">Granted</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Trademark Status</label>
+                                        <select class="form-select" name="trademark_status">
+                                            <option value="">Select trademark status...</option>
+                                            <option value="none">None</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="registered">Registered</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">License Information</label>
+                                        <textarea class="form-control" name="license_information" rows="4" placeholder="Describe any licensing terms, open source licenses, or proprietary restrictions"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 11: Risks & Challenges -->
+                        <div class="step-content" id="step-11" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-exclamation-triangle fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 11 — Risks & Challenges</h4>
+                                <p class="text-muted">Identify potential obstacles and solutions</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Risks</label>
+                                        <div id="risks-list">
+                                            <div class="risk-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="risks[]" placeholder="Identify a potential risk">
+                                                    <button type="button" class="btn btn-outline-danger remove-risk" onclick="removeRisk(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-risk" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another risk
+                                        </button>
+                                        <div class="form-text">Technical, market, financial, or operational risks</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Barriers to Entry</label>
+                                        <div id="barriers-list">
+                                            <div class="barrier-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="barriers[]" placeholder="Describe a barrier to entry">
+                                                    <button type="button" class="btn btn-outline-danger remove-barrier" onclick="removeBarrier(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-barrier" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another barrier
+                                        </button>
+                                        <div class="form-text">What might prevent others from entering this market?</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Mitigation Plan</label>
+                                        <textarea class="form-control" name="mitigation_plan" rows="5" placeholder="How will you address the identified risks and challenges?"></textarea>
+                                        <div class="form-text">Strategies to minimize or overcome risks</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 12: Market -->
+                        <div class="step-content" id="step-12" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 12 — Market</h4>
+                                <p class="text-muted">Understanding your market landscape</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Market Size</label>
+                                        <input type="text" class="form-control" name="market_size" placeholder="e.g., $10B globally, 50M potential users">
+                                        <div class="form-text">Total addressable market (TAM) or number of potential users</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Competitors</label>
+                                        <div id="competitors-list">
+                                            <div class="competitor-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="competitors[]" placeholder="Name a competitor or alternative solution">
+                                                    <button type="button" class="btn btn-outline-danger remove-competitor" onclick="removeCompetitor(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-competitor" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another competitor
+                                        </button>
+                                        <div class="form-text">Direct and indirect competitors</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Competitive Advantage</label>
+                                        <textarea class="form-control" name="competitive_advantage" rows="4" placeholder="What makes your idea better than existing solutions?"></textarea>
+                                        <div class="form-text">Your unique differentiators and advantages</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 13: Team -->
+                        <div class="step-content" id="step-13" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 13 — Team</h4>
+                                <p class="text-muted">Who's working on this idea?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Team Members</label>
+                                        <div id="members-list">
+                                            <div class="member-entry mb-2">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <input type="text" class="form-control" name="member_names[]" placeholder="Member name">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="text" class="form-control" name="member_roles[]" placeholder="Role/position">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="url" class="form-control" name="member_links[]" placeholder="LinkedIn/profile (optional)">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-member" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another member
+                                        </button>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Advisors</label>
+                                        <div id="advisors-list">
+                                            <div class="advisor-entry mb-2">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <input type="text" class="form-control" name="advisor_names[]" placeholder="Advisor name">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="text" class="form-control" name="advisor_expertise[]" placeholder="Expertise area">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="url" class="form-control" name="advisor_links[]" placeholder="Profile link (optional)">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-advisor" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another advisor
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 14: Languages Supported -->
+                        <div class="step-content" id="step-14" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-language fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 14 — Languages Supported</h4>
+                                <p class="text-muted">Which languages will your idea support?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Select all languages your idea will support:</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="english" id="lang-en"><label class="form-check-label" for="lang-en">English</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="arabic" id="lang-ar"><label class="form-check-label" for="lang-ar">Arabic</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="chinese" id="lang-zh"><label class="form-check-label" for="lang-zh">Chinese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="hindi" id="lang-hi"><label class="form-check-label" for="lang-hi">Hindi</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="spanish" id="lang-es"><label class="form-check-label" for="lang-es">Spanish</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="french" id="lang-fr"><label class="form-check-label" for="lang-fr">French</label></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="german" id="lang-de"><label class="form-check-label" for="lang-de">German</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="italian" id="lang-it"><label class="form-check-label" for="lang-it">Italian</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="russian" id="lang-ru"><label class="form-check-label" for="lang-ru">Russian</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="portuguese" id="lang-pt"><label class="form-check-label" for="lang-pt">Portuguese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="japanese" id="lang-ja"><label class="form-check-label" for="lang-ja">Japanese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="korean" id="lang-ko"><label class="form-check-label" for="lang-ko">Korean</label></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="turkish" id="lang-tr"><label class="form-check-label" for="lang-tr">Turkish</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="persian" id="lang-fa"><label class="form-check-label" for="lang-fa">Persian</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="bengali" id="lang-bn"><label class="form-check-label" for="lang-bn">Bengali</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="vietnamese" id="lang-vi"><label class="form-check-label" for="lang-vi">Vietnamese</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="thai" id="lang-th"><label class="form-check-label" for="lang-th">Thai</label></div>
+                                                <div class="form-check"><input class="form-check-input" type="checkbox" name="languages" value="indonesian" id="lang-id"><label class="form-check-label" for="lang-id">Indonesian</label></div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <input type="text" class="form-control" name="other_languages" placeholder="Other languages (separate with commas)">
+                                        </div>
+                                        <div class="form-text">Select all languages that apply to your idea</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 15: Meta & Management -->
+                        <div class="step-content" id="step-15" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-cog fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 15 — Meta & Management</h4>
+                                <p class="text-muted">Final settings and metadata</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Keywords</label>
+                                        <div id="keywords-list">
+                                            <div class="keyword-entry mb-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="keywords[]" placeholder="Add a keyword">
+                                                    <button type="button" class="btn btn-outline-danger remove-keyword" onclick="removeKeyword(this)" style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="add-keyword" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Add another keyword
+                                        </button>
+                                        <div class="form-text">Keywords for search and categorization</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Industry</label>
+                                        <input type="text" class="form-control" name="industry" placeholder="e.g., Healthcare, FinTech, EdTech">
+                                        <div class="form-text">Primary industry or sector</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Created Date</label>
+                                        <input type="text" class="form-control" id="created-date" readonly>
+                                        <div class="form-text">Auto-generated</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" id="last-updated" readonly>
+                                        <div class="form-text">Auto-generated</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Visibility <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="visibility" required>
+                                            <option value="">Select visibility...</option>
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                        <div class="form-text">Who can see this idea</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Verification Status</label>
+                                        <select class="form-select" readonly>
+                                            <option value="unverified" selected>Unverified</option>
+                                        </select>
+                                        <div class="form-text">Auto-generated based on provided proofs and documentation</div>
+                                    </div>
+
+                                    <!-- Success Card -->
+                                    <div class="card bg-light mt-5">
+                                        <div class="card-body">
+                                            <div class="text-center">
+                                                <i class="fas fa-lightbulb fa-3x text-success mb-3"></i>
+                                                <h5 class="card-title text-success">🎉 Brilliant Work!</h5>
+                                                <p class="card-text">
+                                                    You've provided comprehensive details for your innovative idea. 
+                                                    This detailed information will help others understand your vision and potentially collaborate with you!
+                                                </p>
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-star me-2"></i>
+                                                    <strong>Your idea will be featured prominently and attract the right supporters!</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-4 pt-4 border-top">
+                            <button type="button" id="prev-btn" class="btn btn-outline-secondary btn-lg" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                            <div class="flex-grow-1"></div>
+                            <button type="button" id="next-btn" class="btn btn-primary btn-lg">
+                                Next<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <div id="final-buttons" class="d-none">
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-primary btn-lg me-2" id="save-draft-final-btn">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success btn-lg" id="create-idea-final-btn">
+                                    <i class="fas fa-star me-2"></i>Create Idea
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check-lg .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.125em;
+}
+
+.form-check-lg .form-check-label {
+    font-size: 1.1em;
+    padding-left: 0.5em;
+}
+
+.step-content {
+    min-height: 400px;
+}
+
+.media-section .card {
+    border-left: 4px solid #0d6efd;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 15;
+    
+    // Initialize form
+    updateProgress();
+    initializeFormLogic();
+    
+    // Set current date for meta fields
+    const today = new Date().toISOString().split('T')[0];
+    const createdDateField = document.getElementById('created-date');
+    const lastUpdatedField = document.getElementById('last-updated');
+    if (createdDateField) createdDateField.value = today;
+    if (lastUpdatedField) lastUpdatedField.value = today;
+    
+    // Next button handler
+    document.getElementById('next-btn').addEventListener('click', function() {
+        if (validateCurrentStep()) {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+    });
+    
+    // Previous button handler
+    document.getElementById('prev-btn').addEventListener('click', function() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+            updateProgress();
+        }
+    });
+    
+    function showStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(function(stepEl) {
+            stepEl.style.display = 'none';
+        });
+        
+        // Show current step
+        document.getElementById('step-' + step).style.display = 'block';
+        
+        // Update navigation buttons
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finalButtons = document.getElementById('final-buttons');
+        
+        if (step === 1) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+        }
+        
+        if (step === totalSteps) {
+            nextBtn.style.display = 'none';
+            finalButtons.classList.remove('d-none');
+        } else {
+            nextBtn.style.display = 'block';
+            finalButtons.classList.add('d-none');
+        }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function updateProgress() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const percentage = (currentStep / totalSteps) * 100;
+        
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', currentStep);
+        progressText.textContent = `Step ${currentStep} of ${totalSteps}`;
+    }
+    
+    function validateCurrentStep() {
+        const currentStepEl = document.getElementById('step-' + currentStep);
+        let isValid = true;
+        let invalidFields = [];
+        
+        // Remove existing alerts and invalid classes
+        const existingAlerts = currentStepEl.querySelectorAll('.alert-danger');
+        existingAlerts.forEach(alert => alert.remove());
+        currentStepEl.querySelectorAll('.is-invalid').forEach(field => field.classList.remove('is-invalid'));
+        
+        // Validate required fields that are visible
+        const requiredFields = currentStepEl.querySelectorAll('[required]');
+        requiredFields.forEach(function(field) {
+            // Skip hidden fields
+            if (field.offsetParent === null) return;
+            
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                invalidFields.push(field);
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            // Show validation message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger mt-3';
+            alertDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Please fill in all required fields before continuing.';
+            currentStepEl.appendChild(alertDiv);
+            
+            // Scroll to first invalid field
+            if (invalidFields.length > 0) {
+                invalidFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => invalidFields[0].focus(), 300);
+            }
+        }
+        
+        return isValid;
+    }
+    
+    function initializeFormLogic() {
+        // Owner is creator checkbox handler
+        const ownerIsCreatorCheckbox = document.getElementById('owner-is-creator');
+        if (ownerIsCreatorCheckbox) {
+            ownerIsCreatorCheckbox.addEventListener('change', function() {
+                const differentOwnerDetails = document.getElementById('different-owner-details');
+                if (this.checked) {
+                    differentOwnerDetails.style.display = 'none';
+                } else {
+                    differentOwnerDetails.style.display = 'block';
+                }
+            });
+        }
+        
+        // Ownership type handler
+        const ownershipTypeSelect = document.getElementById('ownership-type');
+        if (ownershipTypeSelect) {
+            ownershipTypeSelect.addEventListener('change', function() {
+                const partnerDetailsSection = document.getElementById('partner-details-section');
+                if (['partner', 'llc', 'corporation'].includes(this.value)) {
+                    partnerDetailsSection.style.display = 'block';
+                } else {
+                    partnerDetailsSection.style.display = 'none';
+                }
+            });
+        }
+        
+        // Media type handlers
+        const mediaCheckboxes = document.querySelectorAll('[name="media_types"]');
+        mediaCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const sectionId = this.value + '-section';
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = this.checked ? 'block' : 'none';
+                }
+            });
+        });
+        
+        // Dynamic list handlers
+        setupDynamicList('add-tag', 'tags-list', 'tag-entry', 'tags[]', 'Add a tag', removeTag);
+        setupDynamicList('add-highlight', 'highlights-list', 'highlight-entry', 'highlights[]', 'Add a unique selling point', removeHighlight);
+        setupDynamicList('add-progress-update', 'progress-updates-list', 'progress-update-entry', 'progress_updates[]', 'Add a progress update', removeProgressUpdate);
+        setupDynamicList('add-use-case', 'use-cases-list', 'use-case-entry', 'use_cases[]', 'Describe a use case', removeUseCase);
+        setupDynamicList('add-external-link', 'external-links-list', 'external-link-entry', 'external_links[]', 'Demo, landing page, reference', removeExternalLink);
+        setupDynamicList('add-partner', 'partners-list', 'partner-entry', 'partner_names[]', 'Partner name', null, true);
+        setupDynamicList('add-revenue-stream', 'revenue-streams-list', 'revenue-stream-entry', 'revenue_streams[]', 'Describe a revenue stream', removeRevenueStream);
+        setupDynamicList('add-impact-metric', 'impact-metrics-list', 'impact-metric-entry', 'impact_metrics[]', 'How will you measure impact?', removeImpactMetric);
+        setupDynamicList('add-partnership', 'partnerships-list', 'partnership-entry', 'partnerships[]', 'Describe needed partnership', removePartnership);
+        setupDynamicList('add-resource', 'resources-list', 'resource-entry', 'resources[]', 'Describe needed resource', removeResource);
+        setupDynamicList('add-risk', 'risks-list', 'risk-entry', 'risks[]', 'Identify a potential risk', removeRisk);
+        setupDynamicList('add-barrier', 'barriers-list', 'barrier-entry', 'barriers[]', 'Describe a barrier to entry', removeBarrier);
+        setupDynamicList('add-competitor', 'competitors-list', 'competitor-entry', 'competitors[]', 'Name a competitor or alternative solution', removeCompetitor);
+        setupDynamicList('add-member', 'members-list', 'member-entry', 'member_names[]', 'Member name', null, 'member');
+        setupDynamicList('add-advisor', 'advisors-list', 'advisor-entry', 'advisor_names[]', 'Advisor name', null, 'advisor');
+        setupDynamicList('add-keyword', 'keywords-list', 'keyword-entry', 'keywords[]', 'Add a keyword', removeKeyword);
+        
+        // Funding needed handler
+        const fundingRadios = document.querySelectorAll('[name="funding_needed"]');
+        fundingRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const fundingDetails = document.getElementById('funding-details');
+                if (this.value === 'yes') {
+                    fundingDetails.style.display = 'block';
+                } else {
+                    fundingDetails.style.display = 'none';
+                }
+            });
+        });
+        
+        // Form submission handler
+        const form = document.getElementById('advanced-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const submitButton = document.activeElement;
+                
+                if (submitButton && (submitButton.id === 'create-idea-final-btn' || submitButton.id === 'save-draft-final-btn')) {
+                    // Remove required attribute from hidden fields
+                    const allRequiredFields = form.querySelectorAll('[required]');
+                    allRequiredFields.forEach(field => {
+                        if (field.offsetParent === null) {
+                            field.removeAttribute('required');
+                            field.setAttribute('data-was-required', 'true');
+                        }
+                    });
+                    
+                    // Show loading state
+                    const originalText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                    submitButton.disabled = true;
+                    
+                    console.log('Form submitting with action:', submitButton.value);
+                }
+            });
+        }
+    }
+    
+    function setupDynamicList(buttonId, listId, entryClass, fieldName, placeholder, removeFunction, specialType = false) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', function() {
+                const list = document.getElementById(listId);
+                const newEntry = document.createElement('div');
+                newEntry.className = entryClass + ' mb-2';
+                
+                if (specialType === true || specialType === 'partner') {
+                    // Partner layout
+                    newEntry.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="partner_names[]" placeholder="Partner name">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="url" class="form-control" name="partner_links[]" placeholder="Partner link (optional)">
+                            </div>
+                        </div>
+                    `;
+                } else if (specialType === 'member') {
+                    // Team member layout
+                    newEntry.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="member_names[]" placeholder="Member name">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="member_roles[]" placeholder="Role/position">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="url" class="form-control" name="member_links[]" placeholder="LinkedIn/profile (optional)">
+                            </div>
+                        </div>
+                    `;
+                } else if (specialType === 'advisor') {
+                    // Advisor layout
+                    newEntry.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="advisor_names[]" placeholder="Advisor name">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="advisor_expertise[]" placeholder="Expertise area">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="url" class="form-control" name="advisor_links[]" placeholder="Profile link (optional)">
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Standard input group layout
+                    const removeButtonName = removeFunction ? removeFunction.name : 'remove' + entryClass.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+                    newEntry.innerHTML = `
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="${fieldName}" placeholder="${placeholder}">
+                            <button type="button" class="btn btn-outline-danger remove-${entryClass.split('-')[0]}" onclick="${removeButtonName}(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                list.appendChild(newEntry);
+                updateRemoveButtons(listId, entryClass);
+            });
+        }
+    }
+    
+    function updateRemoveButtons(listId, entryClass) {
+        const entries = document.querySelectorAll(`#${listId} .${entryClass}`);
+        entries.forEach(function(entry, index) {
+            const removeBtn = entry.querySelector('.btn-outline-danger');
+            if (removeBtn) {
+                if (index === 0 && entries.length === 1) {
+                    removeBtn.style.display = 'none';
+                } else {
+                    removeBtn.style.display = 'block';
+                }
+            }
+        });
+    }
+});
+
+// Remove functions for dynamic lists
+function removeTag(button) {
+    button.closest('.tag-entry').remove();
+    updateRemoveButtons('tags-list', 'tag-entry');
+}
+
+function removeHighlight(button) {
+    button.closest('.highlight-entry').remove();
+    updateRemoveButtons('highlights-list', 'highlight-entry');
+}
+
+function removeProgressUpdate(button) {
+    button.closest('.progress-update-entry').remove();
+    updateRemoveButtons('progress-updates-list', 'progress-update-entry');
+}
+
+function removeUseCase(button) {
+    button.closest('.use-case-entry').remove();
+    updateRemoveButtons('use-cases-list', 'use-case-entry');
+}
+
+function removeExternalLink(button) {
+    button.closest('.external-link-entry').remove();
+    updateRemoveButtons('external-links-list', 'external-link-entry');
+}
+
+function removeRevenueStream(button) {
+    button.closest('.revenue-stream-entry').remove();
+    updateRemoveButtons('revenue-streams-list', 'revenue-stream-entry');
+}
+
+function removeImpactMetric(button) {
+    button.closest('.impact-metric-entry').remove();
+    updateRemoveButtons('impact-metrics-list', 'impact-metric-entry');
+}
+
+function removePartnership(button) {
+    button.closest('.partnership-entry').remove();
+    updateRemoveButtons('partnerships-list', 'partnership-entry');
+}
+
+function removeResource(button) {
+    button.closest('.resource-entry').remove();
+    updateRemoveButtons('resources-list', 'resource-entry');
+}
+
+function removeRisk(button) {
+    button.closest('.risk-entry').remove();
+    updateRemoveButtons('risks-list', 'risk-entry');
+}
+
+function removeBarrier(button) {
+    button.closest('.barrier-entry').remove();
+    updateRemoveButtons('barriers-list', 'barrier-entry');
+}
+
+function removeCompetitor(button) {
+    button.closest('.competitor-entry').remove();
+    updateRemoveButtons('competitors-list', 'competitor-entry');
+}
+
+function removeMember(button) {
+    button.closest('.member-entry').remove();
+    updateRemoveButtons('members-list', 'member-entry');
+}
+
+function removeAdvisor(button) {
+    button.closest('.advisor-entry').remove();
+    updateRemoveButtons('advisors-list', 'advisor-entry');
+}
+
+function removeKeyword(button) {
+    button.closest('.keyword-entry').remove();
+    updateRemoveButtons('keywords-list', 'keyword-entry');
+}
+
+function updateRemoveButtons(listId, entryClass) {
+    const entries = document.querySelectorAll(`#${listId} .${entryClass}`);
+    entries.forEach(function(entry, index) {
+        const removeBtn = entry.querySelector('.btn-outline-danger');
+        if (removeBtn) {
+            if (index === 0 && entries.length === 1) {
+                removeBtn.style.display = 'none';
+            } else {
+                removeBtn.style.display = 'block';
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

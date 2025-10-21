@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
+                </h1>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-2"></i>Export Data
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('analytics.export_analytics') }}">
+                            <i class="fas fa-file-csv me-2"></i>Export CSV
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="totalSearches">-</h4>
+                            <p class="card-text">Total Searches</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-search fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="activeFields">-</h4>
+                            <p class="card-text">Active Fields</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="itemTypes">-</h4>
+                            <p class="card-text">Item Types</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tags fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="optimizations">-</h4>
+                            <p class="card-text">Optimizations</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-rocket fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Field Usage by Item Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="fieldUsageChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Search Trends (30 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="searchTrendsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2"></i>Field Usage Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Analyze which fields are being searched and filtered most frequently.</p>
+                    <a href="{{ url_for('analytics.field_usage') }}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar me-2"></i>View Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>Search Patterns
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Discover search patterns and popular search terms across all item types.</p>
+                    <a href="{{ url_for('analytics.search_patterns') }}" class="btn btn-success">
+                        <i class="fas fa-chart-line me-2"></i>View Patterns
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Optimization Suggestions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Get AI-powered suggestions for optimizing your database and search performance.</p>
+                    <a href="{{ url_for('analytics.optimization_suggestions') }}" class="btn btn-warning">
+                        <i class="fas fa-rocket me-2"></i>View Suggestions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadOverviewStats();
+    loadFieldUsageChart();
+    loadSearchTrendsChart();
+});
+
+function loadOverviewStats() {
+    // Load overview statistics
+    fetch('/analytics/api/field-usage-data')
+        .then(response => response.json())
+        .then(data => {
+            let totalSearches = 0;
+            let activeFields = new Set();
+            
+            data.datasets.forEach(dataset => {
+                dataset.data.forEach((value, index) => {
+                    totalSearches += value;
+                    if (value > 0) {
+                        activeFields.add(data.labels[index]);
+                    }
+                });
+            });
+            
+            document.getElementById('totalSearches').textContent = totalSearches.toLocaleString();
+            document.getElementById('activeFields').textContent = activeFields.size;
+            document.getElementById('itemTypes').textContent = data.datasets.length;
+        })
+        .catch(error => console.error('Error loading stats:', error));
+}
+
+function loadFieldUsageChart() {
+    fetch('/analytics/api/field-usage-data')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('fieldUsageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading field usage chart:', error));
+}
+
+function loadSearchTrendsChart() {
+    fetch('/analytics/api/search-trends')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('searchTrendsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading search trends chart:', error));
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

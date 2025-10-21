@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Credibility Scoring Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-shield-alt me-2 text-success"></i>Credibility Scoring Management
+                </h1>
+                <div>
+                    <a href="{{ url_for('scoring_admin.scoring_management') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    <button class="btn btn-success" onclick="saveAllChanges()">
+                        <i class="fas fa-save me-1"></i>Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Current Average Credibility</h6>
+                    <div class="h2 text-success">{{ "%.1f"|format(avg_credibility) }}%</div>
+                    <small class="text-muted">Based on user verification and trust factors</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Credibility Factors</h6>
+                    <div class="text-muted">
+                        <small>Credibility score is calculated based on:</small>
+                        <ul class="mb-0 mt-2">
+                            <li>User verification (email, phone, ID)</li>
+                            <li>Item verification and admin approval</li>
+                            <li>Profile completeness</li>
+                            <li>Account age and activity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scoring Configuration -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Credibility Scoring Configuration
+                    </h5>
+                    <small class="text-muted">Configure weights and thresholds for credibility scoring</small>
+                </div>
+                <div class="card-body">
+                    <form id="credibilityConfigForm">
+                        <div class="row">
+                            <!-- User Verification Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-user-check me-2"></i>User Verification (0-200 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="emailVerified" class="form-label">Email Verified</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="emailVerified" name="email_verified" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="phoneVerified" class="form-label">Phone Verified</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="phoneVerified" name="phone_verified" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="idVerified" class="form-label">ID Verified</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="idVerified" name="id_verified" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="socialVerified" class="form-label">Social Media Verified</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="socialVerified" name="social_verified" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Item Verification Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-3">
+                                    <i class="fas fa-check-circle me-2"></i>Item Verification (0-150 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="itemVerified" class="form-label">Item Verified</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="itemVerified" name="item_verified" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="adminApproved" class="form-label">Admin Approved</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="adminApproved" name="admin_approved" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="qualityChecked" class="form-label">Quality Checked</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="qualityChecked" name="quality_checked" value="50" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Profile Completeness Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-user-circle me-2"></i>Profile Completeness (0-100 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="profileComplete" class="form-label">Profile Complete</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="profileComplete" name="profile_complete" value="30" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="bioComplete" class="form-label">Bio Complete</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="bioComplete" name="bio_complete" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="locationAdded" class="form-label">Location Added</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="locationAdded" name="location_added" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="phoneAdded" class="form-label">Phone Added</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="phoneAdded" name="phone_added" value="15" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="avatarAdded" class="form-label">Avatar Added</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="avatarAdded" name="avatar_added" value="15" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Trust Indicators Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-star me-2"></i>Trust Indicators (0-50 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="accountAge" class="form-label">Account Age Bonus</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="accountAge" name="account_age" value="20" min="0" max="50">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Maximum points for accounts older than 1 year</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="activityLevel" class="form-label">Activity Level</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="activityLevel" name="activity_level" value="15" min="0" max="50">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for active users</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="reputationBonus" class="form-label">Reputation Bonus</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="reputationBonus" name="reputation_bonus" value="15" min="0" max="50">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Additional points for high-reputation users</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Trust Level Thresholds -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-danger mb-3">
+                                    <i class="fas fa-chart-bar me-2"></i>Trust Level Thresholds
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label for="lowThreshold" class="form-label">Low Trust</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="lowThreshold" name="low_threshold" value="0" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="mediumThreshold" class="form-label">Medium Trust</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="mediumThreshold" name="medium_threshold" value="40" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="highThreshold" class="form-label">High Trust</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="highThreshold" name="high_threshold" value="60" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="verifiedThreshold" class="form-label">Verified</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="verifiedThreshold" name="verified_threshold" value="80" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveAllChanges() {
+    const form = document.getElementById('credibilityConfigForm');
+    const formData = new FormData(form);
+    const data = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+        data[key] = parseInt(value) || 0;
+    }
+    
+    fetch('/admin/api/scoring/update-scoring-weights', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            score_type: 'credibility',
+            weights: data
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Success: ' + data.message);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving changes.');
+    });
+}
+
+// Auto-save on input change (with debounce)
+let saveTimeout;
+document.addEventListener('input', function(e) {
+    if (e.target.closest('#credibilityConfigForm')) {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveAllChanges();
+        }, 2000); // 2 second delay
+    }
+});
+</script>
+{% endblock %}

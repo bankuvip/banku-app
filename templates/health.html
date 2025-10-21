@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-heartbeat me-2 text-primary"></i>System Health
+                </h1>
+                <div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshHealth()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="startMonitoring()">
+                        <i class="fas fa-play"></i> Start Monitoring
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="stopMonitoring()">
+                        <i class="fas fa-stop"></i> Stop Monitoring
+                    </button>
+                </div>
+            </div>
+
+            <!-- Overall Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>Overall System Status
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="overallStatus" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading system status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Resources -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-microchip me-2"></i>System Resources
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="systemResources">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                Loading system resources...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Health -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-database me-2"></i>Database Health
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="databaseHealth">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                Loading database status...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Health -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-cogs me-2"></i>Application Health
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="applicationHealth">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                Loading application status...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health History -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history me-2"></i>Recent Health Checks
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="healthHistory">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                Loading health history...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getStatusBadge(status) {
+    const badges = {
+        'healthy': '<span class="badge bg-success">Healthy</span>',
+        'warning': '<span class="badge bg-warning">Warning</span>',
+        'critical': '<span class="badge bg-danger">Critical</span>',
+        'unhealthy': '<span class="badge bg-danger">Unhealthy</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatPercentage(value) {
+    return value.toFixed(1) + '%';
+}
+
+function updateHealthData() {
+    fetch('/health/detailed')
+        .then(response => response.json())
+        .then(data => {
+            updateOverallStatus(data);
+            updateSystemResources(data.checks.system_resources);
+            updateDatabaseHealth(data.checks.database);
+            updateApplicationHealth(data.checks.application);
+        })
+        .catch(error => {
+            console.error('Error fetching health data:', error);
+            document.getElementById('overallStatus').innerHTML = 
+                '<div class="alert alert-danger">Error loading health data</div>';
+        });
+}
+
+function updateOverallStatus(data) {
+    const statusDiv = document.getElementById('overallStatus');
+    const status = data.overall_status;
+    const timestamp = new Date(data.timestamp).toLocaleString();
+    
+    statusDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <h2 class="mb-2">${getStatusBadge(status)}</h2>
+                <p class="text-muted mb-0">System Status</p>
+            </div>
+            <div class="col-md-4">
+                <h4 class="mb-2">${timestamp}</h4>
+                <p class="text-muted mb-0">Last Updated</p>
+            </div>
+            <div class="col-md-4">
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar ${status === 'healthy' ? 'bg-success' : status === 'warning' ? 'bg-warning' : 'bg-danger'}" 
+                         role="progressbar" style="width: ${status === 'healthy' ? '100' : status === 'warning' ? '75' : '25'}%">
+                        ${status.charAt(0).toUpperCase() + status.slice(1)}
+                    </div>
+                </div>
+                <p class="text-muted mb-0">Overall Health</p>
+            </div>
+        </div>
+    `;
+}
+
+function updateSystemResources(resources) {
+    if (!resources) {
+        document.getElementById('systemResources').innerHTML = 
+            '<div class="alert alert-warning">System resources data not available</div>';
+        return;
+    }
+
+    const resourcesDiv = document.getElementById('systemResources');
+    resourcesDiv.innerHTML = `
+        <div class="row">
+            <div class="col-6">
+                <h6>CPU Usage</h6>
+                <div class="progress mb-2">
+                    <div class="progress-bar ${resources.cpu_usage > 80 ? 'bg-danger' : resources.cpu_usage > 60 ? 'bg-warning' : 'bg-success'}" 
+                         style="width: ${resources.cpu_usage}%">${formatPercentage(resources.cpu_usage)}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <h6>Memory Usage</h6>
+                <div class="progress mb-2">
+                    <div class="progress-bar ${resources.memory_usage > 85 ? 'bg-danger' : resources.memory_usage > 70 ? 'bg-warning' : 'bg-success'}" 
+                         style="width: ${resources.memory_usage}%">${formatPercentage(resources.memory_usage)}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <h6>Disk Usage</h6>
+                <div class="progress mb-2">
+                    <div class="progress-bar ${resources.disk_usage > 90 ? 'bg-danger' : resources.disk_usage > 80 ? 'bg-warning' : 'bg-success'}" 
+                         style="width: ${resources.disk_usage}%">${formatPercentage(resources.disk_usage)}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <h6>Free Space</h6>
+                <p class="mb-0">${formatBytes(resources.disk_free)}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-6">
+                <small class="text-muted">
+                    <strong>Total Memory:</strong> ${formatBytes(resources.memory_total)}<br>
+                    <strong>Available Memory:</strong> ${formatBytes(resources.memory_available)}
+                </small>
+            </div>
+            <div class="col-6">
+                <small class="text-muted">
+                    <strong>Network Sent:</strong> ${formatBytes(resources.network_bytes_sent)}<br>
+                    <strong>Network Received:</strong> ${formatBytes(resources.network_bytes_recv)}
+                </small>
+            </div>
+        </div>
+    `;
+}
+
+function updateDatabaseHealth(dbHealth) {
+    if (!dbHealth) {
+        document.getElementById('databaseHealth').innerHTML = 
+            '<div class="alert alert-warning">Database health data not available</div>';
+        return;
+    }
+
+    const dbDiv = document.getElementById('databaseHealth');
+    
+    if (dbHealth.status === 'unhealthy') {
+        dbDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Database Unhealthy</h6>
+                <p class="mb-0">${dbHealth.error || 'Unknown error'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    dbDiv.innerHTML = `
+        <div class="row">
+            <div class="col-6">
+                <h6>Status</h6>
+                <p class="mb-2">${getStatusBadge(dbHealth.status)}</p>
+            </div>
+            <div class="col-6">
+                <h6>Response Time</h6>
+                <p class="mb-2">${dbHealth.response_time ? dbHealth.response_time.toFixed(3) + 's' : 'N/A'}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-6">
+                <small class="text-muted">
+                    <strong>Pool Size:</strong> ${dbHealth.pool_size || 'N/A'}<br>
+                    <strong>Checked Out:</strong> ${dbHealth.checked_out || 'N/A'}
+                </small>
+            </div>
+            <div class="col-6">
+                <small class="text-muted">
+                    <strong>Overflow:</strong> ${dbHealth.overflow || 'N/A'}<br>
+                    <strong>Invalid:</strong> ${dbHealth.invalid || 'N/A'}
+                </small>
+            </div>
+        </div>
+    `;
+}
+
+function updateApplicationHealth(appHealth) {
+    if (!appHealth) {
+        document.getElementById('applicationHealth').innerHTML = 
+            '<div class="alert alert-warning">Application health data not available</div>';
+        return;
+    }
+
+    const appDiv = document.getElementById('applicationHealth');
+    
+    if (appHealth.status === 'unhealthy') {
+        appDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Application Unhealthy</h6>
+                <p class="mb-0">${appHealth.error || 'Unknown error'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    appDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-primary">${appHealth.active_users_24h || 0}</h4>
+                    <small class="text-muted">Active Users (24h)</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-success">${appHealth.total_items || 0}</h4>
+                    <small class="text-muted">Total Items</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-info">${appHealth.active_organizations || 0}</h4>
+                    <small class="text-muted">Active Organizations</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-warning">${appHealth.recent_errors || 0}</h4>
+                    <small class="text-muted">Recent Errors</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function refreshHealth() {
+    updateHealthData();
+}
+
+function startMonitoring() {
+    fetch('/health/monitoring/start')
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || 'Monitoring started');
+            refreshHealth();
+        })
+        .catch(error => {
+            console.error('Error starting monitoring:', error);
+            alert('Error starting monitoring');
+        });
+}
+
+function stopMonitoring() {
+    fetch('/health/monitoring/stop')
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || 'Monitoring stopped');
+        })
+        .catch(error => {
+            console.error('Error stopping monitoring:', error);
+            alert('Error stopping monitoring');
+        });
+}
+
+// Auto-refresh every 30 seconds
+setInterval(updateHealthData, 30000);
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    updateHealthData();
+});
+</script>
+{% endblock %}
+
+
+
+
+
+

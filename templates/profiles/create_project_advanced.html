@@ -1,0 +1,623 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Add Project{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-star me-2 text-primary"></i>
+                    Advanced Add Project
+                </h4>
+                <div>
+                    <span class="badge bg-primary me-2">ADVANCED PATH</span>
+                    <a href="{{ url_for('profiles.create_project_path') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-bold">Step <span id="current-step">1</span> of 8</span>
+                            <span class="text-muted ms-2">•</span>
+                            <span class="text-primary ms-2" id="step-title">Basic Information</span>
+                        </div>
+                        <span class="text-muted">Maximum points path</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" id="progress-bar" style="width: 12.5%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="project-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Step 1: Basic Information -->
+                        <div class="step-content" id="step-1">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-project-diagram fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Basic Information</h4>
+                                <p class="text-muted">Tell us the essentials about your project</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's your project called? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required 
+                                               placeholder="e.g., Mobile App Development, Website Redesign, Research Study">
+                                        <div class="form-text">Choose a clear, memorable name for your project</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Brief description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="200" required 
+                                                  placeholder="Describe your project in a few sentences (max 200 characters)"></textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">Keep it concise and engaging</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/200</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of project is this? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="technology">💻 Technology - Software, apps, websites</option>
+                                            <option value="business">💼 Business - Strategy, operations, marketing</option>
+                                            <option value="research">🔬 Research - Studies, analysis, investigation</option>
+                                            <option value="creative">🎨 Creative - Design, art, content creation</option>
+                                            <option value="construction">🏗️ Construction - Building, infrastructure</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Project Leader & Team -->
+                        <div class="step-content d-none" id="step-2">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Project Leader & Team</h4>
+                                <p class="text-muted">Who leads this project and who's involved?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who leads this project? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required 
+                                               placeholder="e.g., Your Name, Your Team, Your Organization">
+                                        <div class="form-text">This could be you, your team, or organization</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Project leader's profile link (Optional)</label>
+                                        <input type="url" class="form-control form-control-lg" name="creator_link" 
+                                               placeholder="https://linkedin.com/in/leader or website">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who owns this project?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <select class="form-select form-select-lg" name="owner_type" id="owner-type">
+                                                    <option value="me">I own it</option>
+                                                    <option value="team">My team owns it</option>
+                                                    <option value="company">My company owns it</option>
+                                                    <option value="other">Someone else owns it</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6" id="owner-name-field" style="display: none;">
+                                                <input type="text" class="form-control form-control-lg" name="owner_name" 
+                                                       placeholder="Owner's name">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Team size</label>
+                                        <select class="form-select form-select-lg" name="team_size">
+                                            <option value="solo">👤 Solo - Just me</option>
+                                            <option value="small">👥 Small team - 2-5 people</option>
+                                            <option value="medium">👥 Medium team - 6-15 people</option>
+                                            <option value="large">👥 Large team - 16+ people</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Detailed Description -->
+                        <div class="step-content d-none" id="step-3">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Detailed Description</h4>
+                                <p class="text-muted">Provide comprehensive details about your project</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Detailed description</label>
+                                        <textarea class="form-control" name="detailed_description" rows="6" 
+                                                  placeholder="Provide a comprehensive description of your project. What are the goals? What problem does it solve? What are the deliverables?"></textarea>
+                                        <div class="form-text">The more details you provide, the better your project will rank</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Key objectives or deliverables</label>
+                                        <textarea class="form-control" name="key_features" rows="4" 
+                                                  placeholder="List the main objectives, deliverables, or milestones of your project"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Tags (comma-separated)</label>
+                                        <input type="text" class="form-control form-control-lg" name="tags" 
+                                               placeholder="e.g., development, design, research, innovation, startup">
+                                        <div class="form-text">Add relevant keywords to help people find your project</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Project Status & Timeline -->
+                        <div class="step-content d-none" id="step-4">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Project Status & Timeline</h4>
+                                <p class="text-muted">What stage is your project in and what's the timeline?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Project status</label>
+                                        <select class="form-select form-select-lg" name="development_stage">
+                                            <option value="planning">📋 Planning - In development phase</option>
+                                            <option value="active">🚀 Active - Currently working on it</option>
+                                            <option value="testing">🧪 Testing - In testing/review phase</option>
+                                            <option value="completed">✅ Completed - Project finished</option>
+                                            <option value="on_hold">⏸️ On Hold - Temporarily paused</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Project timeline</label>
+                                        <input type="text" class="form-control form-control-lg" name="implementation_timeline" 
+                                               placeholder="e.g., 3 months, 1 year, 6 weeks, Ongoing">
+                                        <div class="form-text">How long will this project take to complete?</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Start date (Optional)</label>
+                                        <input type="date" class="form-control form-control-lg" name="start_date">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Expected completion date (Optional)</label>
+                                        <input type="date" class="form-control form-control-lg" name="completion_date">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Budget & Investment -->
+                        <div class="step-content d-none" id="step-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Budget & Investment</h4>
+                                <p class="text-muted">What's the budget and funding situation?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Funding status</label>
+                                        <select class="form-select form-select-lg" name="pricing_type" id="pricing-type">
+                                            <option value="self_funded">💰 Self-funded - Using own resources</option>
+                                            <option value="seeking_funding">🔍 Seeking Funding - Looking for investors</option>
+                                            <option value="funded">✅ Funded - Already have funding</option>
+                                            <option value="free">🆓 Free/Open Source - No budget needed</option>
+                                            <option value="grant">🎁 Grant-funded - Using grants</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="budget-field">
+                                        <label class="form-label">Project budget (Optional)</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00">
+                                            <select class="form-select" name="currency" style="max-width: 120px;">
+                                                <option value="AED">AED</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="investment-field" style="display: none;">
+                                        <label class="form-label">Investment needed</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="investment_needed" step="0.01" placeholder="0.00">
+                                            <select class="form-select" name="currency" style="max-width: 120px;">
+                                                <option value="AED">AED</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Required resources</label>
+                                        <textarea class="form-control" name="required_resources" rows="3" 
+                                                  placeholder="What resources do you need? (funding, team members, equipment, partnerships, etc.)"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 6: Collaboration & Access -->
+                        <div class="step-content d-none" id="step-6">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-university fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Collaboration & Access</h4>
+                                <p class="text-muted">How can others get involved or access this project?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">How can others participate?</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="contribute" id="contribute">
+                                                    <label class="form-check-label" for="contribute">🤝 Contribute/Collaborate</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="invest" id="invest">
+                                                    <label class="form-check-label" for="invest">💰 Invest/Fund</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="mentor" id="mentor">
+                                                    <label class="form-check-label" for="mentor">🎓 Mentor/Advise</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="volunteer" id="volunteer">
+                                                    <label class="form-check-label" for="volunteer">🙋 Volunteer</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="partner" id="partner">
+                                                    <label class="form-check-label" for="partner">🤝 Partner</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="observe" id="observe">
+                                                    <label class="form-check-label" for="observe">👀 Just observe</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Project location</label>
+                                        <input type="text" class="form-control form-control-lg" name="location" 
+                                               placeholder="e.g., Dubai, UAE or Remote or Multiple Locations">
+                                        <div class="form-text">Where is this project primarily based?</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Availability region</label>
+                                        <select class="form-select form-select-lg" name="availability_region">
+                                            <option value="global">🌍 Global - Worldwide</option>
+                                            <option value="mena">🌍 MENA - Middle East & North Africa</option>
+                                            <option value="gcc">🏛️ GCC - Gulf Countries</option>
+                                            <option value="uae">🇦🇪 UAE - United Arab Emirates</option>
+                                            <option value="local">📍 Local - Specific city/region</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 7: Media & Documentation -->
+                        <div class="step-content d-none" id="step-7">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Media & Documentation</h4>
+                                <p class="text-muted">Add images, videos, and documents to showcase your project</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label">Project images</label>
+                                        <textarea class="form-control" name="image_links" rows="3" 
+                                                  placeholder="Add image URLs, one per line. These could be mockups, screenshots, or project photos."></textarea>
+                                        <div class="form-text">Images help people understand your project better</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Video links</label>
+                                        <textarea class="form-control" name="video_links" rows="2" 
+                                                  placeholder="Add video URLs (YouTube, Vimeo, etc.) that explain or demonstrate your project"></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Document links</label>
+                                        <textarea class="form-control" name="document_links" rows="2" 
+                                                  placeholder="Links to project plans, presentations, specifications, etc."></textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Reference links</label>
+                                        <textarea class="form-control" name="reference_links" rows="2" 
+                                                  placeholder="Links to related projects, research, or inspiration sources"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 8: Final Review -->
+                        <div class="step-content d-none" id="step-8">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                <h4 class="text-success">Final Review</h4>
+                                <p class="text-muted">Review your project and publish it to the world!</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="alert alert-success mb-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-trophy fa-2x me-3"></i>
+                                            <div>
+                                                <h5 class="alert-heading mb-1">Congratulations!</h5>
+                                                <p class="mb-0">You've completed the advanced path. Your project will earn maximum visibility and credibility points!</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Visibility settings</label>
+                                        <select class="form-select form-select-lg" name="visibility">
+                                            <option value="public">🌍 Public - Everyone can see this project</option>
+                                            <option value="private">🔒 Private - Only you can see this</option>
+                                            <option value="limited">👥 Limited - Only selected people can see this</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Project deadline (Optional)</label>
+                                        <input type="date" class="form-control form-control-lg" name="expiration_date">
+                                        <div class="form-text">When should this project listing expire?</div>
+                                    </div>
+
+                                    <div class="text-center">
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <i class="fas fa-eye fa-2x text-info mb-2"></i>
+                                                    <h6>High Visibility</h6>
+                                                    <small class="text-muted">Your detailed project will rank higher in search</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                                    <h6>Maximum Credibility</h6>
+                                                    <small class="text-muted">Complete information builds trust</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <i class="fas fa-university fa-2x text-primary mb-2"></i>
+                                                    <h6>Better Connections</h6>
+                                                    <small class="text-muted">More details attract the right collaborators</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="prev-btn" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                            <div class="ms-auto d-flex gap-3">
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-primary btn-lg" id="save-draft-btn">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="button" class="btn btn-primary btn-lg" id="next-btn">
+                                    Next<i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success btn-lg" id="publish-btn" style="display: none;">
+                                    <i class="fas fa-project-diagram me-2"></i>Publish Project
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-content {
+    min-height: 500px;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+.btn-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 8;
+    
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const publishBtn = document.getElementById('publish-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const currentStepSpan = document.getElementById('current-step');
+    const stepTitle = document.getElementById('step-title');
+    
+    // Step titles array
+    const stepTitles = [
+        'Basic Information',
+        'Project Leader & Team', 
+        'Detailed Description',
+        'Project Status & Timeline',
+        'Budget & Investment',
+        'Collaboration & Access',
+        'Media & Documentation',
+        'Final Review'
+    ];
+    
+    // Character counter
+    const shortDescTextarea = document.querySelector('[name="short_description"]');
+    const charCount = document.getElementById('char-count');
+    
+    if (shortDescTextarea && charCount) {
+        shortDescTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+    
+    // Owner type change handler
+    const ownerType = document.getElementById('owner-type');
+    const ownerNameField = document.getElementById('owner-name-field');
+    
+    if (ownerType && ownerNameField) {
+        ownerType.addEventListener('change', function() {
+            if (this.value === 'other') {
+                ownerNameField.style.display = 'block';
+            } else {
+                ownerNameField.style.display = 'none';
+            }
+        });
+    }
+    
+    // Pricing type change handler
+    const pricingType = document.getElementById('pricing-type');
+    const budgetField = document.getElementById('budget-field');
+    const investmentField = document.getElementById('investment-field');
+    
+    if (pricingType) {
+        pricingType.addEventListener('change', function() {
+            budgetField.style.display = 'block';
+            investmentField.style.display = 'none';
+            
+            if (this.value === 'seeking_funding') {
+                investmentField.style.display = 'block';
+            } else if (this.value === 'free') {
+                budgetField.style.display = 'none';
+            }
+        });
+    }
+    
+    function updateProgress() {
+        const percentage = (currentStep / totalSteps) * 100;
+        progressBar.style.width = percentage + '%';
+        currentStepSpan.textContent = currentStep;
+        stepTitle.textContent = stepTitles[currentStep - 1];
+    }
+    
+    function showStep(step) {
+        // Hide all steps
+        for (let i = 1; i <= totalSteps; i++) {
+            document.getElementById('step-' + i).classList.add('d-none');
+        }
+        
+        // Show current step
+        document.getElementById('step-' + step).classList.remove('d-none');
+        
+        // Update navigation buttons
+        prevBtn.style.display = step > 1 ? 'block' : 'none';
+        
+        if (step < totalSteps) {
+            nextBtn.style.display = 'block';
+            publishBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'none';
+            publishBtn.style.display = 'block';
+        }
+        
+        updateProgress();
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function validateCurrentStep() {
+        const currentStepElement = document.getElementById('step-' + currentStep);
+        const requiredFields = currentStepElement.querySelectorAll('[required]');
+        
+        for (let field of requiredFields) {
+            if (!field.value.trim()) {
+                field.focus();
+                field.classList.add('is-invalid');
+                return false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        }
+        return true;
+    }
+    
+    nextBtn.addEventListener('click', function() {
+        if (validateCurrentStep() && currentStep < totalSteps) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    });
+    
+    prevBtn.addEventListener('click', function() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+    
+    // Initialize
+    showStep(1);
+});
+</script>
+{% endblock %}

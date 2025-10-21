@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Organization Type - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-edit me-2"></i>Edit Organization Type</h2>
+                <a href="{{ url_for('admin.organization_types_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Management
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Organization Type Details</h5>
+                </div>
+                <div class="card-body">
+                    <form id="organizationTypeForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ organization_type.name }}" readonly>
+                                    <div class="form-text">Internal name cannot be changed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="display_name" class="form-label">Display Name *</label>
+                                    <input type="text" class="form-control" id="display_name" name="display_name" value="{{ organization_type.display_name }}" required>
+                                    <div class="form-text">User-friendly name (e.g., 'Company')</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ organization_type.description }}</textarea>
+                            <div class="form-text">Brief description of this organization type</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="icon_class" class="form-label">Icon Class</label>
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <input type="text" class="form-control" id="icon_class" name="icon_class" 
+                                                   value="{{ organization_type.icon_class }}" placeholder="e.g., fas fa-building, fab fa-github">
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="icon-preview text-center p-2 border rounded" style="min-height: 38px; display: flex; align-items: center; justify-content: center;">
+                                                <i id="iconPreview" class="{{ organization_type.icon_class }} fs-4" style="color: #007bff;"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">
+                                        Type any FontAwesome icon code (e.g., <code>fas fa-building</code>, <code>fab fa-github</code>)
+                                        <br><small class="text-muted">
+                                            <strong>Common prefixes:</strong> <code>fas</code> (solid), <code>far</code> (regular), <code>fab</code> (brands)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="color_class" class="form-label">Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="color_picker" value="{{ organization_type.color_class if organization_type.color_class.startswith('#') else '#2988a8' }}">
+                                        <input type="text" class="form-control" id="color_class" name="color_class" value="{{ organization_type.color_class }}" placeholder="#2988a8">
+                                    </div>
+                                    <div class="form-text">
+                                        Choose a color for this organization type
+                                        <br><small class="text-muted">Use hex color values (e.g., #2988a8, #007bff, #28a745)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_profiles_can_join" class="form-label">Max Profiles can Join</label>
+                                    <input type="number" class="form-control" id="max_profiles_can_join" name="max_profiles_can_join" value="{{ organization_type.max_profiles_can_join or 50 }}" min="1" max="1000">
+                                    <div class="form-text">Maximum number of members the organization can have</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="order_index" class="form-label">Display Order</label>
+                                    <input type="number" class="form-control" id="order_index" name="order_index" value="{{ organization_type.order_index or 0 }}" min="0" step="1">
+                                    <div class="form-text">Lower numbers appear first (0 = top priority)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Settings</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="requires_verification" name="requires_verification" {% if organization_type.requires_verification %}checked{% endif %}>
+                                        <label class="form-check-label" for="requires_verification">
+                                            Requires Admin Verification
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if organization_type.is_active %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_active">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.organization_types_management') }}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Organization Type
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Icon preview functionality
+document.getElementById('icon_class').addEventListener('input', function() {
+    const iconClass = this.value.trim();
+    const preview = document.getElementById('iconPreview');
+    
+    if (iconClass) {
+        preview.className = iconClass + ' fs-4';
+    } else {
+        preview.className = 'fas fa-building fs-4';
+    }
+});
+
+// Color picker functionality
+document.getElementById('color_picker').addEventListener('input', function() {
+    const color = this.value;
+    const colorText = document.getElementById('color_class');
+    const preview = document.getElementById('iconPreview');
+    
+    // Update icon preview color
+    preview.style.color = color;
+    
+    // Update text input with hex color
+    colorText.value = color;
+});
+
+// Allow manual hex color input
+document.getElementById('color_class').addEventListener('input', function() {
+    const color = this.value;
+    const colorPicker = document.getElementById('color_picker');
+    const preview = document.getElementById('iconPreview');
+    
+    // Validate hex color format
+    if (/^#[0-9A-F]{6}$/i.test(color)) {
+        colorPicker.value = color;
+        preview.style.color = color;
+    }
+});
+
+// Initialize color picker with current color
+document.addEventListener('DOMContentLoaded', function() {
+    let currentColor = document.getElementById('color_class').value;
+    
+    // If it's not a hex color (old Bootstrap class), convert it
+    if (!currentColor.startsWith('#')) {
+        const colorMap = {
+            'primary': '#007bff',
+            'success': '#28a745',
+            'info': '#17a2b8',
+            'warning': '#ffc107',
+            'danger': '#dc3545',
+            'secondary': '#6c757d',
+            'dark': '#343a40'
+        };
+        currentColor = colorMap[currentColor] || '#2988a8';
+        document.getElementById('color_class').value = currentColor;
+    }
+    
+    document.getElementById('color_picker').value = currentColor;
+    document.getElementById('iconPreview').style.color = currentColor;
+});
+
+// Form submission
+document.getElementById('organizationTypeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert checkbox values
+    data.requires_verification = document.getElementById('requires_verification').checked;
+    data.is_active = document.getElementById('is_active').checked;
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
+    try {
+        const response = await fetch('{{ url_for("admin.edit_organization_type", org_type_id=organization_type.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Organization type updated successfully!');
+                window.location.href = '{{ url_for("admin.organization_types_management") }}';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } else {
+            // Handle non-JSON response (likely a redirect to login)
+            if (response.status === 302 || response.status === 401) {
+                alert('Session expired. Please log in again.');
+                window.location.href = '/auth/login';
+            } else {
+                const text = await response.text();
+                console.error('Unexpected response:', text);
+                alert('An unexpected error occurred. Please try again.');
+            }
+        }
+    } catch (error) {
+        console.error('Request error:', error);
+        alert('An error occurred: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

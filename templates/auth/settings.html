@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </h4>
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Profile
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" class="needs-validation" novalidate enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-4">
+                            <label for="avatar" class="form-label fw-bold">Profile Photo</label>
+                            <div class="d-flex align-items-center gap-3">
+                                {% if user.avatar %}
+                                    <div class="position-relative">
+                                        <img src="{{ url_for('static', filename='uploads/' + user.avatar) }}" 
+                                             alt="Profile Photo" class="rounded-circle" 
+                                             style="width: 80px; height: 80px; object-fit: cover;">
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" 
+                                                style="width: 24px; height: 24px; padding: 0; font-size: 12px;" 
+                                                onclick="removePhoto()" title="Remove photo">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 80px; height: 80px;">
+                                        <i class="fas fa-user text-muted" style="font-size: 2rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <input type="file" class="form-control" id="avatar" name="avatar" 
+                                           accept="image/*" onchange="previewPhoto(this)">
+                                    <div class="form-text">Upload a profile photo (JPG, PNG, GIF - Max 5MB)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label fw-bold">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ user.first_name }}" required>
+                                <div class="invalid-feedback">Please provide your first name.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label fw-bold">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ user.last_name }}" required>
+                                <div class="invalid-feedback">Please provide your last name.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label fw-bold">Username *</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ user.username }}" required>
+                                <div class="invalid-feedback">Please provide a username.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label fw-bold">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ user.email }}" required>
+                                <div class="invalid-feedback">Please provide a valid email.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label fw-bold">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ user.phone or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label fw-bold">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       value="{{ user.location or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bio" class="form-label fw-bold">Bio</label>
+                            <textarea class="form-control" id="bio" name="bio" rows="4" 
+                                      placeholder="Tell us about yourself...">{{ user.bio or '' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="current_password" class="form-label fw-bold">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" 
+                                       placeholder="Enter current password to change password">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="new_password" class="form-label fw-bold">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" 
+                                       placeholder="Enter new password">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label fw-bold">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                   placeholder="Confirm new password">
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Password confirmation validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = this.value;
+    
+    if (newPassword !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('new_password').addEventListener('input', function() {
+    const confirmPassword = document.getElementById('confirm_password');
+    if (confirmPassword.value) {
+        confirmPassword.dispatchEvent(new Event('input'));
+    }
+});
+
+// Photo preview function
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Create or update the preview image
+            let previewContainer = document.querySelector('.position-relative');
+            if (!previewContainer) {
+                previewContainer = document.createElement('div');
+                previewContainer.className = 'position-relative';
+                document.querySelector('.d-flex.align-items-center.gap-3').insertBefore(previewContainer, document.querySelector('.flex-grow-1'));
+            }
+            
+            previewContainer.innerHTML = `
+                <img src="${e.target.result}" alt="Profile Photo Preview" class="rounded-circle" 
+                     style="width: 80px; height: 80px; object-fit: cover;">
+                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" 
+                        style="width: 24px; height: 24px; padding: 0; font-size: 12px;" 
+                        onclick="removePhoto()" title="Remove photo">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Remove photo function
+function removePhoto() {
+    if (confirm('Are you sure you want to remove your profile photo?')) {
+        // Create a form to submit the removal request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("auth.remove_avatar") }}';
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
+

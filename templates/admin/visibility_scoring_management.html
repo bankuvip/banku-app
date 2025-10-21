@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Visibility Scoring Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-eye me-2 text-primary"></i>Visibility Scoring Management
+                </h1>
+                <div>
+                    <a href="{{ url_for('scoring_admin.scoring_management') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    <button class="btn btn-primary" onclick="saveAllChanges()">
+                        <i class="fas fa-save me-1"></i>Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Current Average Visibility</h6>
+                    <div class="h2 text-primary">{{ "%.1f"|format(avg_visibility) }}%</div>
+                    <small class="text-muted">Based on {{ flows|length }} chatbot flows</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Scoring System</h6>
+                    <div class="text-muted">
+                        <small>Visibility score is calculated based on:</small>
+                        <ul class="mb-0 mt-2">
+                            <li>Essential fields (title, description, category)</li>
+                            <li>Chatbot question points (configurable below)</li>
+                            <li>Media attachments and detail level</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Flows and Questions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>Chatbot Questions & Points Configuration
+                    </h5>
+                    <small class="text-muted">Set visibility points for each question. Higher points = more important for scoring.</small>
+                </div>
+                <div class="card-body">
+                    {% for flow in flows %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="fas fa-{{ 'lightbulb' if 'idea' in flow.name.lower() else 'box' if 'product' in flow.name.lower() else 'cogs' if 'service' in flow.name.lower() else 'star' }} me-2"></i>
+                                {{ flow.name }}
+                            </h6>
+                            <span class="badge bg-primary">{{ flow.questions|length }} questions</span>
+                        </div>
+                        
+                        {% if flow.questions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="40%">Question</th>
+                                        <th width="15%">Type</th>
+                                        <th width="15%">Classification</th>
+                                        <th width="15%">Field Mapping</th>
+                                        <th width="10%">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for question in flow.questions %}
+                                    <tr>
+                                        <td>{{ question.order_index }}</td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 300px;" title="{{ question.question_text }}">
+                                                {{ question.question_text[:80] }}{% if question.question_text|length > 80 %}...{% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ question.question_type }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if question.question_classification == 'essential' else 'info' }}">
+                                                {{ question.question_classification.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ question.field_mapping or 'N/A' }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" 
+                                                       class="form-control question-points" 
+                                                       data-question-id="{{ question.id }}"
+                                                       value="{{ question.visibility_points }}"
+                                                       min="0" 
+                                                       max="100"
+                                                       style="width: 80px;">
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-primary btn-sm" 
+                                                            onclick="updateQuestionPoints({{ question.id }}, this.previousElementSibling.value)">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-exclamation-circle me-2"></i>No questions found for this flow
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if not loop.last %}<hr>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateQuestionPoints(questionId, points) {
+    if (!points || points < 0 || points > 100) {
+        alert('Please enter a valid number between 0 and 100');
+        return;
+    }
+    
+    fetch('/admin/api/scoring/update-question-points', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question_id: questionId,
+            points: parseInt(points)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success feedback
+            const btn = event.target;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-success"></i>';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-outline-primary');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating question points.');
+    });
+}
+
+function saveAllChanges() {
+    const inputs = document.querySelectorAll('.question-points');
+    let updatedCount = 0;
+    
+    inputs.forEach(input => {
+        const questionId = input.dataset.questionId;
+        const points = input.value;
+        
+        if (points && points >= 0 && points <= 100) {
+            updateQuestionPoints(questionId, points);
+            updatedCount++;
+        }
+    });
+    
+    if (updatedCount > 0) {
+        alert(`Updated ${updatedCount} questions. Please wait for all updates to complete.`);
+    } else {
+        alert('No valid changes to save.');
+    }
+}
+
+// Auto-save on input change (with debounce)
+let saveTimeout;
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('question-points')) {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            const questionId = e.target.dataset.questionId;
+            const points = e.target.value;
+            if (points && points >= 0 && points <= 100) {
+                updateQuestionPoints(questionId, points);
+            }
+        }, 1000); // 1 second delay
+    }
+});
+</script>
+{% endblock %}

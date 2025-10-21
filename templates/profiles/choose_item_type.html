@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Choose Item Type{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Choose Item Type</h4>
+                </div>
+                <div class="card-body p-5">
+                    <p class="text-muted mb-4">Select the type of item you want to create:</p>
+                    
+                    <div class="row g-4">
+                        <!-- Products -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_product') }}" class="text-decoration-none">
+                                <div class="card border-primary h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-box fa-3x text-primary mb-3"></i>
+                                        <h5 class="card-title">Products</h5>
+                                        <p class="card-text text-muted">Physical, digital, or knowledge products</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Services -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_service') }}" class="text-decoration-none">
+                                <div class="card border-success h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-university fa-3x text-success mb-3"></i>
+                                        <h5 class="card-title">Services</h5>
+                                        <p class="card-text text-muted">Professional services and consulting</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Experiences -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_experience') }}" class="text-decoration-none">
+                                <div class="card border-warning h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                                        <h5 class="card-title">Experiences</h5>
+                                        <p class="card-text text-muted">Share your experiences and lessons</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Opportunities -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_opportunity') }}" class="text-decoration-none">
+                                <div class="card border-info h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-bullseye fa-3x text-info mb-3"></i>
+                                        <h5 class="card-title">Opportunities</h5>
+                                        <p class="card-text text-muted">Business and collaboration opportunities</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Events -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_event') }}" class="text-decoration-none">
+                                <div class="card border-danger h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calendar-alt fa-3x text-danger mb-3"></i>
+                                        <h5 class="card-title">Events</h5>
+                                        <p class="card-text text-muted">Organize and promote events</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Information -->
+                        <div class="col-md-6">
+                            <a href="{{ url_for('profiles.create_information') }}" class="text-decoration-none">
+                                <div class="card border-secondary h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-info-circle fa-3x text-secondary mb-3"></i>
+                                        <h5 class="card-title">Information</h5>
+                                        <p class="card-text text-muted">Share valuable information and insights</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('profiles.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+

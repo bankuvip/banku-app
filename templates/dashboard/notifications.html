@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </h1>
+                <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double me-1"></i>Mark All as Read
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    {% if notifications.items %}
+                        {% for notification in notifications.items %}
+                        <div class="notification-item p-4 border-bottom {% if not notification.is_read %}unread{% endif %}" 
+                             data-notification-id="{{ notification.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ notification.title }}</h6>
+                                    <p class="text-muted mb-2">{{ notification.message }}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-secondary">{{ notification.notification_type.replace('_', ' ').title() }}</span>
+                                        <small class="text-muted">{{ notification.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                    </div>
+                                </div>
+                                {% if not notification.is_read %}
+                                <button class="btn btn-sm btn-outline-primary" onclick="markAsRead({{ notification.id }})">
+                                    <i class="fas fa-check me-1"></i>Mark Read
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash text-muted fs-1 mb-3"></i>
+                        <h4 class="text-muted">No notifications</h4>
+                        <p class="text-muted">You're all caught up! New notifications will appear here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if notifications.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Notifications pagination">
+                <ul class="pagination justify-content-center">
+                    {% if notifications.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.notifications', page=notifications.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in notifications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != notifications.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('dashboard.notifications', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if notifications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('dashboard.notifications', page=notifications.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.notification-item.unread {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+.notification-item.read {
+    opacity: 0.7;
+}
+
+.notification-item {
+    transition: all 0.3s ease;
+}
+
+.notification-item:hover {
+    background-color: #e9ecef;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Use the main.js functions for consistency
+function markAsRead(notificationId) {
+    markNotificationAsRead(notificationId).then(() => {
+        // Hide the mark read button after successful marking
+        const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+        if (notificationElement) {
+            const markReadBtn = notificationElement.querySelector('.btn-outline-primary');
+            if (markReadBtn) {
+                markReadBtn.remove();
+            }
+        }
+    });
+}
+
+function markAllAsRead() {
+    markAllNotificationsAsRead().then(() => {
+        // Reload page to show updated state
+        location.reload();
+    });
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

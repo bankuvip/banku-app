@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - BankU{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-template">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2 class="mb-4">Internal Server Error</h2>
+                <div class="error-details mb-4">
+                    <p class="text-muted">Something went wrong on our end. We're working to fix it!</p>
+                </div>
+                <div class="error-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-home me-2"></i>Go Home
+                    </a>
+                    <a href="javascript:location.reload()" class="btn btn-outline-secondary btn-lg ms-2">
+                        <i class="fas fa-refresh me-2"></i>Try Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-template {
+    padding: 40px 15px;
+    text-align: center;
+}
+
+.error-template .display-1 {
+    font-size: 8rem;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+.error-actions {
+    margin-top: 30px;
+}
+
+.error-actions .btn {
+    margin: 5px;
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+

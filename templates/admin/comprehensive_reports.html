@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+
+{% block title %}Comprehensive Reports - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-pie me-2"></i>Comprehensive Reports</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" onclick="generateReport('overview')">
+                        <i class="fas fa-sync-alt me-2"></i>Generate Overview
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportReport()">
+                        <i class="fas fa-download me-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Report Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="dateFrom" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="dateFrom">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dateTo" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="reportType" class="form-label">Report Type</label>
+                            <select class="form-select" id="reportType">
+                                <option value="overview">Overview Report</option>
+                                <option value="user_activity">User Activity</option>
+                                <option value="system_performance">System Performance</option>
+                                <option value="business_metrics">Business Metrics</option>
+                                <option value="security_events">Security Events</option>
+                                <option value="ab_test_results">A/B Test Results</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="format" class="form-label">Export Format</label>
+                            <select class="form-select" id="format">
+                                <option value="html">HTML</option>
+                                <option value="pdf">PDF</option>
+                                <option value="csv">CSV</option>
+                                <option value="excel">Excel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button class="btn btn-primary" onclick="applyFilters()">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overview Dashboard -->
+            <div id="overviewReport" class="report-section">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="totalUsers">-</h4>
+                                        <p class="card-text">Total Users</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-users fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="totalDeals">-</h4>
+                                        <p class="card-text">Total Deals</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-university fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="totalRevenue">-</h4>
+                                        <p class="card-text">Total Revenue</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-dollar-sign fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="activeUsers">-</h4>
+                                        <p class="card-text">Active Users (24h)</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="fas fa-user-check fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">User Growth Over Time</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="userGrowthChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">User Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="userDistributionChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="row mb-4">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">System Performance</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="performanceChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Error Trends</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="errorTrendsChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Activity Report -->
+            <div id="userActivityReport" class="report-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">User Activity Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Last Activity</th>
+                                        <th>Total Sessions</th>
+                                        <th>Page Views</th>
+                                        <th>Actions</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userActivityTable">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Performance Report -->
+            <div id="systemPerformanceReport" class="report-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">System Performance Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Response Time Trends</h6>
+                                <canvas id="responseTimeChart" height="200"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Resource Usage</h6>
+                                <canvas id="resourceUsageChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Metrics Report -->
+            <div id="businessMetricsReport" class="report-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Business Metrics Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-primary" id="conversionRate">-</h3>
+                                        <p class="card-text">Conversion Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-success" id="retentionRate">-</h3>
+                                        <p class="card-text">User Retention Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-warning" id="avgSessionTime">-</h3>
+                                        <p class="card-text">Avg Session Time</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Events Report -->
+            <div id="securityEventsReport" class="report-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Security Events Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Event Type</th>
+                                        <th>Severity</th>
+                                        <th>IP Address</th>
+                                        <th>User</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="securityEventsTable">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A/B Test Results Report -->
+            <div id="abTestResultsReport" class="report-section" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">A/B Test Results Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="abTestResultsContainer">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let charts = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    document.getElementById('dateFrom').value = lastMonth.toISOString().split('T')[0];
+    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+    
+    // Load overview report by default
+    generateReport('overview');
+});
+
+function generateReport(type) {
+    // Hide all report sections
+    document.querySelectorAll('.report-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show selected report section
+    const reportSection = document.getElementById(type + 'Report');
+    if (reportSection) {
+        reportSection.style.display = 'block';
+    }
+    
+    // Load data based on report type
+    switch(type) {
+        case 'overview':
+            loadOverviewReport();
+            break;
+        case 'user_activity':
+            loadUserActivityReport();
+            break;
+        case 'system_performance':
+            loadSystemPerformanceReport();
+            break;
+        case 'business_metrics':
+            loadBusinessMetricsReport();
+            break;
+        case 'security_events':
+            loadSecurityEventsReport();
+            break;
+        case 'ab_test_results':
+            loadABTestResultsReport();
+            break;
+    }
+}
+
+async function loadOverviewReport() {
+    try {
+        const response = await fetch('/admin/reports/overview');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update metrics
+            document.getElementById('totalUsers').textContent = data.total_users || 0;
+            document.getElementById('totalDeals').textContent = data.total_deals || 0;
+            document.getElementById('totalRevenue').textContent = '$' + (data.total_revenue || 0).toLocaleString();
+            document.getElementById('activeUsers').textContent = data.active_users || 0;
+            
+            // Create charts
+            createUserGrowthChart(data.user_growth || []);
+            createUserDistributionChart(data.user_distribution || {});
+            createPerformanceChart(data.performance_metrics || []);
+            createErrorTrendsChart(data.error_trends || []);
+        }
+    } catch (error) {
+        console.error('Failed to load overview report:', error);
+    }
+}
+
+function createUserGrowthChart(data) {
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+    
+    if (charts.userGrowth) {
+        charts.userGrowth.destroy();
+    }
+    
+    charts.userGrowth = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(item => item.date),
+            datasets: [{
+                label: 'New Users',
+                data: data.map(item => item.count),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createUserDistributionChart(data) {
+    const ctx = document.getElementById('userDistributionChart').getContext('2d');
+    
+    if (charts.userDistribution) {
+        charts.userDistribution.destroy();
+    }
+    
+    charts.userDistribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data),
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function createPerformanceChart(data) {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    if (charts.performance) {
+        charts.performance.destroy();
+    }
+    
+    charts.performance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(item => item.metric),
+            datasets: [{
+                label: 'Value',
+                data: data.map(item => item.value),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createErrorTrendsChart(data) {
+    const ctx = document.getElementById('errorTrendsChart').getContext('2d');
+    
+    if (charts.errorTrends) {
+        charts.errorTrends.destroy();
+    }
+    
+    charts.errorTrends = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(item => item.date),
+            datasets: [{
+                label: 'Errors',
+                data: data.map(item => item.count),
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+async function loadUserActivityReport() {
+    try {
+        const response = await fetch('/admin/reports/user-activity');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('userActivityTable');
+            tbody.innerHTML = '';
+            
+            data.users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${new Date(user.last_activity).toLocaleString()}</td>
+                    <td>${user.total_sessions}</td>
+                    <td>${user.page_views}</td>
+                    <td>${user.actions}</td>
+                    <td><span class="badge bg-${user.status === 'active' ? 'success' : 'secondary'}">${user.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load user activity report:', error);
+    }
+}
+
+async function loadSystemPerformanceReport() {
+    try {
+        const response = await fetch('/admin/reports/system-performance');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Create response time chart
+            const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+            if (charts.responseTime) {
+                charts.responseTime.destroy();
+            }
+            
+            charts.responseTime = new Chart(responseCtx, {
+                type: 'line',
+                data: {
+                    labels: data.response_times.map(item => item.time),
+                    datasets: [{
+                        label: 'Response Time (ms)',
+                        data: data.response_times.map(item => item.value),
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Create resource usage chart
+            const resourceCtx = document.getElementById('resourceUsageChart').getContext('2d');
+            if (charts.resourceUsage) {
+                charts.resourceUsage.destroy();
+            }
+            
+            charts.resourceUsage = new Chart(resourceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['CPU', 'Memory', 'Disk'],
+                    datasets: [{
+                        data: [data.cpu_usage, data.memory_usage, data.disk_usage],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load system performance report:', error);
+    }
+}
+
+async function loadBusinessMetricsReport() {
+    try {
+        const response = await fetch('/admin/reports/business-metrics');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('conversionRate').textContent = (data.conversion_rate || 0) + '%';
+            document.getElementById('retentionRate').textContent = (data.retention_rate || 0) + '%';
+            document.getElementById('avgSessionTime').textContent = (data.avg_session_time || 0) + ' min';
+        }
+    } catch (error) {
+        console.error('Failed to load business metrics report:', error);
+    }
+}
+
+async function loadSecurityEventsReport() {
+    try {
+        const response = await fetch('/admin/reports/security-events');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('securityEventsTable');
+            tbody.innerHTML = '';
+            
+            data.events.forEach(event => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(event.timestamp).toLocaleString()}</td>
+                    <td>${event.event_type}</td>
+                    <td><span class="badge bg-${event.severity === 'high' ? 'danger' : event.severity === 'medium' ? 'warning' : 'info'}">${event.severity}</span></td>
+                    <td>${event.ip_address}</td>
+                    <td>${event.user || 'Anonymous'}</td>
+                    <td>${event.description}</td>
+                    <td><span class="badge bg-${event.status === 'resolved' ? 'success' : 'warning'}">${event.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load security events report:', error);
+    }
+}
+
+async function loadABTestResultsReport() {
+    try {
+        const response = await fetch('/admin/reports/ab-test-results');
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('abTestResultsContainer');
+            container.innerHTML = '';
+            
+            data.tests.forEach(test => {
+                const testCard = document.createElement('div');
+                testCard.className = 'card mb-3';
+                testCard.innerHTML = `
+                    <div class="card-body">
+                        <h6 class="card-title">${test.name}</h6>
+                        <p class="card-text">${test.description}</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Results:</h6>
+                                <ul class="list-unstyled">
+                                    ${Object.entries(test.results || {}).map(([variant, result]) => 
+                                        `<li><strong>Variant ${variant}:</strong> ${result.conversion_rate || 0}% conversion rate</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Status:</h6>
+                                <span class="badge bg-${test.status === 'active' ? 'success' : 'secondary'}">${test.status}</span>
+                                <p class="mt-2">Participants: ${test.participants || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(testCard);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load A/B test results report:', error);
+    }
+}
+
+function applyFilters() {
+    const reportType = document.getElementById('reportType').value;
+    generateReport(reportType);
+}
+
+function clearFilters() {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('reportType').value = 'overview';
+    generateReport('overview');
+}
+
+function exportReport() {
+    const format = document.getElementById('format').value;
+    const reportType = document.getElementById('reportType').value;
+    
+    // Implementation for report export
+    alert(`Exporting ${reportType} report as ${format.toUpperCase()}`);
+}
+</script>
+{% endblock %}

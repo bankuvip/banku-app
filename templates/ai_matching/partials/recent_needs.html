@@ -1,0 +1,32 @@
+{% if recent_needs %}
+    <div style="max-height: 400px; overflow-y: auto;">
+        {% for need in recent_needs[:6] %}
+            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                <div>
+                    <h6 class="mb-1">{{ need.title }}</h6>
+                    <small class="text-muted">{{ need.need_type.title() }} • {{ need.urgency_level.title() }}</small>
+                    <br>
+                    <small class="text-info">
+                        <i class="fas fa-user me-1"></i>{{ need.user.first_name }} {{ need.user.last_name }}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('ai_matching.need_detail', need_id=need.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+        {% if recent_needs|length > 6 %}
+            <div class="text-center mt-3">
+                <small class="text-muted">Showing 6 of {{ recent_needs|length }} needs</small>
+            </div>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="text-center py-4">
+        <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+        <h5>No Recent Needs</h5>
+        <p class="text-muted">No needs have been added recently.</p>
+    </div>
+{% endif %}

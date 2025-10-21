@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bank.name }} - Organizations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Bank Header -->
+            <div class="bank-header mb-4" style="background: linear-gradient(135deg, {{ bank.color }}, {{ bank.color }}dd); color: white; padding: 2rem; border-radius: 10px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-2">
+                            <i class="{{ bank.icon }} me-3"></i>{{ bank.name }}
+                        </h1>
+                        {% if bank.description %}
+                            <p class="mb-0 opacity-75">{{ bank.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        <div class="h3 mb-0">{{ organizations.total }} Organizations</div>
+                        <small class="opacity-75">Active Organizations</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="search" placeholder="Search organizations..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="org_type_filter">
+                                <option value="">All Organization Types</option>
+                                {% for org_type in organization_types %}
+                                    <option value="{{ org_type.id }}" {% if org_type_filter == org_type.id|string %}selected{% endif %}>
+                                        {{ org_type.display_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" name="privacy_filter">
+                                <option value="">All Organizations</option>
+                                <option value="public" {% if privacy_filter == 'public' %}selected{% endif %}>Public Only</option>
+                                <option value="private" {% if privacy_filter == 'private' %}selected{% endif %}>Private Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" name="sort_by">
+                                <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Sort by Date</option>
+                                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Organizations Grid -->
+            {% if organizations.items %}
+                <div class="row">
+                    {% for org in organizations.items %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100 organization-card">
+                                <!-- Organization Logo -->
+                                <div class="text-center p-3">
+                                    {% if org.logo %}
+                                        <img src="{{ url_for('static', filename='uploads/' + org.logo) }}" 
+                                             class="rounded-circle mb-2" 
+                                             style="width: 80px; height: 80px; object-fit: cover;"
+                                             alt="{{ org.name }}">
+                                    {% else %}
+                                        <div class="rounded-circle mb-2 d-flex align-items-center justify-content-center" 
+                                             style="width: 80px; height: 80px; background: {{ org.organization_type.color_class|default(bank.color) }}; color: white; margin: 0 auto;">
+                                            <i class="{{ org.organization_type.icon_class|default('fas fa-building') }} fa-2x"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body text-center">
+                                    <h5 class="card-title mb-1">
+                                        {{ org.name }}
+                                    </h5>
+                                    
+                                    {% if org.organization_type %}
+                                        <span class="badge mb-2" style="background-color: {{ org.organization_type.color_class|default('#6c757d') }};">
+                                            {{ org.organization_type.display_name }}
+                                        </span>
+                                    {% endif %}
+                                    
+                                    {% if org.location %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ org.location }}
+                                        </p>
+                                    {% endif %}
+                                    
+                                    {% if org.description %}
+                                        <p class="card-text small">{{ org.description[:100] }}{% if org.description|length > 100 %}...{% endif %}</p>
+                                    {% endif %}
+                                    
+                                    {% if org.website %}
+                                        <p class="small mb-2">
+                                            <a href="{{ org.website }}" target="_blank" class="text-decoration-none">
+                                                <i class="fas fa-globe me-1"></i>Website
+                                            </a>
+                                        </p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for('organizations.view', slug=org.slug) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View Organization
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer text-muted small text-center">
+                                    Created {{ org.created_at.strftime('%b %Y') }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if organizations.pages > 1 %}
+                    <nav aria-label="Organizations pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if organizations.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=organizations.prev_num, search=search, org_type_filter=org_type_filter, privacy_filter=privacy_filter, sort_by=sort_by, sort_order=sort_order) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in organizations.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != organizations.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=page_num, search=search, org_type_filter=org_type_filter, privacy_filter=privacy_filter, sort_by=sort_by, sort_order=sort_order) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if organizations.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=organizations.next_num, search=search, org_type_filter=org_type_filter, privacy_filter=privacy_filter, sort_by=sort_by, sort_order=sort_order) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <!-- No Organizations Found -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-building fa-5x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">No Organizations Found</h3>
+                    {% if search or org_type_filter or privacy_filter %}
+                        <p class="text-muted mb-4">No organizations match your search criteria</p>
+                        <a href="{{ url_for('banks.bank_items', bank_slug=bank.slug) }}" class="btn btn-primary">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </a>
+                    {% else %}
+                        <p class="text-muted mb-4">This bank doesn't have any organizations yet.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.organization-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid #e9ecef;
+}
+
+.organization-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.bank-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color)dd);
+}
+</style>
+{% endblock %}

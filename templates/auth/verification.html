@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Account Verification - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Account Verification
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Email Verification Status -->
+                    <div class="verification-item mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="verification-icon me-3">
+                                    {% if current_user.email_verified %}
+                                        <i class="fas fa-check-circle text-success fs-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-exclamation-circle text-warning fs-2"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Email Address</h5>
+                                    <p class="text-muted mb-0">{{ current_user.email }}</p>
+                                </div>
+                            </div>
+                            <div class="verification-status">
+                                {% if current_user.email_verified %}
+                                    <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if not current_user.email_verified %}
+                        <div class="mt-3">
+                            <p class="text-muted small mb-2">
+                                Please check your email for a verification link. If you didn't receive it, you can resend it.
+                            </p>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-outline-primary btn-sm" id="resendBtn" onclick="resendEmailVerification()">
+                                    <i class="fas fa-paper-plane me-1"></i>Resend Verification Email
+                                </button>
+                                <span class="text-muted small" id="attemptsInfo"></span>
+                            </div>
+                            <div class="mt-2" id="countdownContainer" style="display: none;">
+                                <div class="alert alert-warning py-2">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <span id="countdownText">Please wait before requesting another email.</span>
+                                </div>
+                            </div>
+                            <div class="mt-2" id="configErrorContainer" style="display: none;">
+                                <div class="alert alert-info py-2">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <span id="configErrorText">Email verification is not configured. Please contact support.</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Phone Verification Status - DISABLED FOR NOW -->
+                    <!-- 
+                    <div class="verification-item mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="verification-icon me-3">
+                                    <i class="fas fa-phone text-muted fs-2"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Phone Number</h5>
+                                    <p class="text-muted mb-0">Coming Soon</p>
+                                </div>
+                            </div>
+                            <div class="verification-status">
+                                <span class="badge bg-secondary">Disabled</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <p class="text-muted small mb-2">
+                                Phone verification will be available in a future update. For now, email verification provides full account access.
+                            </p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> Phone verification is currently disabled. Email verification is sufficient for full account access.
+                            </div>
+                        </div>
+                    </div>
+                    -->
+
+                    <!-- Verification Benefits -->
+                    <div class="verification-benefits mt-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-star me-2"></i>Benefits of Email Verification
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <small>Full access to all BankU features</small>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <small>Enhanced account security</small>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <small>Password recovery options</small>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <small>Important notifications via email</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Email verification is currently the only verification method available. Phone verification will be added in a future update.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('auth.settings') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-cog me-2"></i>Account Settings
+                        </a>
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                            <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Resend email verification with countdown timer
+function resendEmailVerification() {
+    const resendBtn = document.getElementById('resendBtn');
+    const attemptsInfo = document.getElementById('attemptsInfo');
+    const countdownContainer = document.getElementById('countdownContainer');
+    const countdownText = document.getElementById('countdownText');
+    
+    // Disable button during request
+    resendBtn.disabled = true;
+    resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    
+    fetch('{{ url_for("auth.resend_verification") }}', {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            
+            // Update attempts info
+            if (data.attempts_remaining !== undefined) {
+                if (data.attempts_remaining > 0) {
+                    attemptsInfo.textContent = `${data.attempts_remaining} attempts remaining`;
+                    attemptsInfo.className = 'text-muted small';
+                } else {
+                    attemptsInfo.textContent = 'No attempts remaining';
+                    attemptsInfo.className = 'text-warning small fw-bold';
+                }
+            }
+            
+            // If max attempts reached, show countdown
+            if (data.max_attempts && data.cooldown) {
+                startCountdown(data.cooldown);
+            } else {
+                // Re-enable button after 2 seconds
+                setTimeout(() => {
+                    resendBtn.disabled = false;
+                    resendBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Resend Verification Email';
+                }, 2000);
+            }
+        } else {
+            showAlert('error', data.message);
+            
+            // If configuration error, show info message
+            if (data.needs_config) {
+                const configErrorContainer = document.getElementById('configErrorContainer');
+                const configErrorText = document.getElementById('configErrorText');
+                configErrorText.textContent = data.message;
+                configErrorContainer.style.display = 'block';
+                
+                // Disable button permanently until config is fixed
+                resendBtn.disabled = true;
+                resendBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Email Not Configured';
+                resendBtn.className = 'btn btn-outline-warning btn-sm';
+            }
+            // If cooldown, start countdown
+            else if (data.cooldown) {
+                startCountdown(data.cooldown);
+            } else {
+                // Re-enable button
+                resendBtn.disabled = false;
+                resendBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Resend Verification Email';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'An error occurred. Please try again.');
+        
+        // Re-enable button
+        resendBtn.disabled = false;
+        resendBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Resend Verification Email';
+    });
+}
+
+// Start countdown timer
+function startCountdown(seconds) {
+    const resendBtn = document.getElementById('resendBtn');
+    const countdownContainer = document.getElementById('countdownContainer');
+    const countdownText = document.getElementById('countdownText');
+    
+    // Disable button and show countdown
+    resendBtn.disabled = true;
+    resendBtn.innerHTML = '<i class="fas fa-clock me-1"></i>Wait';
+    countdownContainer.style.display = 'block';
+    
+    let remaining = seconds;
+    
+    const countdownInterval = setInterval(() => {
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        
+        if (remaining > 0) {
+            countdownText.textContent = `Please wait ${minutes}:${secs.toString().padStart(2, '0')} before requesting another email.`;
+            remaining--;
+        } else {
+            // Countdown finished
+            clearInterval(countdownInterval);
+            resendBtn.disabled = false;
+            resendBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Resend Verification Email';
+            countdownContainer.style.display = 'none';
+        }
+    }, 1000);
+}
+
+// Phone verification functions are disabled for now
+// They will be re-enabled when SMS service integration is ready
+
+// Show alert function
+function showAlert(type, message) {
+    const alertContainer = document.querySelector('.alert-container') || createAlertContainer();
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function createAlertContainer() {
+    const container = document.createElement('div');
+    container.className = 'alert-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+</script>
+{% endblock %}

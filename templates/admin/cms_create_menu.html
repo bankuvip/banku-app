@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Add Menu Item - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>Add Menu Item
+                </h1>
+                <a href="{{ url_for('admin.cms_navigation') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Navigation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Menu Item Information</h5>
+                </div>
+                <div class="card-body">
+                    <form id="menuForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="menuName" class="form-label">Menu Name *</label>
+                                    <select class="form-select" id="menuName" name="name" required>
+                                        <option value="">Select a menu...</option>
+                                        <option value="main">Main Navigation</option>
+                                        <option value="footer">Footer Menu</option>
+                                        <option value="sidebar">Sidebar Menu</option>
+                                        <option value="mobile">Mobile Menu</option>
+                                    </select>
+                                    <div class="form-text">Which menu this item belongs to</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="menuTitle" class="form-label">Menu Title *</label>
+                                    <input type="text" class="form-control" id="menuTitle" name="title" required placeholder="e.g., About Us">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="menuType" class="form-label">Link Type *</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="link_type" id="linkPage" value="page" checked>
+                                        <label class="form-check-label" for="linkPage">
+                                            Link to Page
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="link_type" id="linkUrl" value="url">
+                                        <label class="form-check-label" for="linkUrl">
+                                            External URL
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="pageSelect">
+                                    <label for="menuPage" class="form-label">Select Page</label>
+                                    <select class="form-select" id="menuPage" name="page_id">
+                                        <option value="">Choose a page...</option>
+                                        {% for page in pages %}
+                                        <option value="{{ page.id }}">{{ page.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3" id="urlInput" style="display: none;">
+                                    <label for="menuUrl" class="form-label">URL</label>
+                                    <input type="url" class="form-control" id="menuUrl" name="url" placeholder="https://example.com">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="menuIcon" class="form-label">Icon (Font Awesome)</label>
+                                    <input type="text" class="form-control" id="menuIcon" name="icon" placeholder="fas fa-home">
+                                    <div class="form-text">Font Awesome icon class (e.g., fas fa-home)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="menuCssClass" class="form-label">CSS Classes</label>
+                                    <input type="text" class="form-control" id="menuCssClass" name="css_class" placeholder="custom-class another-class">
+                                    <div class="form-text">Space-separated CSS classes</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Menu Settings</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="isPublished" name="is_published" checked>
+                                                <label class="form-check-label" for="isPublished">
+                                                    Publish immediately
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="requiresAuth" name="requires_auth">
+                                                <label class="form-check-label" for="requiresAuth">
+                                                    Requires authentication
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="sortOrder" class="form-label">Sort Order</label>
+                                            <input type="number" class="form-control" id="sortOrder" name="sort_order" value="0">
+                                            <div class="form-text">Lower numbers appear first</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Role Requirements</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Required Roles</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="roleAdmin" name="required_roles" value="Admin">
+                                                <label class="form-check-label" for="roleAdmin">Admin</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="roleUser" name="required_roles" value="User">
+                                                <label class="form-check-label" for="roleUser">User</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="roleModerator" name="required_roles" value="Moderator">
+                                                <label class="form-check-label" for="roleModerator">Moderator</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('admin.cms_navigation') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Menu Item
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const linkTypeRadios = document.querySelectorAll('input[name="link_type"]');
+    const pageSelect = document.getElementById('pageSelect');
+    const urlInput = document.getElementById('urlInput');
+    
+    // Link type change handler
+    linkTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'page') {
+                pageSelect.style.display = 'block';
+                urlInput.style.display = 'none';
+            } else {
+                pageSelect.style.display = 'none';
+                urlInput.style.display = 'block';
+            }
+        });
+    });
+    
+    // Form submission
+    document.getElementById('menuForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            title: formData.get('title'),
+            url: formData.get('url'),
+            page_id: formData.get('page_id'),
+            icon: formData.get('icon'),
+            css_class: formData.get('css_class'),
+            is_published: formData.get('is_published') === 'on',
+            requires_auth: formData.get('requires_auth') === 'on',
+            sort_order: parseInt(formData.get('sort_order')) || 0,
+            required_roles: Array.from(formData.getAll('required_roles'))
+        };
+        
+        fetch('/admin/cms/navigation/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/admin/cms/navigation';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the menu item.');
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
+

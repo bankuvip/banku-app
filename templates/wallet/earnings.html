@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Earnings History - My Wallet{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Earnings History
+                </h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="syncEarnings()">
+                        <i class="fas fa-sync-alt me-1"></i>Sync Earnings
+                    </button>
+                    <a href="{{ url_for('wallet.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Wallet
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Earned</h6>
+                            <h4 class="mb-0">
+                                ${{ "%.2f"|format(earnings.items | sum(attribute='amount')) }}
+                            </h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending</h6>
+                            <h4 class="mb-0">
+                                ${{ "%.2f"|format(earnings.items | selectattr('status', 'equalto', 'pending') | sum(attribute='amount')) }}
+                            </h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Paid</h6>
+                            <h4 class="mb-0">
+                                ${{ "%.2f"|format(earnings.items | selectattr('status', 'equalto', 'paid') | sum(attribute='amount')) }}
+                            </h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Count</h6>
+                            <h4 class="mb-0">{{ earnings.total }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-3">
+                            <label for="earning_type" class="form-label">Earning Type</label>
+                            <select class="form-select" id="earning_type" name="earning_type">
+                                <option value="">All Types</option>
+                                <option value="referral" {% if request.args.get('earning_type') == 'referral' %}selected{% endif %}>Referral</option>
+                                <option value="project_contribution" {% if request.args.get('earning_type') == 'project_contribution' %}selected{% endif %}>Project Contribution</option>
+                                <option value="connector" {% if request.args.get('earning_type') == 'connector' %}selected{% endif %}>Connector</option>
+                                <option value="collector" {% if request.args.get('earning_type') == 'collector' %}selected{% endif %}>Collector</option>
+                                <option value="deal_completion" {% if request.args.get('earning_type') == 'deal_completion' %}selected{% endif %}>Deal Completion</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="paid" {% if request.args.get('status') == 'paid' %}selected{% endif %}>Paid</option>
+                                <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                            <a href="{{ url_for('wallet.earnings') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        Earnings
+                        <span class="badge bg-secondary ms-2">{{ earnings.total }} total</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if earnings.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Deal</th>
+                                        <th>Paid Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for earning in earnings.items %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ earning.created_at.strftime('%m/%d/%Y') }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ earning.created_at.strftime('%H:%M:%S') }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if earning.earning_type == 'deal_completion' %}success{% elif earning.earning_type == 'connector' %}primary{% elif earning.earning_type == 'referral' %}info{% else %}secondary{% endif %}">
+                                                <i class="fas fa-{% if earning.earning_type == 'deal_completion' %}handshake{% elif earning.earning_type == 'connector' %}link{% elif earning.earning_type == 'referral' %}user-plus{% else %}coins{% endif %} me-1"></i>
+                                                {{ earning.earning_type.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                {{ earning.description }}
+                                                {% if earning.deal_id %}
+                                                    <br>
+                                                    <small class="text-muted">Deal ID: #{{ earning.deal_id }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">
+                                                <strong>+${{ "%.2f"|format(earning.amount) }}</strong>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">{{ earning.currency }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if earning.status == 'paid' %}success{% elif earning.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                                <i class="fas fa-{% if earning.status == 'paid' %}check{% elif earning.status == 'pending' %}clock{% else %}times{% endif %} me-1"></i>
+                                                {{ earning.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if earning.deal_id %}
+                                                <a href="{{ url_for('deals.detail', deal_id=earning.deal_id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-external-link-alt me-1"></i>View Deal
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if earning.paid_at %}
+                                                <div>
+                                                    <strong>{{ earning.paid_at.strftime('%m/%d/%Y') }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ earning.paid_at.strftime('%H:%M:%S') }}</small>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if earnings.pages > 1 %}
+                        <nav aria-label="Earnings pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if earnings.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('wallet.earnings', page=earnings.prev_num, **request.args) }}">
+                                            <i class="fas fa-chevron-left"></i> Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in earnings.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != earnings.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('wallet.earnings', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if earnings.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('wallet.earnings', page=earnings.next_num, **request.args) }}">
+                                            Next <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-4x text-muted mb-4"></i>
+                            <h4 class="text-muted">No Earnings Found</h4>
+                            <p class="text-muted">Your earnings will appear here once you start earning money through deals, referrals, or other activities.</p>
+                            <div class="mt-4">
+                                <a href="{{ url_for('deals.index') }}" class="btn btn-primary me-2">
+                                    <i class="fas fa-handshake me-1"></i>View Deals
+                                </a>
+                                <a href="{{ url_for('wallet.index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Back to Wallet
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function syncEarnings() {
+    fetch('{{ url_for("wallet.sync_earnings") }}', {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0';
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${data.message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error syncing earnings');
+    });
+}
+</script>
+{% endblock %}

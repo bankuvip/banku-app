@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Search Patterns - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Search Patterns & Trends
+                </h1>
+                <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ popular_terms|length }}</h4>
+                    <p class="card-text">Popular Search Terms</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ trends_data|length }}</h4>
+                    <p class="card-text">Days Tracked</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ popular_terms|sum(attribute='total_searches') if popular_terms else 0 }}</h4>
+                    <p class="card-text">Total Searches</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Trends Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Search Trends (30 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="searchTrendsChart" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Search Terms -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>Popular Search Terms
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if popular_terms %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Search Term</th>
+                                        <th>Item Type</th>
+                                        <th>Total Searches</th>
+                                        <th>Popularity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for term in popular_terms %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-{% if loop.index <= 3 %}primary{% elif loop.index <= 10 %}success{% else %}secondary{% endif %}">
+                                                #{{ loop.index }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ term.search_term }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ term.item_type.title() }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ term.total_searches }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-{% if loop.index <= 3 %}primary{% elif loop.index <= 10 %}success{% else %}info{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ (term.total_searches / popular_terms[0].total_searches * 100)|round(1) }}%">
+                                                    {{ (term.total_searches / popular_terms[0].total_searches * 100)|round(1) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No Search Data Yet</h5>
+                            <p class="text-muted">Start using the search functionality to see patterns and trends here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Insights -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Search Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if popular_terms %}
+                        {% set top_term = popular_terms[0] %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-trophy me-2"></i>Most Popular Search</h6>
+                            <p class="mb-0">
+                                <strong>"{{ top_term.search_term }}"</strong> in 
+                                <span class="badge bg-primary">{{ top_term.item_type.title() }}</span>
+                                with {{ top_term.total_searches }} searches
+                            </p>
+                        </div>
+                        
+                        {% set item_types = popular_terms|map(attribute='item_type')|unique|list %}
+                        <h6>Search Activity by Item Type:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for item_type in item_types %}
+                                {% set type_searches = popular_terms|selectattr('item_type', 'equalto', item_type)|sum(attribute='total_searches') %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item_type.title() }}
+                                    <span class="badge bg-primary rounded-pill">{{ type_searches }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No insights available yet. Start searching to see patterns!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Search Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if popular_terms %}
+                        <canvas id="searchDistributionChart" height="300"></canvas>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No data to display</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadSearchTrendsChart();
+    loadSearchDistributionChart();
+});
+
+function loadSearchTrendsChart() {
+    fetch('/analytics/api/search-trends')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('searchTrendsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading search trends chart:', error));
+}
+
+function loadSearchDistributionChart() {
+    {% if popular_terms %}
+    const itemTypes = {};
+    {% for term in popular_terms %}
+        if (!itemTypes['{{ term.item_type }}']) {
+            itemTypes['{{ term.item_type }}'] = 0;
+        }
+        itemTypes['{{ term.item_type }}'] += {{ term.total_searches }};
+    {% endfor %}
+    
+    const ctx = document.getElementById('searchDistributionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(itemTypes).map(type => type.charAt(0).toUpperCase() + type.slice(1)),
+            datasets: [{
+                data: Object.values(itemTypes),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+                    '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

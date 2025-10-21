@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bank.name }} - Users{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Bank Header -->
+            <div class="bank-header mb-4" style="background: linear-gradient(135deg, {{ bank.color }}, {{ bank.color }}dd); color: white; padding: 2rem; border-radius: 10px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-2">
+                            <i class="{{ bank.icon }} me-3"></i>{{ bank.name }}
+                        </h1>
+                        {% if bank.description %}
+                            <p class="mb-0 opacity-75">{{ bank.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        <div class="h3 mb-0">{{ users.total }} Users</div>
+                        <small class="opacity-75">Active Members</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" name="search" placeholder="Search users..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="sort_by">
+                                <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Sort by Date</option>
+                                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" name="sort_order">
+                                <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Newest First</option>
+                                <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Users Grid -->
+            {% if users.items %}
+                <div class="row">
+                    {% for user in users.items %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100 user-card">
+                                <!-- User Avatar -->
+                                <div class="text-center p-3">
+                                    {% if user.avatar %}
+                                        <img src="{{ url_for('static', filename='uploads/' + user.avatar) }}" 
+                                             class="rounded-circle mb-2" 
+                                             style="width: 80px; height: 80px; object-fit: cover;"
+                                             alt="{{ user.first_name }} {{ user.last_name }}">
+                                    {% else %}
+                                        <div class="rounded-circle mb-2 d-flex align-items-center justify-content-center" 
+                                             style="width: 80px; height: 80px; background: {{ bank.color }}; color: white; margin: 0 auto;">
+                                            <i class="fas fa-user fa-2x"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body text-center">
+                                    <h5 class="card-title mb-1">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    </h5>
+                                    <p class="text-muted mb-2">@{{ user.username }}</p>
+                                    
+                                    {% if user.location %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ user.location }}
+                                        </p>
+                                    {% endif %}
+                                    
+                                    {% if user.bio %}
+                                        <p class="card-text small">{{ user.bio[:100] }}{% if user.bio|length > 100 %}...{% endif %}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        {% if user_profiles.get(user.id) %}
+                                            {% set profile = user_profiles[user.id] %}
+                                            {% if profile.slug %}
+                                                <a href="{{ url_for('profiles.detail_by_slug', slug=profile.slug) }}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                            {% else %}
+                                                <a href="{{ url_for('profiles.detail_by_id', profile_id=profile.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                            {% endif %}
+                                                <i class="fas fa-eye me-1"></i>View Profile
+                                            </a>
+                                        {% else %}
+                                            <span class="btn btn-outline-secondary btn-sm disabled">
+                                                <i class="fas fa-user-slash me-1"></i>No Profile
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer text-muted small text-center">
+                                    Joined {{ user.created_at.strftime('%b %Y') }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if users.pages > 1 %}
+                    <nav aria-label="Users pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if users.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=users.prev_num, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in users.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != users.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=page_num, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if users.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=users.next_num, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <!-- No Users Found -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-users fa-5x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">No Users Found</h3>
+                    {% if search %}
+                        <p class="text-muted mb-4">No users match your search criteria "{{ search }}"</p>
+                        <a href="{{ url_for('banks.bank_items', bank_slug=bank.slug) }}" class="btn btn-primary">
+                            <i class="fas fa-times me-2"></i>Clear Search
+                        </a>
+                    {% else %}
+                        <p class="text-muted mb-4">This bank doesn't have any users yet.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.user-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid #e9ecef;
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.bank-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color)dd);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-file-alt me-2"></i>{{ page.title }}
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.cms_pages') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Pages
+                    </a>
+                    <a href="{{ url_for('admin.cms_edit_page', page_id=page.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Page Information -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Page Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Title:</strong><br>
+                        <span class="text-muted">{{ page.title }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>URL Slug:</strong><br>
+                        <code>{{ page.slug }}</code>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong><br>
+                        {% if page.is_published %}
+                            <span class="badge bg-success">Published</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Draft</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Template:</strong><br>
+                        <span class="badge bg-info">{{ page.template }}</span>
+                    </div>
+                    
+                    {% if page.is_homepage %}
+                    <div class="mb-3">
+                        <span class="badge bg-primary">Homepage</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Created:</strong><br>
+                        <span class="text-muted">{{ page.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong><br>
+                        <span class="text-muted">{{ page.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SEO Information -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">SEO Information</h5>
+                </div>
+                <div class="card-body">
+                    {% if page.meta_description %}
+                    <div class="mb-3">
+                        <strong>Meta Description:</strong><br>
+                        <span class="text-muted">{{ page.meta_description }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if page.meta_keywords %}
+                    <div class="mb-3">
+                        <strong>Meta Keywords:</strong><br>
+                        <span class="text-muted">{{ page.meta_keywords }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page Content -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Page Content</h5>
+                </div>
+                <div class="card-body">
+                    {% if page.content %}
+                        <div class="content-preview">
+                            {{ page.content|safe }}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No Content</h5>
+                            <p class="text-muted">This page doesn't have any content yet.</p>
+                            <a href="{{ url_for('admin.cms_edit_page', page_id=page.id) }}" class="btn btn-primary">
+                                <i class="fas fa-edit me-2"></i>Add Content
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Content Blocks -->
+            {% if page.content_blocks %}
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Content Blocks</h5>
+                </div>
+                <div class="card-body">
+                    {% for block in page.content_blocks %}
+                    <div class="content-block-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ block.title or 'Untitled Block' }}</h6>
+                            <div class="d-flex gap-1">
+                                <span class="badge bg-{% if block.is_published %}success{% else %}secondary{% endif %}">
+                                    {% if block.is_published %}Published{% else %}Draft{% endif %}
+                                </span>
+                                <span class="badge bg-info">{{ block.block_type|title }}</span>
+                            </div>
+                        </div>
+                        
+                        {% if block.content %}
+                        <div class="content-preview">
+                            {{ block.content[:200] }}{% if block.content|length > 200 %}...{% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if block.css_class %}
+                        <div class="mt-2">
+                            <small class="text-muted">CSS Class: <code>{{ block.css_class }}</code></small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.content-preview {
+    line-height: 1.6;
+}
+
+.content-preview h1, .content-preview h2, .content-preview h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.content-preview p {
+    margin-bottom: 1rem;
+}
+
+.content-block-item {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+
+
+

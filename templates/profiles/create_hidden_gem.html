@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Create Hidden Gem{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-gem me-2"></i>Share Hidden Gem</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- 1. Category & Classification -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">1. Category & Classification</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="hidden_gems">Hidden Gems</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="gem_type" required>
+                                        <option value="">Select Gem Type</option>
+                                        <option value="person">Talented Person</option>
+                                        <option value="product">Underrated Product</option>
+                                        <option value="service">Hidden Service</option>
+                                        <option value="knowledge">Unique Knowledge</option>
+                                        <option value="expertise">Rare Expertise</option>
+                                        <option value="resource">Valuable Resource</option>
+                                        <option value="location">Special Location</option>
+                                        <option value="opportunity">Hidden Opportunity</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tags & Keywords</label>
+                                    <input type="text" class="form-control" name="tags" placeholder="Separate with commas">
+                                    <div class="form-text">e.g. underrated, talent, unique, valuable</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Ownership & Creator -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">2. Ownership & Creator</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Creator <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="creator" required placeholder="Creator name">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Owner <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="owner_name" required placeholder="Owner name">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Ownership Type</label>
+                                    <select class="form-select" name="owner_type">
+                                        <option value="individual">Individual</option>
+                                        <option value="organization">Organization</option>
+                                        <option value="shared">Shared</option>
+                                        <option value="community">Community</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Creator Link/Profile</label>
+                                    <input type="url" class="form-control" name="creator_link" placeholder="https://...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Owner Link/Profile</label>
+                                    <input type="url" class="form-control" name="owner_link" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">3. Basic Information</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Title / Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Short Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="short_description" rows="3" maxlength="200" required placeholder="Brief description (max 200 characters)"></textarea>
+                                <div class="form-text"><span id="char-count">0</span>/200 characters</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Detailed Description</label>
+                                <textarea class="form-control" name="detailed_description" rows="5" placeholder="Detailed information about this hidden gem"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Unique Value</label>
+                                <textarea class="form-control" name="unique_value" rows="4" placeholder="What makes this special and unique?"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 4. Condition & Status -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">4. Condition & Status</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Recognition Level <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="recognition_level" required>
+                                        <option value="">Select Recognition Level</option>
+                                        <option value="unknown">Unknown</option>
+                                        <option value="underrated">Underrated</option>
+                                        <option value="emerging">Emerging</option>
+                                        <option value="niche">Niche Known</option>
+                                        <option value="established">Established</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Value & Availability -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">5. Value & Availability</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Promotion Potential</label>
+                                    <textarea class="form-control" name="promotion_potential" rows="3" placeholder="How can this be promoted or utilized?"></textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Pricing Model</label>
+                                    <select class="form-select" name="pricing_type">
+                                        <option value="free">Free to Share</option>
+                                        <option value="paid">Premium Access</option>
+                                        <option value="referral">Referral Fee</option>
+                                        <option value="partnership">Partnership Opportunity</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Access Fee</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00">
+                                        <select class="form-select" name="currency" style="max-width: 100px;">
+                                            <option value="AED">AED</option>
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                            <option value="QAR">QAR</option>
+                                            <option value="KWD">KWD</option>
+                                            <option value="BHD">BHD</option>
+                                            <option value="OMR">OMR</option>
+                                            <option value="EGP">EGP</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Logistics & Delivery -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">6. Logistics & Delivery</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Access Method</label>
+                                    <select class="form-select" name="delivery_method">
+                                        <option value="introduction">Introduction/Referral</option>
+                                        <option value="direct_contact">Direct Contact</option>
+                                        <option value="consultation">Consultation</option>
+                                        <option value="guided_tour">Guided Experience</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="location" placeholder="City, Country or Online">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Availability Region</label>
+                                    <select class="form-select" name="availability_region">
+                                        <option value="local">Local</option>
+                                        <option value="national">National</option>
+                                        <option value="international">International</option>
+                                        <option value="global">Global</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Media & Proof -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">7. Media & Proof</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Images</label>
+                                    <input type="file" class="form-control mb-2" name="images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links (separate with commas)">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Videos</label>
+                                    <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="Or paste video links (YouTube, Vimeo, etc.)">
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Documents / Files</label>
+                                    <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Or paste document links">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Links / References</label>
+                                    <textarea class="form-control" name="reference_links" rows="3" placeholder="Portfolio: https://...&#10;Examples: https://...&#10;Testimonials: https://..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Management -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 text-success">8. Management</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Expiration Date</label>
+                                    <input type="date" class="form-control" name="expiration_date">
+                                    <div class="form-text">Leave empty if gem remains valuable</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Visibility</label>
+                                    <select class="form-select" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="restricted">Restricted</option>
+                                        <option value="members_only">Members-only</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-success me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>Share Hidden Gem
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter for short description
+document.querySelector('[name="short_description"]').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length;
+});
+</script>
+{% endblock %}

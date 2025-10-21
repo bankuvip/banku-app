@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Items - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-box me-2"></i>Manage Items
+                </h2>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Admin
+                </a>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ items.total }}</h4>
+                                    <p class="mb-0">Total Items</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-box fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ items.items | selectattr('is_verified', 'equalto', true) | list | length }}</h4>
+                                    <p class="mb-0">Verified Items</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ items.items | selectattr('is_available', 'equalto', true) | list | length }}</h4>
+                                    <p class="mb-0">Available Items</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-eye fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ items.items | selectattr('views', 'greaterthan', 0) | list | length }}</h4>
+                                    <p class="mb-0">Viewed Items</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-eye fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Search items...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="verified" {% if status == 'verified' %}selected{% endif %}>Verified</option>
+                                <option value="unverified" {% if status == 'unverified' %}selected{% endif %}>Unverified</option>
+                                <option value="available" {% if status == 'available' %}selected{% endif %}>Available</option>
+                                <option value="unavailable" {% if status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="profile_id" class="form-label">Profile</label>
+                            <select class="form-select" id="profile_id" name="profile_id">
+                                <option value="">All Profiles</option>
+                                {% for profile in profiles %}
+                                <option value="{{ profile.id }}" {% if profile_id == profile.id %}selected{% endif %}>
+                                    {{ profile.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>Filter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Items List</h5>
+                    <span class="badge bg-secondary">{{ items.total }} items found</span>
+                </div>
+                <div class="card-body">
+                    {% if items.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Profile</th>
+                                    <th>Status</th>
+                                    <th>Views</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items.items %}
+                                <tr>
+                                    <td>{{ item.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <strong>{{ item.title }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ item.short_description[:50] }}{% if item.short_description|length > 50 %}...{% endif %}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ item.category }}</span>
+                                        {% if item.subcategory %}
+                                        <br><small class="text-muted">{{ item.subcategory }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin.profiles_management') }}?profile_id={{ item.profile_id }}" 
+                                           class="text-decoration-none">
+                                            {{ item.profile.name if item.profile else 'Unknown' }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-1">
+                                            {% if item.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">Unverified</span>
+                                            {% endif %}
+                                            
+                                            {% if item.is_available %}
+                                            <span class="badge bg-primary">Available</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Unavailable</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ item.views }}</span>
+                                        {% if item.rating > 0 %}
+                                        <br><small class="text-muted">★ {{ "%.1f"|format(item.rating) }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ item.created_at.strftime('%Y-%m-%d') }}</small>
+                                        <br><small class="text-muted">{{ item.created_at.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    onclick="viewItem({{ item.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if not item.is_verified %}
+                                            <button type="button" class="btn btn-sm btn-outline-success" 
+                                                    onclick="verifyItem({{ item.id }})" title="Verify Item">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="editItem({{ item.id }})" title="Edit Item">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteItem({{ item.id }}, '{{ item.title }}')" title="Delete Item">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if items.pages > 1 %}
+                    <nav aria-label="Items pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if items.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.items_management', page=items.prev_num, search=search, category=category, status=status, profile_id=profile_id) }}">Previous</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in items.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != items.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.items_management', page=page_num, search=search, category=category, status=status, profile_id=profile_id) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if items.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.items_management', page=items.next_num, search=search, category=category, status=status, profile_id=profile_id) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No items found</h5>
+                        <p class="text-muted">Try adjusting your filters or check if there are any items in the system.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item View Modal -->
+<div class="modal fade" id="itemViewModal" tabindex="-1" aria-hidden="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Item Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="itemViewContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteItemModal" tabindex="-1" aria-hidden="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this item?</p>
+                <p><strong id="deleteItemName"></strong></p>
+                <p class="text-danger">This action cannot be undone!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for action buttons -->
+<script>
+// Global variables
+let deleteItemId = null;
+
+// Function to view item details
+function viewItem(itemId) {
+    // Fetch item details and show in modal
+    fetch(`/admin/items/${itemId}/view`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch item details');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showItemDetailsModal(data.item);
+        } else {
+            showAlert('error', data.message || 'Failed to load item details');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to load item details');
+    });
+}
+
+// Function to verify an item
+function verifyItem(itemId) {
+    if (confirm('Are you sure you want to verify this item?')) {
+        fetch(`/admin/items/${itemId}/verify`, {
+        method: 'POST',
+        headers: {
+            
+                'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                location.reload();
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Failed to verify item');
+        });
+    }
+}
+
+// Function to edit an item
+function editItem(itemId) {
+    // Redirect to item edit page or show edit modal
+    window.location.href = `/profiles/item/${itemId}/edit`;
+}
+
+// Function to delete an item
+function deleteItem(itemId, itemName) {
+    console.log('🗑️ deleteItem called with:', itemId, itemName);
+
+    // Use simple confirm dialog as backup if modal fails
+    if (confirm(`Are you sure you want to delete "${itemName}"?\n\nThis action cannot be undone!`)) {
+        console.log('✅ User confirmed deletion for item:', itemId);
+        deleteItemDirectly(itemId);
+    } else {
+        console.log('❌ User cancelled deletion');
+    }
+}
+
+// Direct delete function
+function deleteItemDirectly(itemId) {
+    // Get CSRF token from multiple sources
+    let token = '';
+
+    // Try to get from meta tag first
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfTokenMeta) {
+        token = csrfTokenMeta.getAttribute('content');
+    }
+
+    // Fallback: try to get from form if available
+    if (!token) {
+        const csrfInput = document.querySelector('input[name="csrf_token"]');
+        if (csrfInput) {
+            token = csrfInput.value;
+        }
+    }
+
+    // Final fallback: try to get from cookies (Flask-WTF might use this)
+    if (!token) {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrf_token') {
+                token = value;
+                break;
+            }
+        }
+    }
+
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    // Only add CSRF token if available
+    if (token) {
+        headers['X-CSRF-Token'] = token;
+    }
+
+    console.log('🔐 CSRF Token:', token ? 'Present' : 'Not found');
+
+    fetch(`/admin/items/${itemId}/delete`, {
+        method: 'POST',
+        headers: headers
+    })
+    .then(response => {
+        console.log('📡 Raw response status:', response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+            console.error('❌ Response not OK:', response.status, response.statusText);
+            return response.text().then(text => {
+                console.error('❌ Response body:', text);
+                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('📋 Parsed response data:', data);
+        if (data && data.success) {
+            showAlert('success', data.message || 'Item deleted successfully');
+            location.reload();
+        } else {
+            console.error('❌ Delete failed:', data);
+            showAlert('error', (data && data.message) || 'Failed to delete item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to delete item');
+    });
+}
+
+// Function to show item details in modal
+function showItemDetailsModal(item) {
+    const modalContent = `
+        <div class="row">
+            <div class="col-md-8">
+                <h5>${item.title}</h5>
+                <p class="text-muted">${item.short_description}</p>
+                <div class="mb-3">
+                    <strong>Category:</strong> ${item.category}
+                    ${item.subcategory ? `<br><strong>Subcategory:</strong> ${item.subcategory}` : ''}
+                </div>
+                <div class="mb-3">
+                    <strong>Description:</strong><br>
+                    ${item.detailed_description}
+                </div>
+                <div class="mb-3">
+                    <strong>Pricing:</strong> ${item.pricing_type}
+                    ${item.price ? `<br><strong>Price:</strong> ${item.price} ${item.currency || 'USD'}` : ''}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Item Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>ID:</strong> ${item.id}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge ${item.is_verified ? 'bg-success' : 'bg-warning'}">
+                                ${item.is_verified ? 'Verified' : 'Unverified'}
+                            </span>
+                            <span class="badge ${item.is_available ? 'bg-primary' : 'bg-secondary'} ms-1">
+                                ${item.is_available ? 'Available' : 'Unavailable'}
+                            </span>
+                        </p>
+                        <p><strong>Views:</strong> ${item.views || 0}</p>
+                        <p><strong>Rating:</strong> ${item.rating ? item.rating.toFixed(1) : 'N/A'}</p>
+                        <p><strong>Created:</strong><br>${new Date(item.created_at).toLocaleString()}</p>
+                        <p><strong>Profile:</strong> ${item.profile ? item.profile.name : 'Unknown'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('itemViewContent').innerHTML = modalContent;
+    const modalElement = document.getElementById('itemViewModal');
+    
+    // Force remove aria-hidden and ensure modal is interactive
+    modalElement.removeAttribute('aria-hidden');
+    modalElement.setAttribute('aria-modal', 'true');
+    modalElement.setAttribute('aria-hidden', 'false');
+    
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
+    
+    modal.show();
+    
+    // Double-check after showing
+    setTimeout(() => {
+        modalElement.removeAttribute('aria-hidden');
+        modalElement.setAttribute('aria-modal', 'true');
+    }, 100);
+}
+
+// Function to show alert messages
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Initialize event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for delete confirmation button
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (!deleteItemId) return;
+            
+            fetch(`/admin/items/${deleteItemId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    location.reload();
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Failed to delete item');
+            });
+            
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteItemModal'));
+            deleteModal.hide();
+            deleteItemId = null;
+        });
+    }
+    
+    console.log('Items management page JavaScript loaded successfully');
+    console.log('Available functions: viewItem, verifyItem, editItem, deleteItem, showAlert');
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Collector Monitoring Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line me-2"></i>Collector Monitoring Dashboard</h2>
+                <div>
+                    <button class="btn btn-success me-2" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-primary" onclick="runAllCollectors()">
+                        <i class="fas fa-play me-1"></i>Run All
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ collectors|length }}</h4>
+                                    <p class="card-text">Total Collectors</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-robot fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ active_collectors }}</h4>
+                                    <p class="card-text">Active Collectors</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-play-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_success_count }}</h4>
+                                    <p class="card-text">Total Success</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_error_count }}</h4>
+                                    <p class="card-text">Total Errors</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real-time Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Real-time Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Currently Running</h6>
+                                    <div id="running-collectors">
+                                        <span class="badge bg-info">None</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Last Activity</h6>
+                                    <div id="last-activity">
+                                        <small class="text-muted">No recent activity</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Collectors Table -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Collector Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Website</th>
+                                            <th>Schedule</th>
+                                            <th>Success Rate</th>
+                                            <th>Last Run</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for collector in collectors %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ collector.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ collector.description[:50] }}...</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ collector.data_type.title() }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if collector.is_active else 'secondary' }}">
+                                                    {{ 'Active' if collector.is_active else 'Inactive' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if collector.filter_rules and collector.filter_rules.url %}
+                                                    <a href="{{ collector.filter_rules.url }}" target="_blank" class="text-decoration-none">
+                                                        {{ collector.filter_rules.url[:30] }}...
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">Internal Only</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if collector.filter_rules and collector.filter_rules.schedule_type and collector.filter_rules.schedule_type != 'manual' %}
+                                                    Every {{ collector.filter_rules.schedule_value }} {{ collector.filter_rules.schedule_type }}
+                                                {% else %}
+                                                    <span class="text-muted">Manual</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% set total = collector.success_count + collector.error_count %}
+                                                {% if total > 0 %}
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-{{ 'success' if (collector.success_count / total) > 0.8 else 'warning' if (collector.success_count / total) > 0.5 else 'danger' }}" 
+                                                             style="width: {{ (collector.success_count / total) * 100 }}%">
+                                                            {{ "%.1f"|format((collector.success_count / total) * 100) }}%
+                                                        </div>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">No runs yet</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if collector.last_run %}
+                                                    <span class="text-success">{{ collector.last_run.strftime('%Y-%m-%d %H:%M') }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Never</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary" onclick="testCollector({{ collector.id }})" title="Test">
+                                                        <i class="fas fa-vial"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-success" onclick="runCollector({{ collector.id }})" title="Run Now">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-info" onclick="viewLogs({{ collector.id }})" title="View Logs">
+                                                        <i class="fas fa-list"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Modal -->
+<div class="modal fade" id="logsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Collector Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="logs-content">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh dashboard every 30 seconds
+setInterval(refreshDashboard, 30000);
+
+function refreshDashboard() {
+    location.reload();
+}
+
+function testCollector(collectorId) {
+    fetch(`/admin/data-collectors/${collectorId}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Test completed successfully!\nFound ${data.data_count} items`);
+        } else {
+            alert('Test failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error testing collector');
+    });
+}
+
+function runCollector(collectorId) {
+    if (confirm('Are you sure you want to run this collector now?')) {
+        fetch(`/admin/data-collectors/${collectorId}/run`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Collector run completed successfully!');
+                location.reload();
+            } else {
+                alert('Run failed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error running collector');
+        });
+    }
+}
+
+function runAllCollectors() {
+    if (confirm('Are you sure you want to run all active collectors?')) {
+        fetch('/admin/data-collectors/run-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All collectors started successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error running collectors');
+        });
+    }
+}
+
+function viewLogs(collectorId) {
+    const modal = new bootstrap.Modal(document.getElementById('logsModal'));
+    modal.show();
+    
+    // Load logs
+    fetch(`/admin/data-collectors/${collectorId}/logs`)
+    .then(response => response.json())
+    .then(data => {
+        const logsContent = document.getElementById('logs-content');
+        if (data.success) {
+            logsContent.innerHTML = `
+                <div class="logs-container" style="max-height: 400px; overflow-y: auto;">
+                    ${data.logs.map(log => `
+                        <div class="log-entry mb-2 p-2 border rounded ${log.level === 'ERROR' ? 'bg-danger text-white' : log.level === 'WARNING' ? 'bg-warning' : 'bg-light'}">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${log.level}</span>
+                                <small>${log.timestamp}</small>
+                            </div>
+                            <div>${log.message}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            logsContent.innerHTML = '<p class="text-muted">No logs available</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('logs-content').innerHTML = '<p class="text-danger">Error loading logs</p>';
+    });
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

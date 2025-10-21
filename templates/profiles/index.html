@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}My Profiles - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-user me-2"></i>My Profiles
+                </h1>
+                <a href="{{ url_for('profiles.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create New Profile
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        {% for profile in profiles %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ profile.name }}</h5>
+                        <span class="badge bg-{{ 'primary' if profile.profile_type == 'personal' else 'success' if profile.profile_type == 'company' else 'info' if profile.profile_type == 'team' else 'warning' if profile.profile_type == 'project' else 'secondary' }}">
+                            {{ profile.profile_type.title() }}
+                        </span>
+                    </div>
+                    
+                    {% if profile.description %}
+                    <p class="card-text text-muted mb-3">{{ profile.description[:100] }}{% if profile.description|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        {% if profile.website %}
+                        <div class="small text-muted mb-1">
+                            <i class="fas fa-globe me-1"></i>{{ profile.website }}
+                        </div>
+                        {% endif %}
+                        {% if profile.location %}
+                        <div class="small text-muted mb-1">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ profile.location }}
+                        </div>
+                        {% endif %}
+                        <div class="small text-muted">
+                            <i class="fas fa-calendar me-1"></i>Created {{ profile.created_at.strftime('%B %d, %Y') }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-light text-dark">{{ profile.items|length }} items</span>
+                        </div>
+                        <div class="btn-group" role="group">
+                            {% if profile.slug %}
+                                <a href="{{ url_for('profiles.detail_by_slug', slug=profile.slug) }}" class="btn btn-outline-primary btn-sm">
+                            {% else %}
+                                <a href="{{ url_for('profiles.detail_by_id', profile_id=profile.id) }}" class="btn btn-outline-primary btn-sm">
+                            {% endif %}
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{{ url_for('profiles.edit', profile_id=profile.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-user-plus text-muted fs-1 mb-3"></i>
+                <h4 class="text-muted">No profiles yet</h4>
+                <p class="text-muted">Create your first profile to get started.</p>
+                <a href="{{ url_for('profiles.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create Your First Profile
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+

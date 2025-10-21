@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deal.title }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">{{ deal.title }}</h1>
+                    <p class="text-muted mb-0">Deal #{{ deal.id }}</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary" onclick="updateDealStatus('pending')">
+                        <i class="fas fa-clock me-1"></i>Set Pending
+                    </button>
+                    <button class="btn btn-outline-info" onclick="updateDealStatus('in_progress')">
+                        <i class="fas fa-play me-1"></i>Start Deal
+                    </button>
+                    <button class="btn btn-outline-success" onclick="updateDealStatus('completed')">
+                        <i class="fas fa-check me-1"></i>Complete
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="updateDealStatus('cancelled')">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Deal Info -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Deal Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Description</h6>
+                            <p>{{ deal.description }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Status</h6>
+                            <span class="badge bg-{{ 'warning' if deal.status == 'pending' else 'info' if deal.status == 'in_progress' else 'success' if deal.status == 'completed' else 'danger' }} fs-6">
+                                {{ deal.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Total Amount</h6>
+                            <h4 class="text-primary">${{ "%.2f"|format(deal.total_amount) }}</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Commission Rate</h6>
+                            <p>{{ "%.1f"|format(deal.commission_rate * 100) }}%</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Escrow Amount</h6>
+                            <p>${{ "%.2f"|format(deal.escrow_amount or 0) }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Provider</h6>
+                            <p>
+                                <i class="fas fa-user-tie me-1"></i>
+                                <a href="{{ url_for('profiles.user_profile', username=deal.provider.username) }}" class="text-decoration-none">
+                                    {{ deal.provider.first_name }} {{ deal.provider.last_name }}
+                                    <i class="fas fa-link ms-1 text-muted"></i>
+                                </a>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Connector</h6>
+                            {% if deal.connector %}
+                            <p>
+                                <i class="fas fa-handshake me-1"></i>
+                                <a href="{{ url_for('profiles.user_profile', username=deal.connector.username) }}" class="text-decoration-none">
+                                    {{ deal.connector.first_name }} {{ deal.connector.last_name }}
+                                    <i class="fas fa-link ms-1 text-muted"></i>
+                                </a>
+                            </p>
+                            {% else %}
+                            <p class="text-muted">
+                                <i class="fas fa-handshake me-1"></i>
+                                No connector assigned
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Consumer</h6>
+                            <p>
+                                <i class="fas fa-user me-1"></i>
+                                <a href="{{ url_for('profiles.user_profile', username=deal.consumer.username) }}" class="text-decoration-none">
+                                    {{ deal.consumer.first_name }} {{ deal.consumer.last_name }}
+                                    <i class="fas fa-link ms-1 text-muted"></i>
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Timeline -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Activity Timeline
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#activityTimeline" aria-expanded="false" aria-controls="activityTimeline" onclick="toggleActivityIcon(this)">
+                            <i class="fas fa-chevron-up" id="activityIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="activityTimeline">
+                    <div class="card-body p-0">
+                        <div class="timeline p-3" style="max-height: 500px; overflow-y: auto;">
+                            {% for activity in deal_activities %}
+                            <div class="timeline-item mb-4">
+                                <div class="d-flex">
+                                    <div class="timeline-marker me-3">
+                                        {% if activity.type == 'deal_created' %}
+                                            <i class="fas fa-plus-circle text-success"></i>
+                                        {% elif activity.type == 'status_changed' %}
+                                            <i class="fas fa-edit text-primary"></i>
+                                        {% elif activity.type == 'message_sent' %}
+                                            <i class="fas fa-comment text-info"></i>
+                                        {% elif activity.type == 'item_added' %}
+                                            <i class="fas fa-box text-warning"></i>
+                                        {% else %}
+                                            <i class="fas fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="timeline-content flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0">{{ activity.title }}</h6>
+                                            <small class="text-muted">{{ activity.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                        </div>
+                                        <p class="text-muted small mb-1">{{ activity.description }}</p>
+                                        {% if activity.user %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ activity.user.first_name }} {{ activity.user.last_name }}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-comments me-2"></i>Messages
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chat-messages p-3" style="max-height: 400px; overflow-y: auto;">
+                        {% for message in messages %}
+                        <div class="message mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}</strong>
+                                <small class="text-muted">{{ message.created_at.strftime('%H:%M') }}</small>
+                            </div>
+                            <div>{{ message.message }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="p-3 border-top">
+                        <form id="messageForm">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Deal Items & Needs -->
+        <div class="col-lg-4 mb-4">
+            <!-- Deal Items -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-box me-2"></i>Deal Items
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if deal.items %}
+                        {% for deal_item in deal.items %}
+                        <div class="border-bottom p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-1 text-primary">{{ deal_item.item.title }}</h6>
+                                <a href="{{ url_for('profiles.item_detail', item_id=deal_item.item.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </div>
+                            <p class="text-muted small mb-2">{{ deal_item.item.detailed_description[:60] }}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary">{{ deal_item.item.category.title() }}</span>
+                                <span class="fw-bold">${{ "%.2f"|format(deal_item.unit_price) }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box text-muted fs-1 mb-3"></i>
+                        <h6 class="text-muted">No items</h6>
+                        <p class="text-muted small">This deal doesn't have any specific items.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Deal Needs -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bullhorn me-2"></i>Deal Needs
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if deal_needs %}
+                        {% for need in deal_needs %}
+                        <div class="border-bottom p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-1 text-info">{{ need.title }}</h6>
+                                <a href="{{ url_for('ai_matching.need_detail', need_id=need.id) }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </div>
+                            <p class="text-muted small mb-2">{{ need.description[:60] }}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-info">{{ need.need_type.title() }}</span>
+                                <span class="badge bg-warning">{{ need.urgency_level.title() }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-bullhorn text-muted fs-1 mb-3"></i>
+                        <h6 class="text-muted">No needs</h6>
+                        <p class="text-muted small">This deal doesn't have any specific needs.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+.timeline {
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-marker {
+    position: relative;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 50%;
+    font-size: 16px;
+}
+
+.timeline-marker i {
+    margin: 0;
+}
+
+.timeline-content {
+    padding-left: 15px;
+}
+
+.timeline-item:last-child .timeline-marker::after {
+    display: none;
+}
+
+.timeline-marker::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: #e9ecef;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleActivityIcon(button) {
+    const icon = button.querySelector('i');
+    if (icon.classList.contains('fa-chevron-down')) {
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+function updateDealStatus(status) {
+    if (confirm(`Are you sure you want to set this deal to ${status.replace('_', ' ')}?`)) {
+        fetch(`{{ url_for('deals.update_status', deal_id=deal.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+
+// Message form
+document.getElementById('messageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const message = document.getElementById('messageInput').value;
+    if (message.trim()) {
+        fetch(`{{ url_for('deals.send_message', deal_id=deal.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+

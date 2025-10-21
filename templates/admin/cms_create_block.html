@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Create Content Block - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>Create New Content Block
+                </h1>
+                <a href="{{ url_for('admin.cms_blocks') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Blocks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Content Block Information</h5>
+                </div>
+                <div class="card-body">
+                    <form id="blockForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="blockTitle" class="form-label">Block Title</label>
+                                    <input type="text" class="form-control" id="blockTitle" name="title" placeholder="Enter a title for this block">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="blockType" class="form-label">Block Type *</label>
+                                    <select class="form-select" id="blockType" name="block_type" required>
+                                        <option value="">Select a block type...</option>
+                                        <option value="text">Text Block</option>
+                                        <option value="html">HTML Block</option>
+                                        <option value="image">Image Block</option>
+                                        <option value="video">Video Block</option>
+                                        <option value="gallery">Gallery Block</option>
+                                        <option value="form">Form Block</option>
+                                        <option value="card">Card Block</option>
+                                        <option value="hero">Hero Section</option>
+                                        <option value="testimonial">Testimonial</option>
+                                        <option value="cta">Call to Action</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="blockContent" class="form-label">Content</label>
+                                    <textarea class="form-control" id="blockContent" name="content" rows="8" placeholder="Enter your content here..."></textarea>
+                                </div>
+                                
+                                <!-- Block-specific fields -->
+                                <div id="blockSpecificFields" style="display: none;">
+                                    <!-- These will be populated based on block type -->
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Block Settings</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="blockPage" class="form-label">Assigned Page</label>
+                                            <select class="form-select" id="blockPage" name="page_id">
+                                                <option value="">Global Block (appears on all pages)</option>
+                                                {% for page in pages %}
+                                                <option value="{{ page.id }}">{{ page.title }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="isPublished" name="is_published" checked>
+                                                <label class="form-check-label" for="isPublished">
+                                                    Publish immediately
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="sortOrder" class="form-label">Sort Order</label>
+                                            <input type="number" class="form-control" id="sortOrder" name="sort_order" value="0">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="cssClass" class="form-label">CSS Classes</label>
+                                            <input type="text" class="form-control" id="cssClass" name="css_class" placeholder="custom-class another-class">
+                                            <div class="form-text">Space-separated CSS classes</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">Block Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="blockPreview" class="border rounded p-3" style="min-height: 100px; background-color: #f8f9fa;">
+                                            <p class="text-muted text-center">Preview will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('admin.cms_blocks') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Block
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const blockTypeSelect = document.getElementById('blockType');
+    const blockContentTextarea = document.getElementById('blockContent');
+    const blockSpecificFields = document.getElementById('blockSpecificFields');
+    const blockPreview = document.getElementById('blockPreview');
+    
+    // Block type change handler
+    blockTypeSelect.addEventListener('change', function() {
+        const blockType = this.value;
+        updateBlockSpecificFields(blockType);
+        updatePreview();
+    });
+    
+    // Content change handler
+    blockContentTextarea.addEventListener('input', function() {
+        updatePreview();
+    });
+    
+    function updateBlockSpecificFields(blockType) {
+        let fieldsHtml = '';
+        
+        switch(blockType) {
+            case 'image':
+                fieldsHtml = `
+                    <div class="mb-3">
+                        <label for="imageUrl" class="form-label">Image URL</label>
+                        <input type="url" class="form-control" id="imageUrl" name="image_url" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageAlt" class="form-label">Alt Text</label>
+                        <input type="text" class="form-control" id="imageAlt" name="image_alt" placeholder="Description of the image">
+                    </div>
+                `;
+                break;
+            case 'video':
+                fieldsHtml = `
+                    <div class="mb-3">
+                        <label for="videoUrl" class="form-label">Video URL</label>
+                        <input type="url" class="form-control" id="videoUrl" name="video_url" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="videoTitle" class="form-label">Video Title</label>
+                        <input type="text" class="form-control" id="videoTitle" name="video_title" placeholder="Video title">
+                    </div>
+                `;
+                break;
+            case 'cta':
+                fieldsHtml = `
+                    <div class="mb-3">
+                        <label for="ctaButtonText" class="form-label">Button Text</label>
+                        <input type="text" class="form-control" id="ctaButtonText" name="cta_button_text" placeholder="Get Started">
+                    </div>
+                    <div class="mb-3">
+                        <label for="ctaButtonUrl" class="form-label">Button URL</label>
+                        <input type="url" class="form-control" id="ctaButtonUrl" name="cta_button_url" placeholder="/signup">
+                    </div>
+                `;
+                break;
+        }
+        
+        blockSpecificFields.innerHTML = fieldsHtml;
+        blockSpecificFields.style.display = blockType ? 'block' : 'none';
+    }
+    
+    function updatePreview() {
+        const blockType = blockTypeSelect.value;
+        const content = blockContentTextarea.value;
+        
+        if (!blockType || !content) {
+            blockPreview.innerHTML = '<p class="text-muted text-center">Preview will appear here</p>';
+            return;
+        }
+        
+        let previewHtml = '';
+        
+        switch(blockType) {
+            case 'text':
+                previewHtml = `<p>${content}</p>`;
+                break;
+            case 'html':
+                previewHtml = content;
+                break;
+            case 'image':
+                const imageUrl = document.getElementById('imageUrl')?.value || 'https://via.placeholder.com/300x200';
+                const imageAlt = document.getElementById('imageAlt')?.value || 'Image';
+                previewHtml = `<img src="${imageUrl}" alt="${imageAlt}" class="img-fluid">`;
+                break;
+            case 'video':
+                previewHtml = `<div class="ratio ratio-16x9"><iframe src="${document.getElementById('videoUrl')?.value || ''}" allowfullscreen></iframe></div>`;
+                break;
+            case 'cta':
+                const buttonText = document.getElementById('ctaButtonText')?.value || 'Click Here';
+                const buttonUrl = document.getElementById('ctaButtonUrl')?.value || '#';
+                previewHtml = `
+                    <div class="text-center p-4 bg-primary text-white rounded">
+                        <h3>${content}</h3>
+                        <a href="${buttonUrl}" class="btn btn-light">${buttonText}</a>
+                    </div>
+                `;
+                break;
+            default:
+                previewHtml = `<div class="p-3 border rounded"><strong>${blockType.toUpperCase()}:</strong> ${content}</div>`;
+        }
+        
+        blockPreview.innerHTML = previewHtml;
+    }
+    
+    // Form submission
+    document.getElementById('blockForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {
+            title: formData.get('title'),
+            content: formData.get('content'),
+            block_type: formData.get('block_type'),
+            page_id: formData.get('page_id') || null,
+            is_published: formData.get('is_published') === 'on',
+            sort_order: parseInt(formData.get('sort_order')) || 0,
+            css_class: formData.get('css_class'),
+            block_data: {}
+        };
+        
+        // Add block-specific data
+        const blockType = formData.get('block_type');
+        if (blockType === 'image') {
+            data.block_data = {
+                image_url: formData.get('image_url'),
+                image_alt: formData.get('image_alt')
+            };
+        } else if (blockType === 'video') {
+            data.block_data = {
+                video_url: formData.get('video_url'),
+                video_title: formData.get('video_title')
+            };
+        } else if (blockType === 'cta') {
+            data.block_data = {
+                button_text: formData.get('cta_button_text'),
+                button_url: formData.get('cta_button_url')
+            };
+        }
+        
+        fetch('/admin/cms/blocks/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/admin/cms/blocks';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the block.');
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
+

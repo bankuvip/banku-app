@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Create Profile Type - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus-circle me-2"></i>Create New Profile Type</h2>
+                <a href="{{ url_for('admin.profile_types_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Management
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Profile Type Details</h5>
+                </div>
+                <div class="card-body">
+                    <form id="profileTypeForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <div class="form-text">Internal name (lowercase, no spaces, e.g., 'professional')</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="display_name" class="form-label">Display Name *</label>
+                                    <input type="text" class="form-control" id="display_name" name="display_name" required>
+                                    <div class="form-text">User-friendly name (e.g., 'Professional/Expert')</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                            <div class="form-text">Brief description of this profile type</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="icon_class" class="form-label">Icon Class</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="icon_class" name="icon_class" value="fas fa-user">
+                                        <button type="button" class="btn btn-outline-secondary" id="iconPreviewBtn">
+                                            <i id="iconPreview" class="fas fa-user"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">FontAwesome icon class (e.g., 'fas fa-user')</div>
+                                    
+                                    <!-- Quick Icon Picker -->
+                                    <div class="mt-2">
+                                        <label class="form-label small">Quick Pick Icons:</label>
+                                        <div class="d-flex flex-wrap gap-2" id="icon_picker">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-user">
+                                                <i class="fas fa-user"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-briefcase">
+                                                <i class="fas fa-briefcase"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-rocket">
+                                                <i class="fas fa-rocket"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-chart-line">
+                                                <i class="fas fa-chart-line"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-heart">
+                                                <i class="fas fa-heart"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-lightbulb">
+                                                <i class="fas fa-lightbulb"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-code">
+                                                <i class="fas fa-code"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-paint-brush">
+                                                <i class="fas fa-paint-brush"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="color_class" class="form-label">Profile Type Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="color_class" name="color_class" 
+                                               value="#007bff" style="width: 60px; height: 38px;">
+                                        <input type="text" class="form-control" id="color_class_hex" placeholder="#007bff" 
+                                               value="#007bff">
+                                    </div>
+                                    <div class="form-text">Choose color in hex format (e.g., #007bff)</div>
+                                    
+                                    <!-- Quick Color Picker -->
+                                    <div class="mt-2">
+                                        <label class="form-label small">Quick Colors:</label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-sm color-option" data-color="#007bff" style="background-color: #007bff; width: 30px; height: 30px; border: 1px solid #ddd;" title="Blue"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#28a745" style="background-color: #28a745; width: 30px; height: 30px; border: 1px solid #ddd;" title="Green"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#ffc107" style="background-color: #ffc107; width: 30px; height: 30px; border: 1px solid #ddd;" title="Yellow"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#dc3545" style="background-color: #dc3545; width: 30px; height: 30px; border: 1px solid #ddd;" title="Red"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#17a2b8" style="background-color: #17a2b8; width: 30px; height: 30px; border: 1px solid #ddd;" title="Cyan"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#6c757d" style="background-color: #6c757d; width: 30px; height: 30px; border: 1px solid #ddd;" title="Gray"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#6f42c1" style="background-color: #6f42c1; width: 30px; height: 30px; border: 1px solid #ddd;" title="Purple"></button>
+                                            <button type="button" class="btn btn-sm color-option" data-color="#fd7e14" style="background-color: #fd7e14; width: 30px; height: 30px; border: 1px solid #ddd;" title="Orange"></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_privacy" class="form-label">Default Privacy</label>
+                                    <select class="form-select" id="default_privacy" name="default_privacy">
+                                        <option value="public" selected>Public</option>
+                                        <option value="private">Private</option>
+                                    </select>
+                                    <div class="form-text">Default privacy setting for new profiles</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="order_index" class="form-label">Display Order</label>
+                                    <input type="number" class="form-control" id="order_index" name="order_index" value="1" min="0" step="1">
+                                    <div class="form-text">Lower numbers appear first (0 = top priority)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="requires_verification" name="requires_verification">
+                                    <label class="form-check-label" for="requires_verification">
+                                        Requires Admin Verification
+                                    </label>
+                                    <div class="form-text">Check if profiles of this type need admin approval</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                    <label class="form-check-label" for="is_active">
+                                        Active
+                                    </label>
+                                    <div class="form-text">Check to make this profile type available for use</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.profile_types_management') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Profile Type
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This is how the profile type will appear to users when creating profiles.
+                    </div>
+                    <div class="card h-100" id="previewCard" style="max-width: 300px;">
+                        <div class="card-body text-center">
+                            <div class="profile-type-icon mb-3" id="previewIconContainer" style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; background: linear-gradient(135deg, #667eea, #764ba2);">
+                                <i id="previewIcon" class="fas fa-user fa-2x" style="color: #007bff;"></i>
+                            </div>
+                            <h5 class="card-title" id="previewTitle">Profile Type</h5>
+                            <p class="card-text text-muted" id="previewDescription">Description will appear here</p>
+                            <div class="alert alert-info alert-sm mb-0" id="previewVerification" style="display: none;">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Requires admin verification
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profileTypeForm');
+    const previewIcon = document.getElementById('previewIcon');
+    const previewIconContainer = document.getElementById('previewIconContainer');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewVerification = document.getElementById('previewVerification');
+
+    // Color picker elements
+    const colorPicker = document.getElementById('color_class');
+    const colorHexInput = document.getElementById('color_class_hex');
+    const iconInput = document.getElementById('icon_class');
+    const iconPreview = document.getElementById('iconPreview');
+
+    // Icon picker functionality
+    document.querySelectorAll('.icon-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.dataset.icon;
+            iconInput.value = icon;
+            iconPreview.className = icon;
+            updatePreview();
+            
+            // Update active state
+            document.querySelectorAll('.icon-option').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Color picker functionality
+    colorPicker.addEventListener('input', function() {
+        colorHexInput.value = this.value;
+        updatePreview();
+    });
+
+    colorHexInput.addEventListener('input', function() {
+        if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+            colorPicker.value = this.value;
+            updatePreview();
+        }
+    });
+
+    document.querySelectorAll('.color-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const color = this.dataset.color;
+            colorPicker.value = color;
+            colorHexInput.value = color;
+            updatePreview();
+            
+            // Update active state
+            document.querySelectorAll('.color-option').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Update preview in real-time
+    function updatePreview() {
+        const displayName = document.getElementById('display_name').value || 'Profile Type';
+        const description = document.getElementById('description').value || 'Description will appear here';
+        const iconClass = document.getElementById('icon_class').value || 'fas fa-user';
+        const colorValue = document.getElementById('color_class').value || '#007bff';
+        const requiresVerification = document.getElementById('requires_verification').checked;
+
+        previewTitle.textContent = displayName;
+        previewDescription.textContent = description;
+        
+        // Update icon
+        previewIcon.className = iconClass + ' fa-2x';
+        previewIcon.style.color = colorValue;
+        
+        // Update icon container background with gradient
+        previewIconContainer.style.background = `linear-gradient(135deg, ${colorValue}20, ${colorValue}40)`;
+        
+        // Update verification display
+        previewVerification.style.display = requiresVerification ? 'block' : 'none';
+    }
+
+    // Add event listeners
+    ['display_name', 'description', 'icon_class'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+    document.getElementById('requires_verification').addEventListener('change', updatePreview);
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert checkboxes to boolean
+        data.requires_verification = document.getElementById('requires_verification').checked;
+        data.is_active = document.getElementById('is_active').checked;
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        fetch('{{ url_for("admin.create_profile_type") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("admin.profile_types_management") }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the profile type.');
+        });
+    });
+
+    // Initial preview update
+    updatePreview();
+});
+</script>
+
+<style>
+.icon-option {
+    transition: all 0.2s ease;
+    border-radius: 6px !important;
+}
+
+.icon-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.icon-option.active {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+.color-option {
+    transition: all 0.2s ease;
+    border-radius: 50% !important;
+    position: relative;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.color-option.active::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    text-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+
+.form-control-color {
+    cursor: pointer;
+}
+
+#iconPreviewBtn {
+    border-radius: 0 6px 6px 0 !important;
+}
+
+.profile-type-icon {
+    transition: all 0.3s ease;
+}
+
+.profile-type-icon:hover {
+    transform: scale(1.05);
+}
+</style>
+
+{% endblock %}

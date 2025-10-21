@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Review Scoring Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-star me-2 text-warning"></i>Review Scoring Management
+                </h1>
+                <div>
+                    <a href="{{ url_for('scoring_admin.scoring_management') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    <button class="btn btn-warning" onclick="saveAllChanges()">
+                        <i class="fas fa-save me-1"></i>Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Current Average Review Score</h6>
+                    <div class="h2 text-warning">{{ "%.1f"|format(avg_review) }}%</div>
+                    <small class="text-muted">Based on ratings, reviews, and quality metrics</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Review Factors</h6>
+                    <div class="text-muted">
+                        <small>Review score is calculated based on:</small>
+                        <ul class="mb-0 mt-2">
+                            <li>Number of reviews and ratings</li>
+                            <li>Average rating quality</li>
+                            <li>Review content quality</li>
+                            <li>Response rate and dispute rate</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scoring Configuration -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Review Scoring Configuration
+                    </h5>
+                    <small class="text-muted">Configure weights and thresholds for review scoring</small>
+                </div>
+                <div class="card-body">
+                    <form id="reviewConfigForm">
+                        <div class="row">
+                            <!-- Review Metrics Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-star me-2"></i>Review Metrics (0-200 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="reviewCount" class="form-label">Review Count Bonus</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="reviewCount" name="review_count" value="40" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Maximum points for 20+ reviews</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="averageRating" class="form-label">Average Rating Bonus</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="averageRating" name="average_rating" value="30" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for 4.5+ average rating</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="ratingDistribution" class="form-label">Rating Distribution</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="ratingDistribution" name="rating_distribution" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for balanced rating distribution</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="reviewQuality" class="form-label">Review Quality</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="reviewQuality" name="review_quality" value="30" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for detailed, helpful reviews</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="responseRate" class="form-label">Response Rate</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="responseRate" name="response_rate" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for responding to reviews</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="disputeRate" class="form-label">Dispute Rate Penalty</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="disputeRate" name="dispute_rate" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Penalty for high dispute rate</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Quality Indicators Section -->
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-3">
+                                    <i class="fas fa-chart-line me-2"></i>Quality Indicators (0-100 points)
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="detailedReviews" class="form-label">Detailed Reviews</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="detailedReviews" name="detailed_reviews" value="30" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for reviews with 50+ characters</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="helpfulReviews" class="form-label">Helpful Reviews</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="helpfulReviews" name="helpful_reviews" value="25" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for reviews marked as helpful</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="recentReviews" class="form-label">Recent Reviews</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="recentReviews" name="recent_reviews" value="20" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for reviews within last 30 days</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="verifiedReviews" class="form-label">Verified Reviews</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="verifiedReviews" name="verified_reviews" value="25" min="0" max="100">
+                                        <span class="input-group-text">points</span>
+                                    </div>
+                                    <small class="text-muted">Points for verified purchase reviews</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Review Level Thresholds -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-danger mb-3">
+                                    <i class="fas fa-chart-bar me-2"></i>Review Level Thresholds
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <label for="noneThreshold" class="form-label">None</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="noneThreshold" name="none_threshold" value="0" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="lowThreshold" class="form-label">Low</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="lowThreshold" name="low_threshold" value="20" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="mediumThreshold" class="form-label">Medium</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="mediumThreshold" name="medium_threshold" value="40" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="highThreshold" class="form-label">High</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="highThreshold" name="high_threshold" value="60" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="excellentThreshold" class="form-label">Excellent</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="excellentThreshold" name="excellent_threshold" value="80" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rating Distribution Weights -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-percentage me-2"></i>Rating Distribution Weights
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <label for="weight1" class="form-label">1 Star</label>
+                                        <input type="number" class="form-control" id="weight1" name="weight_1" value="0" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="weight2" class="form-label">2 Stars</label>
+                                        <input type="number" class="form-control" id="weight2" name="weight_2" value="10" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="weight3" class="form-label">3 Stars</label>
+                                        <input type="number" class="form-control" id="weight3" name="weight_3" value="20" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="weight4" class="form-label">4 Stars</label>
+                                        <input type="number" class="form-control" id="weight4" name="weight_4" value="30" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="weight5" class="form-label">5 Stars</label>
+                                        <input type="number" class="form-control" id="weight5" name="weight_5" value="40" min="0" max="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveAllChanges() {
+    const form = document.getElementById('reviewConfigForm');
+    const formData = new FormData(form);
+    const data = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+        data[key] = parseInt(value) || 0;
+    }
+    
+    fetch('/admin/api/scoring/update-scoring-weights', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            score_type: 'review',
+            weights: data
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Success: ' + data.message);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving changes.');
+    });
+}
+
+// Auto-save on input change (with debounce)
+let saveTimeout;
+document.addEventListener('input', function(e) {
+    if (e.target.closest('#reviewConfigForm')) {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveAllChanges();
+        }, 2000); // 2 second delay
+    }
+});
+</script>
+{% endblock %}

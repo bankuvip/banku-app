@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Create Hybrid Chatbot - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-robot me-2"></i>Create Hybrid Chatbot
+                </h1>
+                <a href="{{ url_for('admin.chatbots') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Chatbots
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2"></i>Hybrid Chatbot with Field Mapping
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="hybridChatbotForm">
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Basic Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="flowName" class="form-label">Chatbot Name *</label>
+                                    <input type="text" class="form-control" id="flowName" name="name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="itemType" class="form-label">Item Type *</label>
+                                    <select class="form-select" id="itemType" name="item_type_id" required onchange="updateFieldMapping()">
+                                        <option value="">Select Item Type</option>
+                                        {% for item_type in item_types %}
+                                        <option value="{{ item_type.id }}" data-type="{{ item_type.name }}">
+                                            {{ item_type.display_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Mapping Configuration -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Field Mapping Configuration</h5>
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Smart Field Mapping:</strong> Map chatbot questions to database fields for optimal search performance.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-success">Core Fields (Always Fast)</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Title Question</label>
+                                        <input type="text" class="form-control" name="core_title" value="What's the title?">
+                                        <small class="text-muted">Maps to: title</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Description Question</label>
+                                        <input type="text" class="form-control" name="core_description" value="Describe briefly">
+                                        <small class="text-muted">Maps to: short_description</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Price Question</label>
+                                        <input type="text" class="form-control" name="core_price" value="What's the price?">
+                                        <small class="text-muted">Maps to: price</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Location Question</label>
+                                        <input type="text" class="form-control" name="core_location" value="Where are you located?">
+                                        <small class="text-muted">Maps to: location</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h6 class="text-warning">Category-Specific Fields</h6>
+                                    <div id="categoryFieldsMapping">
+                                        <div class="alert alert-light">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Select an Item Type to see available fields
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Questions Configuration -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Questions Configuration</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6>Add Questions</h6>
+                                <button type="button" class="btn btn-success btn-sm" onclick="addQuestion()">
+                                    <i class="fas fa-plus me-2"></i>Add Question
+                                </button>
+                            </div>
+                            <div id="questionsContainer">
+                                <!-- Questions will be added here -->
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Hybrid Chatbot
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let questionCounter = 0;
+
+// Category-specific field mappings
+const categoryFieldMappings = {
+    'product': {
+        'condition': { label: 'Condition', type: 'select', options: ['new', 'like_new', 'used', 'refurbished'] },
+        'quantity': { label: 'Quantity', type: 'number' },
+        'brand': { label: 'Brand', type: 'text' },
+        'model': { label: 'Model', type: 'text' },
+        'creator': { label: 'Creator/Manufacturer', type: 'text' }
+    },
+    'service': {
+        'duration': { label: 'Duration', type: 'select', options: ['1 hour', '2 hours', 'half day', 'full day'] },
+        'experience_level': { label: 'Experience Level', type: 'select', options: ['beginner', 'intermediate', 'expert'] },
+        'service_type': { label: 'Service Type', type: 'select', options: ['physical', 'mental', 'hybrid'] }
+    },
+    'event': {
+        'event_date': { label: 'Event Date', type: 'datetime-local' },
+        'venue': { label: 'Venue', type: 'text' },
+        'capacity': { label: 'Capacity', type: 'number' },
+        'event_type': { label: 'Event Type', type: 'select', options: ['conference', 'workshop', 'meeting', 'social'] }
+    }
+};
+
+function updateFieldMapping() {
+    const itemTypeSelect = document.getElementById('itemType');
+    const selectedOption = itemTypeSelect.options[itemTypeSelect.selectedIndex];
+    const itemType = selectedOption.getAttribute('data-type');
+    
+    const container = document.getElementById('categoryFieldsMapping');
+    
+    if (itemType && categoryFieldMappings[itemType]) {
+        const mappings = categoryFieldMappings[itemType];
+        container.innerHTML = '';
+        
+        Object.entries(mappings).forEach(([fieldName, config]) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'mb-3 p-3 border rounded bg-light';
+            
+            let inputHtml = '';
+            if (config.type === 'select') {
+                inputHtml = `<select class="form-select" name="category_${fieldName}">
+                    <option value="">Select ${config.label}</option>
+                    ${config.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                </select>`;
+            } else {
+                inputHtml = `<input type="${config.type}" class="form-control" name="category_${fieldName}">`;
+            }
+            
+            fieldDiv.innerHTML = `
+                <label class="form-label">${config.label}</label>
+                ${inputHtml}
+                <small class="text-muted">Maps to: ${fieldName}</small>
+            `;
+            
+            container.appendChild(fieldDiv);
+        });
+    } else {
+        container.innerHTML = '<div class="alert alert-light"><i class="fas fa-info-circle me-2"></i>Select an Item Type to see available fields</div>';
+    }
+}
+
+function addQuestion() {
+    questionCounter++;
+    const container = document.getElementById('questionsContainer');
+    
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'mb-3 p-3 border rounded bg-light';
+    questionDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6>Question ${questionCounter}</h6>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Question Text</label>
+                <input type="text" class="form-control" name="question_${questionCounter}_text" required>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label class="form-label">Question Type</label>
+                <select class="form-select" name="question_${questionCounter}_type">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="textarea">Long Text</option>
+                    <option value="select">Select</option>
+                    <option value="date">Date</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label class="form-label">Field Mapping</label>
+                <select class="form-select" name="question_${questionCounter}_mapping">
+                    <option value="">Select Field</option>
+                    <option value="title">Title</option>
+                    <option value="short_description">Description</option>
+                    <option value="price">Price</option>
+                    <option value="location">Location</option>
+                    <option value="type_data">Flexible Storage</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="question_${questionCounter}_required">
+            <label class="form-check-label">Required Field</label>
+        </div>
+    `;
+    
+    container.appendChild(questionDiv);
+}
+
+function removeQuestion(button) {
+    button.closest('.mb-3').remove();
+}
+
+document.getElementById('hybridChatbotForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    console.log('Form data:', data);
+    
+    // Send to server
+    fetch('{{ url_for("admin.create_chatbot_hybrid") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('Hybrid Chatbot created successfully!');
+            window.location.href = '{{ url_for("admin.chatbots") }}';
+        } else {
+            alert('Error: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the chatbot');
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

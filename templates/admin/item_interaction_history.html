@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Item Interaction History - {{ analytics.item.title }} - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-chart-line me-2"></i>Item Interaction History</h2>
+                    <p class="text-muted mb-0">{{ analytics.item.title }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.interaction_analytics') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Analytics
+                    </a>
+                    <a href="{{ url_for('banks.item_detail', item_id=analytics.item.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-2"></i>View Item
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ analytics.total_interactions }}</h4>
+                            <p class="card-text">Total Interactions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-mouse-pointer fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ analytics.logged_in_interactions }}</h4>
+                            <p class="card-text">Logged-in Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ analytics.anonymous_interactions }}</h4>
+                            <p class="card-text">Anonymous Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-secret fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ analytics.item.views }}</h4>
+                            <p class="card-text">Total Views</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Details -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Item Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Title:</strong></td>
+                                    <td>{{ analytics.item.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Category:</strong></td>
+                                    <td>{{ analytics.item.category }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Subcategory:</strong></td>
+                                    <td>{{ analytics.item.subcategory }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ analytics.item.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Profile:</strong></td>
+                                    <td>
+                                        {% set profile = analytics.all_profiles.get(analytics.item.profile_id) %}
+                                        {% if profile %}
+                                            <a href="{{ url_for('admin.profile_interaction_history', profile_id=profile.id) }}" class="text-decoration-none">
+                                                {{ profile.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">Profile Deleted</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if analytics.item.is_available %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unavailable</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Verified:</strong></td>
+                                    <td>
+                                        {% if analytics.item.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Unverified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Interaction Types Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Interaction Types</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics.interaction_types %}
+                        <canvas id="interactionTypesChart"></canvas>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                            <p>No interaction data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-users me-2"></i>Top Users</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics.top_users %}
+                        <div class="list-group">
+                            {% for user_data in analytics.top_users %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ user_data.user.username }}</h6>
+                                    <small class="text-muted">{{ user_data.user.email }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ user_data.interaction_count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-3x mb-3"></i>
+                            <p>No user interactions yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Interactions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>All Interactions</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics.interactions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Source</th>
+                                        <th>Referrer</th>
+                                        <th>IP Address</th>
+                                        <th>Session ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for interaction in analytics.interactions %}
+                                    <tr>
+                                        <td>{{ interaction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>
+                                            {% if interaction.user_id %}
+                                                {% set user = analytics.all_users.get(interaction.user_id) %}
+                                                {% if user %}
+                                                    <span class="badge bg-success">{{ user.username }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Unknown User</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-warning">Anonymous</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ interaction.interaction_type }}</span>
+                                        </td>
+                                        <td>{{ interaction.source or 'Unknown' }}</td>
+                                        <td>
+                                            {% if interaction.referrer and interaction.referrer != 'direct' %}
+                                                <small class="text-muted">{{ interaction.referrer[:50] }}{% if interaction.referrer|length > 50 %}...{% endif %}</small>
+                                            {% else %}
+                                                <span class="text-muted">Direct</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><small class="text-muted">{{ interaction.ip_address }}</small></td>
+                                        <td><small class="text-muted">{{ interaction.session_id[:10] }}...</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-history fa-3x mb-3"></i>
+                            <p>No interactions recorded yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Interaction Types Chart
+{% if analytics.interaction_types %}
+const interactionTypesCtx = document.getElementById('interactionTypesChart').getContext('2d');
+new Chart(interactionTypesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ analytics.interaction_types.keys() | list | tojson }},
+        datasets: [{
+            data: {{ analytics.interaction_types.values() | list | tojson }},
+            backgroundColor: [
+                '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

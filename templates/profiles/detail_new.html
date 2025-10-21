@@ -1,0 +1,759 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile.name }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Profile Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <!-- First Row: Photo + Name -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-4">
+                            <div class="profile-photo">
+                                {% if profile.photo %}
+                                    <img src="{{ url_for('static', filename='uploads/' + profile.photo) }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Photo" class="profile-custom-photo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
+                                {% elif profile.logo %}
+                                    <img src="{{ url_for('static', filename='uploads/' + profile.logo) }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Logo" class="profile-custom-logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
+                                {% else %}
+                                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="mb-2">{{ profile.name }}</h1>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary fs-6">
+                                    {{ profile.profile_type.title() }}
+                                </span>
+                                {% if profile.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if profile.is_public %}
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-globe me-1"></i>Public
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-lock me-1"></i>Private
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Profile Actions -->
+                            <div class="mt-3">
+                                {% if profile.user_id == current_user.id %}
+                                    <!-- Owner can edit/add items -->
+                                    <a href="{{ url_for('profiles.edit', profile_id=profile.id) }}" class="btn btn-outline-primary btn-sm me-2">
+                                        <i class="fas fa-edit me-1"></i>Edit Profile
+                                    </a>
+                                    <a href="{{ url_for('profiles.create_item_redirect') }}" class="btn btn-primary btn-sm me-2">
+                                        <i class="fas fa-plus me-1"></i>Add Item
+                                    </a>
+                                    <a href="{{ url_for('profiles.create_item_by_type', item_type_name='need') }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-hand-holding-heart me-1"></i>I Need
+                                    </a>
+                                {% else %}
+                                    <!-- Viewer sees public profile info -->
+                                    <span class="text-muted">
+                                        <i class="fas fa-user me-1"></i>Viewing {{ profile.name }}'s Public Profile
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Description -->
+                    {% if profile.description %}
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="text-muted mb-0">{{ profile.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Profile Details -->
+                    <div class="row mt-3">
+                        {% if profile.location %}
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ profile.location }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        {% if profile.website %}
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-globe me-1"></i>
+                                <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">{{ profile.website }}</a>
+                            </small>
+                        </div>
+                        {% endif %}
+                        {% if profile.phone %}
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-phone me-1"></i>{{ profile.phone }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header p-0">
+                    <ul class="nav nav-tabs nav-fill" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">
+                                <i class="fas fa-box me-2"></i>Items
+                                <span class="badge bg-secondary ms-1">{{ items_list|length }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="needs-tab" data-bs-toggle="tab" data-bs-target="#needs" type="button" role="tab">
+                                <i class="fas fa-hand-holding-heart me-2"></i>Needs
+                                <span class="badge bg-secondary ms-1">{{ needs|length }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="saved-tab" data-bs-toggle="tab" data-bs-target="#saved" type="button" role="tab">
+                                <i class="fas fa-bookmark me-2"></i>Saved Items
+                                <span class="badge bg-secondary ms-1">{{ saved_items|length }}</span>
+                            </button>
+                        </li>
+                        {% if can_view_activity %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                                <i class="fas fa-history me-2"></i>Activity
+                            </button>
+                        </li>
+                        {% endif %}
+                        {% if can_view_about %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
+                                <i class="fas fa-info-circle me-2"></i>About
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="card-body">
+                    <div class="tab-content" id="profileTabContent">
+                        <!-- Items Tab -->
+                        <div class="tab-pane fade show active" id="items" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Items ({{ items_list|length }})</h5>
+                                <a href="{{ url_for('profiles.create_item_redirect') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Add Item
+                                </a>
+                            </div>
+                            
+                            {% if items %}
+                                <div class="row">
+                                    {% for item in items %}
+                                    <div class="col-md-4 col-lg-3 col-xl-2 mb-2">
+                                        <div class="card h-100">
+                                            <!-- Item Image -->
+                                            {% if item.images_media and item.images_media|length > 0 %}
+                                                <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
+                                                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" 
+                                                         class="img-fluid h-100 w-100" 
+                                                         style="object-fit: cover;"
+                                                         alt="{{ item.title }}"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div class="d-flex align-items-center justify-content-center h-100" style="display: none; background: #f8f9fa;">
+                                                        {% if item.item_type %}
+                                                            <div class="text-center">
+                                                                <i class="{{ item.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ item.item_type.button_color or 'primary' }});"></i>
+                                                                <div class="small mt-1" style="color: var(--bs-{{ item.item_type.button_color or 'primary' }}); font-weight: 600;">{{ item.item_type.display_name or item.item_type.name.title() }}</div>
+                                                            </div>
+                                                        {% else %}
+                                                            <i class="fas fa-image text-muted fa-2x"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 100px; background: #f8f9fa;">
+                                                    {% if item.item_type %}
+                                                        <div class="text-center">
+                                                            <i class="{{ item.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ item.item_type.button_color or 'primary' }});"></i>
+                                                            <div class="small mt-1" style="color: var(--bs-{{ item.item_type.button_color or 'primary' }}); font-weight: 600;">{{ item.item_type.display_name or item.item_type.name.title() }}</div>
+                                                        </div>
+                                                    {% else %}
+                                                        <i class="fas fa-image text-muted fa-2x"></i>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <div class="card-body d-flex flex-column p-2">
+                                                <h6 class="card-title mb-1" style="font-size: 0.8rem;">{{ item.title }}</h6>
+                                                
+                                                <!-- Item Type Badge -->
+                                                {% if item.item_type %}
+                                                    <span class="badge bg-primary mb-2" style="font-size: 0.6rem;">{{ item.item_type.name.title() }}</span>
+                                                {% endif %}
+                                                
+                                                <!-- Action Buttons -->
+                                                <div class="d-flex gap-1 mt-auto">
+                                                    <a href="{{ url_for('banks.item_detail', item_id=item.id) }}" class="btn btn-outline-primary btn-sm flex-fill" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('profiles.edit_item', profile_id=profile.id, item_id=item.id) }}" class="btn btn-outline-warning btn-sm flex-fill" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form method="POST" action="{{ url_for('profiles.delete_item', item_id=item.id) }}" style="display: inline;" class="flex-fill">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Are you sure you want to delete this item?')" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Items Yet</h5>
+                                    <p class="text-muted">Start by adding your first item!</p>
+                                    <a href="{{ url_for('profiles.create_item_redirect') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-1"></i>Add Your First Item
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Needs Tab -->
+                        <div class="tab-pane fade" id="needs" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Needs ({{ needs|length }})</h5>
+                                <a href="{{ url_for('dashboard.add_need', profile_id=profile.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Add Need
+                                </a>
+                            </div>
+                            
+                            {% if needs %}
+                                <div class="row">
+                                    {% for need in needs %}
+                                    <div class="col-md-4 col-lg-3 col-xl-2 mb-2">
+                                        <div class="card h-100">
+                                            <!-- Need Image -->
+                                            {% if need.images_media and need.images_media|length > 0 %}
+                                                <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
+                                                    <img src="{{ url_for('static', filename='uploads/' + need.images_media[0]) }}" 
+                                                         class="img-fluid h-100 w-100" 
+                                                         style="object-fit: cover;"
+                                                         alt="{{ need.title }}"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div class="d-flex align-items-center justify-content-center h-100" style="display: none; background: #f8f9fa;">
+                                                        {% if need.item_type %}
+                                                            <div class="text-center">
+                                                                <i class="{{ need.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ need.item_type.button_color or 'success' }});"></i>
+                                                                <div class="small mt-1" style="color: var(--bs-{{ need.item_type.button_color or 'success' }}); font-weight: 600;">{{ need.item_type.display_name or need.item_type.name.title() }}</div>
+                                                            </div>
+                                                        {% else %}
+                                                            <i class="fas fa-image text-muted fa-2x"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 100px; background: #f8f9fa;">
+                                                    {% if need.item_type %}
+                                                        <div class="text-center">
+                                                            <i class="{{ need.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ need.item_type.button_color or 'success' }});"></i>
+                                                            <div class="small mt-1" style="color: var(--bs-{{ need.item_type.button_color or 'success' }}); font-weight: 600;">{{ need.item_type.display_name or need.item_type.name.title() }}</div>
+                                                        </div>
+                                                    {% else %}
+                                                        <i class="fas fa-image text-muted fa-2x"></i>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <div class="card-body d-flex flex-column p-2">
+                                                <h6 class="card-title mb-1" style="font-size: 0.8rem;">{{ need.title }}</h6>
+                                                
+                                                <!-- Need Type Badge -->
+                                                {% if need.item_type %}
+                                                    <span class="badge bg-success mb-2" style="font-size: 0.6rem;">{{ need.item_type.name.title() }}</span>
+                                                {% endif %}
+                                                
+                                                <!-- Action Buttons -->
+                                                <div class="d-flex gap-1 mt-auto">
+                                                    <a href="{{ url_for('banks.item_detail', item_id=need.id) }}" class="btn btn-outline-primary btn-sm flex-fill" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('profiles.edit_item', profile_id=profile.id, item_id=need.id) }}" class="btn btn-outline-warning btn-sm flex-fill" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form method="POST" action="{{ url_for('profiles.delete_item', item_id=need.id) }}" style="display: inline;" class="flex-fill">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Are you sure you want to delete this need?')" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-hand-holding-heart fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Needs Yet</h5>
+                                    <p class="text-muted">Let others know what you need!</p>
+                                    <a href="{{ url_for('profiles.create_item_by_type', item_type_name='need') }}" class="btn btn-success">
+                                        <i class="fas fa-plus me-1"></i>Add Your First Need
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Saved Items Tab -->
+                        <div class="tab-pane fade" id="saved" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Saved Items ({{ saved_items|length }})</h5>
+                            </div>
+                            
+                            {% if saved_items %}
+                                <div class="row">
+                                    {% for item in saved_items %}
+                                    <div class="col-md-4 col-lg-3 col-xl-2 mb-2">
+                                        <div class="card h-100">
+                                            <!-- Item Image -->
+                                            {% if item.images_media and item.images_media|length > 0 %}
+                                                <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
+                                                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" 
+                                                         class="img-fluid h-100 w-100" 
+                                                         style="object-fit: cover;"
+                                                         alt="{{ item.title }}"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div class="d-flex align-items-center justify-content-center h-100" style="display: none; background: #f8f9fa;">
+                                                        {% if item.item_type %}
+                                                            <div class="text-center">
+                                                                <i class="{{ item.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ item.item_type.button_color or 'secondary' }});"></i>
+                                                                <div class="small mt-1" style="color: var(--bs-{{ item.item_type.button_color or 'secondary' }}); font-weight: 600;">{{ item.item_type.display_name or item.item_type.name.title() }}</div>
+                                                            </div>
+                                                        {% else %}
+                                                            <i class="fas fa-image text-muted fa-2x"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 100px; background: #f8f9fa;">
+                                                    {% if item.item_type %}
+                                                        <div class="text-center">
+                                                            <i class="{{ item.item_type.icon_class or 'fas fa-box' }} fa-2x" style="color: var(--bs-{{ item.item_type.button_color or 'secondary' }});"></i>
+                                                            <div class="small mt-1" style="color: var(--bs-{{ item.item_type.button_color or 'secondary' }}); font-weight: 600;">{{ item.item_type.display_name or item.item_type.name.title() }}</div>
+                                                        </div>
+                                                    {% else %}
+                                                        <i class="fas fa-image text-muted fa-2x"></i>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <div class="card-body d-flex flex-column p-2">
+                                                <h6 class="card-title mb-1" style="font-size: 0.8rem;">{{ item.title }}</h6>
+                                                <p class="card-text text-muted flex-grow-1" style="font-size: 0.7rem; line-height: 1.2;">{{ item.short_description[:60] }}{% if item.short_description|length > 60 %}...{% endif %}</p>
+                                                
+                                                <!-- Item Type Badge -->
+                                                {% if item.item_type %}
+                                                    <span class="badge bg-primary mb-1" style="font-size: 0.6rem;">{{ item.item_type.name.title() }}</span>
+                                                {% endif %}
+                                                
+                                                <!-- Location -->
+                                                {% if item.location %}
+                                                    <div class="mb-1">
+                                                        <small class="text-muted" style="font-size: 0.6rem;">
+                                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                                            {{ item.location[:30] }}{% if item.location|length > 30 %}...{% endif %}
+                                                        </small>
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <!-- Action Buttons -->
+                                                <div class="d-flex gap-1 mt-auto">
+                                                    <a href="{{ url_for('banks.item_detail', item_id=item.id) }}" class="btn btn-outline-primary btn-sm flex-fill" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm flex-fill" onclick="unsaveItem({{ item.id }})" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                                        <i class="fas fa-bookmark"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-bookmark text-muted fa-3x mb-3"></i>
+                                    <h5 class="text-muted">No saved items yet</h5>
+                                    <p class="text-muted">Items you save from banks will appear here</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Activity Tab -->
+                        {% if can_view_activity %}
+                        <div class="tab-pane fade" id="activity" role="tabpanel">
+                            <h5 class="mb-3">Recent Activity</h5>
+                            
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-primary"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Profile Created</h6>
+                                        <p class="timeline-text text-muted">Profile was created on {{ profile.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                        <small class="text-muted">{{ profile.created_at.strftime('%B %d, %Y') }}</small>
+                                    </div>
+                                </div>
+                                
+                                {% if items_list %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-success"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Items Added</h6>
+                                        <p class="timeline-text text-muted">{{ items_list|length }} item{{ 's' if items_list|length != 1 else '' }} added to profile</p>
+                                        <small class="text-muted">Latest: {{ items_list[0].created_at.strftime('%B %d, %Y') if items_list else '' }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if needs %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-warning"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Needs Added</h6>
+                                        <p class="timeline-text text-muted">{{ needs|length }} need{{ 's' if needs|length != 1 else '' }} added to profile</p>
+                                        <small class="text-muted">Latest: {{ needs[0].created_at.strftime('%B %d, %Y') if needs else '' }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- About Tab -->
+                        {% if can_view_about %}
+                        <div class="tab-pane fade" id="about" role="tabpanel">
+                            <h5 class="mb-3">About {{ profile.name }}</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Profile Information</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Type:</strong></td>
+                                            <td>{{ profile.profile_type.title() }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                <span class="badge bg-{% if profile.is_active %}success{% else %}secondary{% endif %}">
+                                                    {{ 'Active' if profile.is_active else 'Inactive' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Visibility:</strong></td>
+                                            <td>
+                                                <span class="badge bg-{% if profile.is_public %}info{% else %}warning{% endif %}">
+                                                    {{ 'Public' if profile.is_public else 'Private' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Created:</strong></td>
+                                            <td>{{ profile.created_at.strftime('%B %d, %Y') }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>Contact Information</h6>
+                                    <table class="table table-borderless">
+                                        {% if profile.location %}
+                                        <tr>
+                                            <td><strong>Location:</strong></td>
+                                            <td>{{ profile.location }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if profile.phone %}
+                                        <tr>
+                                            <td><strong>Phone:</strong></td>
+                                            <td>{{ profile.phone }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if profile.website %}
+                                        <tr>
+                                            <td><strong>Website:</strong></td>
+                                            <td><a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a></td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            {% if profile.description %}
+                            <div class="mt-4">
+                                <h6>Description</h6>
+                                <p class="text-muted">{{ profile.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-custom-photo, .profile-custom-logo {
+    border: 3px solid #e9ecef;
+    transition: transform 0.2s;
+}
+
+.profile-custom-photo:hover, .profile-custom-logo:hover {
+    transform: scale(1.05);
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+    background-color: transparent;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.timeline-text {
+    margin-bottom: 5px;
+}
+</style>
+
+<script>
+// Save/Unsave functionality
+function saveItem(itemId) {
+    fetch(`/profiles/save-item/${itemId}`, {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showToast('Item saved successfully!', 'success');
+            // Update button state if needed
+            updateSaveButtonState(itemId, true);
+        } else {
+            showToast(data.message || 'Failed to save item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving item:', error);
+        showToast('An error occurred while saving the item', 'error');
+    });
+}
+
+function unsaveItem(itemId) {
+    if (!confirm('Are you sure you want to remove this item from your saved items?')) {
+        return;
+    }
+    
+    fetch(`/profiles/unsave-item/${itemId}`, {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showToast('Item removed from saved items', 'success');
+            // Remove the item from the saved items grid
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.remove();
+                // Update the count in the tab
+                updateSavedItemsCount();
+            }
+        } else {
+            showToast(data.message || 'Failed to remove item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing item:', error);
+        showToast('An error occurred while removing the item', 'error');
+    });
+}
+
+function updateSaveButtonState(itemId, isSaved) {
+    // This function can be used to update save button states in other parts of the app
+    const saveButton = document.querySelector(`[data-save-item="${itemId}"]`);
+    if (saveButton) {
+        if (isSaved) {
+            saveButton.innerHTML = '<i class="fas fa-bookmark me-1"></i>Saved';
+            saveButton.classList.remove('btn-outline-primary');
+            saveButton.classList.add('btn-success');
+            saveButton.disabled = true;
+        } else {
+            saveButton.innerHTML = '<i class="fas fa-bookmark me-1"></i>Save';
+            saveButton.classList.remove('btn-success');
+            saveButton.classList.add('btn-outline-primary');
+            saveButton.disabled = false;
+        }
+    }
+}
+
+function updateSavedItemsCount() {
+    const savedItems = document.querySelectorAll('#saved .col-md-6');
+    const countBadge = document.querySelector('#saved-tab .badge');
+    if (countBadge) {
+        countBadge.textContent = savedItems.length;
+    }
+    
+    // If no items left, show empty state
+    if (savedItems.length === 0) {
+        const savedTab = document.querySelector('#saved');
+        if (savedTab) {
+            savedTab.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Saved Items (0)</h5>
+                </div>
+                <div class="text-center py-5">
+                    <i class="fas fa-bookmark text-muted fa-3x mb-3"></i>
+                    <h5 class="text-muted">No saved items yet</h5>
+                    <p class="text-muted">Items you save from banks will appear here</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// Simple toast notification function
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Add to page
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.appendChild(toast);
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove from DOM after hiding
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// Add data-item-id attribute to saved item cards for easy removal
+document.addEventListener('DOMContentLoaded', function() {
+    const savedItemCards = document.querySelectorAll('#saved .col-md-6');
+    savedItemCards.forEach(card => {
+        const unsaveButton = card.querySelector('[onclick*="unsaveItem"]');
+        if (unsaveButton) {
+            const itemId = unsaveButton.getAttribute('onclick').match(/\d+/)[0];
+            card.setAttribute('data-item-id', itemId);
+        }
+    });
+});
+</script>
+{% endblock %}

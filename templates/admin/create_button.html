@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Create Dashboard Button - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Create New Dashboard Button</h2>
+                <a href="{{ url_for('admin.dynamic_buttons') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Buttons
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Button Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="createButtonForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="button_key" class="form-label">Button Key <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="button_key" name="button_key" required>
+                                            <div class="form-text">Unique identifier (e.g., 'add_item', 'add_need')</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="button_label" class="form-label">Button Label <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="button_label" name="button_label" required>
+                                            <div class="form-text">Text displayed on the button</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="button_description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="button_description" name="button_description" rows="2"></textarea>
+                                    <div class="form-text">Optional description shown below the button</div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="target_type" class="form-label">Target Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="target_type" name="target_type" required>
+                                                <option value="">Select target type</option>
+                                                <option value="page">Internal Page</option>
+                                                <option value="chatbot">Chatbot Flow</option>
+                                                <option value="external">External Link</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="target_value" class="form-label">Target Value</label>
+                                            <input type="text" class="form-control" id="target_value" name="target_value">
+                                            <div class="form-text" id="target_help">URL, chatbot ID, or external link</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="icon_class" class="form-label">Icon Class</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="icon_class" name="icon_class" value="fas fa-plus">
+                                                <button type="button" class="btn btn-outline-secondary" id="iconPreviewBtn">
+                                                    <i id="iconPreview" class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">FontAwesome icon class (e.g., 'fas fa-plus')</div>
+                                            
+                                            <!-- Quick Icon Picker -->
+                                            <div class="mt-2">
+                                                <label class="form-label small">Quick Pick Icons:</label>
+                                                <div class="d-flex flex-wrap gap-2" id="icon_picker">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-plus">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-user-plus">
+                                                        <i class="fas fa-user-plus"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-exclamation-circle">
+                                                        <i class="fas fa-exclamation-circle"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-robot">
+                                                        <i class="fas fa-robot"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-file-alt">
+                                                        <i class="fas fa-file-alt"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-chart-line">
+                                                        <i class="fas fa-chart-line"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-cog">
+                                                        <i class="fas fa-cog"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-home">
+                                                        <i class="fas fa-home"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="button_color" class="form-label">Button Icon Color</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="button_color" name="button_color" 
+                                                       value="#007bff" style="width: 60px; height: 38px;">
+                                                <input type="text" class="form-control" id="button_color_hex" placeholder="#007bff" 
+                                                       value="#007bff">
+                                            </div>
+                                            <div class="form-text">Choose icon color in hex format (e.g., #007bff)</div>
+                                            
+                                            <!-- Quick Color Picker -->
+                                            <div class="mt-2">
+                                                <label class="form-label small">Quick Colors:</label>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#007bff" style="background-color: #007bff; width: 30px; height: 30px; border: 1px solid #ddd;" title="Blue"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#28a745" style="background-color: #28a745; width: 30px; height: 30px; border: 1px solid #ddd;" title="Green"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#ffc107" style="background-color: #ffc107; width: 30px; height: 30px; border: 1px solid #ddd;" title="Yellow"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#dc3545" style="background-color: #dc3545; width: 30px; height: 30px; border: 1px solid #ddd;" title="Red"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#17a2b8" style="background-color: #17a2b8; width: 30px; height: 30px; border: 1px solid #ddd;" title="Cyan"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#6c757d" style="background-color: #6c757d; width: 30px; height: 30px; border: 1px solid #ddd;" title="Gray"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#6f42c1" style="background-color: #6f42c1; width: 30px; height: 30px; border: 1px solid #ddd;" title="Purple"></button>
+                                                    <button type="button" class="btn btn-sm color-option" data-color="#fd7e14" style="background-color: #fd7e14; width: 30px; height: 30px; border: 1px solid #ddd;" title="Orange"></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="order_index" class="form-label">Order Index</label>
+                                            <input type="number" class="form-control" id="order_index" name="order_index" value="0">
+                                            <div class="form-text">Lower numbers appear first</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                                <label class="form-check-label" for="is_active">
+                                                    Active
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="is_visible" name="is_visible" checked>
+                                                <label class="form-check-label" for="is_visible">
+                                                    Visible
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('admin.dynamic_buttons') }}" class="btn btn-secondary">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create Button
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Preview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="buttonPreview" class="text-center">
+                                <div class="action-card" style="max-width: 200px; margin: 0 auto;">
+                                    <div class="action-icon" id="previewIcon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+                                    <h6 id="previewLabel" class="action-title">Button Label</h6>
+                                    <p id="previewDescription" class="action-description text-muted small">Button description</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Help</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Target Types:</h6>
+                            <ul class="small">
+                                <li><strong>Internal Page:</strong> Use relative URLs like '/dashboard/add-item'</li>
+                                <li><strong>Chatbot Flow:</strong> Enter the chatbot ID number</li>
+                                <li><strong>External Link:</strong> Use full URLs like 'https://example.com'</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Common Icons:</h6>
+                            <ul class="small">
+                                <li><code>fas fa-plus</code> - Add/Plus</li>
+                                <li><code>fas fa-user-plus</code> - Add User</li>
+                                <li><code>fas fa-exclamation-circle</code> - Need/Alert</li>
+                                <li><code>fas fa-robot</code> - Chatbot</li>
+                                <li><code>fas fa-file-alt</code> - Document</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createButtonForm');
+    const previewIcon = document.getElementById('previewIcon');
+    const previewLabel = document.getElementById('previewLabel');
+    const previewDescription = document.getElementById('previewDescription');
+    const targetTypeSelect = document.getElementById('target_type');
+    const targetValueInput = document.getElementById('target_value');
+    const targetHelp = document.getElementById('target_help');
+    const iconClassInput = document.getElementById('icon_class');
+    const buttonColorInput = document.getElementById('button_color');
+    const buttonColorHexInput = document.getElementById('button_color_hex');
+    const iconPreview = document.getElementById('iconPreview');
+
+    // Update preview when inputs change
+    function updatePreview() {
+        const label = document.getElementById('button_label').value || 'Button Label';
+        const description = document.getElementById('button_description').value || 'Button description';
+        const iconClass = iconClassInput.value || 'fas fa-plus';
+        const color = buttonColorInput.value || '#007bff';
+
+        previewLabel.textContent = label;
+        previewDescription.textContent = description;
+        
+        // Update icon
+        const iconElement = previewIcon.querySelector('i');
+        iconElement.className = iconClass;
+        iconElement.style.color = color;
+        
+        // Update icon preview in input group
+        iconPreview.className = iconClass;
+        iconPreview.style.color = color;
+        
+        // Keep the gradient background but change icon color
+        previewIcon.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+    }
+    
+    // Update hex input when color picker changes
+    buttonColorInput.addEventListener('input', function() {
+        buttonColorHexInput.value = this.value;
+        updatePreview();
+    });
+    
+    // Update color picker when hex input changes
+    buttonColorHexInput.addEventListener('input', function() {
+        const hexValue = this.value;
+        if (/^#[0-9A-F]{6}$/i.test(hexValue)) {
+            buttonColorInput.value = hexValue;
+            updatePreview();
+        }
+    });
+    
+    // Icon picker buttons
+    document.querySelectorAll('.icon-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const iconClass = this.getAttribute('data-icon');
+            
+            // Remove active class from all icon options
+            document.querySelectorAll('.icon-option').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            iconClassInput.value = iconClass;
+            updatePreview();
+        });
+    });
+    
+    // Color picker buttons
+    document.querySelectorAll('.color-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const color = this.getAttribute('data-color');
+            
+            // Remove active class from all color options
+            document.querySelectorAll('.color-option').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            buttonColorInput.value = color;
+            buttonColorHexInput.value = color;
+            updatePreview();
+        });
+    });
+
+    // Update target help text
+    function updateTargetHelp() {
+        const targetType = targetTypeSelect.value;
+        switch(targetType) {
+            case 'page':
+                targetHelp.textContent = 'Internal page URL (e.g., /dashboard/add-item)';
+                break;
+            case 'chatbot':
+                targetHelp.textContent = 'Chatbot ID number (e.g., 5)';
+                break;
+            case 'external':
+                targetHelp.textContent = 'Full external URL (e.g., https://example.com)';
+                break;
+            default:
+                targetHelp.textContent = 'URL, chatbot ID, or external link';
+        }
+    }
+
+    // Add event listeners
+    document.getElementById('button_label').addEventListener('input', updatePreview);
+    document.getElementById('button_description').addEventListener('input', updatePreview);
+    iconClassInput.addEventListener('input', updatePreview);
+    targetTypeSelect.addEventListener('change', updateTargetHelp);
+
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert checkboxes
+        data.is_active = document.getElementById('is_active').checked;
+        data.is_visible = document.getElementById('is_visible').checked;
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        fetch('{{ url_for("admin.create_button") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("admin.dynamic_buttons") }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the button.');
+        });
+    });
+
+    // Initialize preview
+    updatePreview();
+    updateTargetHelp();
+});
+</script>
+
+<style>
+.action-card {
+    padding: 1.5rem;
+    border-radius: 15px;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.action-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.action-description {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+/* Icon picker styling */
+.icon-option {
+    transition: all 0.2s ease;
+}
+
+.icon-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.icon-option.active {
+    background-color: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+/* Color picker styling */
+.color-option {
+    transition: all 0.2s ease;
+    border-radius: 50% !important;
+    border: 2px solid #ddd !important;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-color: #333 !important;
+}
+
+.color-option.active {
+    border-color: #333 !important;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+/* Form control color styling */
+.form-control-color {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+}
+
+/* Icon preview in input group */
+#iconPreviewBtn {
+    border-left: 0;
+}
+
+#iconPreview {
+    font-size: 1.2rem;
+}
+
+/* Preview section styling */
+#previewIcon {
+    transition: all 0.3s ease;
+}
+
+/* Input group styling */
+.input-group .form-control:focus {
+    z-index: 3;
+}
+
+.input-group .btn {
+    z-index: 2;
+}
+</style>
+{% endblock %}

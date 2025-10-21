@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Add Service - Step by Step{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-star me-2 text-primary"></i>
+                    Advanced Add Service - Step by Step
+                </h4>
+                <div>
+                    <span class="badge bg-primary me-2">ADVANCED PATH</span>
+                    <a href="{{ url_for('profiles.create_service') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Progress</span>
+                        <span id="progress-text" class="text-muted">Step 1 of 8</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" style="width: 12.5%" aria-valuenow="1" aria-valuemin="0" aria-valuemax="8"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">Category</small>
+                        <small class="text-muted">Provider</small>
+                        <small class="text-muted">Basic Info</small>
+                        <small class="text-muted">Experience</small>
+                        <small class="text-muted">Pricing</small>
+                        <small class="text-muted">Delivery</small>
+                        <small class="text-muted">Portfolio</small>
+                        <small class="text-muted">Management</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-body">
+                    <form id="advanced-form" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Step 1: Category & Classification -->
+                        <div class="step-content" id="step-1">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-tags fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 1: Category & Classification</h4>
+                                <p class="text-muted">Let's start by categorizing your service</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of service is this? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" id="main-category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="professional" {{ 'selected' if form_data and form_data.get('main_category') == 'professional' else '' }}>💼 Professional - Business, consulting, legal services</option>
+                                            <option value="creative" {{ 'selected' if form_data and form_data.get('main_category') == 'creative' else '' }}>🎨 Creative - Design, writing, multimedia services</option>
+                                            <option value="technical" {{ 'selected' if form_data and form_data.get('main_category') == 'technical' else '' }}>⚙️ Technical - Development, IT, engineering services</option>
+                                            <option value="educational" {{ 'selected' if form_data and form_data.get('main_category') == 'educational' else '' }}>📚 Educational - Teaching, training, coaching</option>
+                                            <option value="personal" {{ 'selected' if form_data and form_data.get('main_category') == 'personal' else '' }}>👤 Personal - Health, fitness, lifestyle services</option>
+                                        </select>
+                                        <div id="category-description" class="mt-3 p-3 bg-light rounded" style="display: none;">
+                                            <small class="text-muted"></small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id="subcategory-section" style="display: none;">
+                                        <label class="form-label fs-5">More specifically, what kind? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="sub_category" id="sub-category" required disabled>
+                                            <option value="">Select a sub-category...</option>
+                                        </select>
+                                        <div id="custom-subcategory" class="mt-3" style="display: none;">
+                                            <input type="text" class="form-control form-control-lg" name="custom_sub_category" placeholder="Tell us more specifically what service you offer...">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Tags & Keywords (Optional)</label>
+                                        <input type="text" class="form-control" name="tags" placeholder='e.g. "web design, responsive, e-commerce, UI/UX"' value="{{ form_data.get('tags', '') if form_data else '' }}">
+                                        <div class="form-text">Help people find your service with relevant keywords</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Service Provider & Creator -->
+                        <div class="step-content" id="step-2" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-user-tie fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 2: Service Provider & Creator</h4>
+                                <p class="text-muted">Who provides this service and who's behind it?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who provides this service? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required placeholder="e.g., Your Name, Your Company, Your Team" value="{{ form_data.get('creator', '') if form_data else '' }}">
+                                        <div class="form-text">This could be you, your company, or your team</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Provider Website/Profile (Optional)</label>
+                                        <input type="url" class="form-control" name="creator_link" placeholder="https://..." value="{{ form_data.get('creator_link', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Who currently manages this service?</label>
+                                        <select class="form-select" name="owner_type" id="owner-type">
+                                            <option value="me" {{ 'selected' if form_data and form_data.get('owner_type') == 'me' else '' }}>I manage it</option>
+                                            <option value="other" {{ 'selected' if form_data and form_data.get('owner_type') == 'other' else '' }}>Someone else manages it</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="owner-details" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Manager Name</label>
+                                                <input type="text" class="form-control" name="owner_name" placeholder="Manager's name" value="{{ form_data.get('owner_name', '') if form_data else '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Manager Link</label>
+                                                <input type="url" class="form-control" name="owner_link" placeholder="https://..." value="{{ form_data.get('owner_link', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Provider Type</label>
+                                        <select class="form-select" name="ownership_type">
+                                            <option value="individual" {{ 'selected' if form_data and form_data.get('ownership_type') == 'individual' else '' }}>Individual Freelancer</option>
+                                            <option value="organization" {{ 'selected' if form_data and form_data.get('ownership_type') == 'organization' else '' }}>Company/Agency</option>
+                                            <option value="shared" {{ 'selected' if form_data and form_data.get('ownership_type') == 'shared' else '' }}>Team/Partnership</option>
+                                            <option value="open_source" {{ 'selected' if form_data and form_data.get('ownership_type') == 'open_source' else '' }}>Community/Open Source</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Basic Information -->
+                        <div class="step-content" id="step-3" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 3: Basic Information</h4>
+                                <p class="text-muted">Tell us about your service</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's the name of your service? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required placeholder="Give your service a clear, descriptive name" value="{{ form_data.get('title', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Short Description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="200" required placeholder="Describe your service in a few sentences (max 200 characters)">{{ form_data.get('short_description', '') if form_data else '' }}</textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">Keep it concise and engaging</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/200</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Brand/Company (Optional)</label>
+                                        <input type="text" class="form-control" name="brand_manufacturer" placeholder="Brand or company name if different from provider" value="{{ form_data.get('brand_manufacturer', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Package/Code (Optional)</label>
+                                        <input type="text" class="form-control" name="model_sku" placeholder="Package name or service code" value="{{ form_data.get('model_sku', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Detailed Description (Optional)</label>
+                                        <textarea class="form-control" name="detailed_description" rows="5" placeholder="Provide more detailed information about your service...">{{ form_data.get('detailed_description', '') if form_data else '' }}</textarea>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Key Benefits & Features (Optional)</label>
+                                        <textarea class="form-control" name="key_features" rows="4" placeholder="• Benefit 1&#10;• Benefit 2&#10;• Benefit 3">{{ form_data.get('key_features', '') if form_data else '' }}</textarea>
+                                        <div class="form-text">Use bullet points (•) for each benefit or feature</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Experience & Qualifications -->
+                        <div class="step-content" id="step-4" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-medal fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 4: Experience & Qualifications</h4>
+                                <p class="text-muted">What's your experience level and qualifications?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's your experience level? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="experience_level" id="experience-select" required>
+                                            <option value="">Select experience level...</option>
+                                            <option value="beginner" {{ 'selected' if form_data and form_data.get('experience_level') == 'beginner' else '' }}>🌱 Beginner - Just starting out (0-1 years)</option>
+                                            <option value="intermediate" {{ 'selected' if form_data and form_data.get('experience_level') == 'intermediate' else '' }}>📈 Intermediate - Some experience (1-3 years)</option>
+                                            <option value="experienced" {{ 'selected' if form_data and form_data.get('experience_level') == 'experienced' else '' }}>💪 Experienced - Solid background (3-5 years)</option>
+                                            <option value="expert" {{ 'selected' if form_data and form_data.get('experience_level') == 'expert' else '' }}>🏆 Expert - Highly skilled (5-10 years)</option>
+                                            <option value="master" {{ 'selected' if form_data and form_data.get('experience_level') == 'master' else '' }}>👑 Master - Industry leader (10+ years)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Duration/Timeline</label>
+                                        <select class="form-select" name="service_duration">
+                                            <option value="immediate" {{ 'selected' if form_data and form_data.get('service_duration') == 'immediate' else '' }}>⚡ Immediate - Same day delivery</option>
+                                            <option value="short" {{ 'selected' if form_data and form_data.get('service_duration') == 'short' else '' }}>🏃 Short-term - 1-7 days</option>
+                                            <option value="medium" {{ 'selected' if form_data and form_data.get('service_duration') == 'medium' else '' }}>📅 Medium-term - 1-4 weeks</option>
+                                            <option value="long" {{ 'selected' if form_data and form_data.get('service_duration') == 'long' else '' }}>📆 Long-term - 1+ months</option>
+                                            <option value="ongoing" {{ 'selected' if form_data and form_data.get('service_duration') == 'ongoing' else '' }}>🔄 Ongoing - Continuous service</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Current Status</label>
+                                        <select class="form-select" name="status">
+                                            <option value="active" {{ 'selected' if form_data and form_data.get('status') == 'active' else '' }}>🟢 Available - Ready to take on projects</option>
+                                            <option value="busy" {{ 'selected' if form_data and form_data.get('status') == 'busy' else '' }}>🟡 Busy - Limited availability</option>
+                                            <option value="booked" {{ 'selected' if form_data and form_data.get('status') == 'booked' else '' }}>🔴 Fully Booked - Not available</option>
+                                            <option value="seasonal" {{ 'selected' if form_data and form_data.get('status') == 'seasonal' else '' }}>📅 Seasonal - Available certain times</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Availability Schedule</label>
+                                        <select class="form-select" name="availability">
+                                            <option value="flexible" {{ 'selected' if form_data and form_data.get('availability') == 'flexible' else '' }}>Flexible Schedule</option>
+                                            <option value="business_hours" {{ 'selected' if form_data and form_data.get('availability') == 'business_hours' else '' }}>Business Hours Only</option>
+                                            <option value="evenings_weekends" {{ 'selected' if form_data and form_data.get('availability') == 'evenings_weekends' else '' }}>Evenings & Weekends</option>
+                                            <option value="24_7" {{ 'selected' if form_data and form_data.get('availability') == '24_7' else '' }}>24/7 Available</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Qualifications & Certifications (Optional)</label>
+                                        <textarea class="form-control" name="qualifications" rows="4" placeholder="List your relevant qualifications, certifications, or credentials...">{{ form_data.get('qualifications', '') if form_data else '' }}</textarea>
+                                        <div class="form-text">Include degrees, certifications, awards, or other credentials</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Pricing & Booking -->
+                        <div class="step-content" id="step-5" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 5: Pricing & Booking</h4>
+                                <p class="text-muted">How do you price your service?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">How many clients can you serve?</label>
+                                        <input type="number" class="form-control form-control-lg" name="quantity" id="quantity-input" placeholder="Enter number of clients" value="{{ form_data.get('quantity', '') if form_data else '' }}">
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" name="unlimited_quantity" id="unlimited" {{ 'checked' if form_data and form_data.get('unlimited_quantity') else '' }}>
+                                            <label class="form-check-label" for="unlimited">
+                                                ♾️ Unlimited capacity (can serve multiple clients simultaneously)
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's your pricing model?</label>
+                                        <select class="form-select form-select-lg" name="pricing_type" id="pricing-type">
+                                            <option value="free" {{ 'selected' if form_data and form_data.get('pricing_type') == 'free' else '' }}>🆓 Free - No cost</option>
+                                            <option value="paid" {{ 'selected' if form_data and form_data.get('pricing_type') == 'paid' else '' }}>💰 Fixed Price - Per project/service</option>
+                                            <option value="hourly" {{ 'selected' if form_data and form_data.get('pricing_type') == 'hourly' else '' }}>⏰ Hourly Rate - Per hour</option>
+                                            <option value="subscription" {{ 'selected' if form_data and form_data.get('pricing_type') == 'subscription' else '' }}>🔄 Subscription - Monthly/yearly</option>
+                                            <option value="negotiable" {{ 'selected' if form_data and form_data.get('pricing_type') == 'negotiable' else '' }}>🤝 Negotiable - Price on request</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4" id="price-fields" style="display: none;">
+                                        <label class="form-label fs-5">What's the price?</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00" value="{{ form_data.get('price', '') if form_data else '' }}">
+                                            <select class="form-select" name="currency" style="max-width: 120px;">
+                                                <option value="AED" {{ 'selected' if form_data and form_data.get('currency') == 'AED' else '' }}>AED</option>
+                                                <option value="USD" {{ 'selected' if form_data and form_data.get('currency') == 'USD' else '' }}>USD</option>
+                                                <option value="EUR" {{ 'selected' if form_data and form_data.get('currency') == 'EUR' else '' }}>EUR</option>
+                                                <option value="GBP" {{ 'selected' if form_data and form_data.get('currency') == 'GBP' else '' }}>GBP</option>
+                                                <option value="SAR" {{ 'selected' if form_data and form_data.get('currency') == 'SAR' else '' }}>SAR</option>
+                                                <option value="QAR" {{ 'selected' if form_data and form_data.get('currency') == 'QAR' else '' }}>QAR</option>
+                                                <option value="KWD" {{ 'selected' if form_data and form_data.get('currency') == 'KWD' else '' }}>KWD</option>
+                                                <option value="BHD" {{ 'selected' if form_data and form_data.get('currency') == 'BHD' else '' }}>BHD</option>
+                                                <option value="OMR" {{ 'selected' if form_data and form_data.get('currency') == 'OMR' else '' }}>OMR</option>
+                                                <option value="EGP" {{ 'selected' if form_data and form_data.get('currency') == 'EGP' else '' }}>EGP</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Any special offers or packages?</label>
+                                        <input type="text" class="form-control" name="discounts_offers" placeholder="e.g., 10% off for first-time clients, Package deals available" value="{{ form_data.get('discounts_offers', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Booking Type</label>
+                                        <select class="form-select" name="booking_type">
+                                            <option value="instant" {{ 'selected' if form_data and form_data.get('booking_type') == 'instant' else '' }}>⚡ Instant Booking - Clients can book immediately</option>
+                                            <option value="consultation" {{ 'selected' if form_data and form_data.get('booking_type') == 'consultation' else '' }}>💬 Consultation First - Discuss before booking</option>
+                                            <option value="quote" {{ 'selected' if form_data and form_data.get('booking_type') == 'quote' else '' }}>📝 Quote Required - Custom pricing per project</option>
+                                            <option value="waitlist" {{ 'selected' if form_data and form_data.get('booking_type') == 'waitlist' else '' }}>📋 Waitlist - Join queue for future availability</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 6: Service Delivery -->
+                        <div class="step-content" id="step-6" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-university fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 6: Service Delivery</h4>
+                                <p class="text-muted">How do you deliver your service?</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">How do you deliver this service?</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check form-check-lg">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="remote" id="delivery-remote" {{ 'checked' if form_data and 'remote' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                                    <label class="form-check-label" for="delivery-remote">
+                                                        <i class="fas fa-laptop me-2"></i>Remote/Online
+                                                        <small class="d-block text-muted">Video calls, online collaboration</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check form-check-lg">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="on_site" id="delivery-onsite" {{ 'checked' if form_data and 'on_site' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                                    <label class="form-check-label" for="delivery-onsite">
+                                                        <i class="fas fa-map-marker-alt me-2"></i>On-site/In-person
+                                                        <small class="d-block text-muted">At client's location or office</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check form-check-lg">
+                                                    <input class="form-check-input" type="checkbox" name="delivery_methods" value="hybrid" id="delivery-hybrid" {{ 'checked' if form_data and 'hybrid' in (form_data.get('delivery_methods', '') or '') else '' }}>
+                                                    <label class="form-check-label" for="delivery-hybrid">
+                                                        <i class="fas fa-sync-alt me-2"></i>Hybrid
+                                                        <small class="d-block text-muted">Combination of remote and on-site</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Where do you provide this service?</label>
+                                        <input type="text" class="form-control form-control-lg" name="location" placeholder="e.g., Dubai, UAE or Online/Worldwide" value="{{ form_data.get('location', '') if form_data else '' }}">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Area</label>
+                                        <select class="form-select form-select-lg" name="availability_region">
+                                            <option value="local" {{ 'selected' if form_data and form_data.get('availability_region') == 'local' else '' }}>🏘️ Local - Same city/area only</option>
+                                            <option value="national" {{ 'selected' if form_data and form_data.get('availability_region') == 'national' else '' }}>🏳️ National - Same country</option>
+                                            <option value="international" {{ 'selected' if form_data and form_data.get('availability_region') == 'international' else '' }}>🌍 International - Worldwide</option>
+                                            <option value="online" {{ 'selected' if form_data and form_data.get('availability_region') == 'online' else '' }}>☁️ Online/Global - Available everywhere online</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 7: Portfolio & Proof -->
+                        <div class="step-content" id="step-7" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 7: Portfolio & Proof</h4>
+                                <p class="text-muted">Show off your work with portfolio, testimonials, and examples</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">📸 Portfolio Images</label>
+                                        <input type="file" class="form-control form-control-lg mb-2" name="images" multiple accept="image/*">
+                                        <div class="text-center my-2 text-muted">OR</div>
+                                        <input type="url" class="form-control" name="image_links" placeholder="Paste portfolio image links (separate multiple links with commas)" value="{{ form_data.get('image_links', '') if form_data else '' }}">
+                                        <div class="form-text">Show examples of your work, before/after photos, or service demonstrations</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">🎥 Demo Videos</label>
+                                        <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                        <div class="text-center my-2 text-muted">OR</div>
+                                        <input type="url" class="form-control" name="video_links" placeholder="YouTube, Vimeo, or other video links" value="{{ form_data.get('video_links', '') if form_data else '' }}">
+                                        <div class="form-text">Videos can demonstrate your skills and previous work</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">📄 Certificates & Documents</label>
+                                        <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                        <div class="text-center my-2 text-muted">OR</div>
+                                        <input type="url" class="form-control" name="document_links" placeholder="Links to certificates, case studies, etc." value="{{ form_data.get('document_links', '') if form_data else '' }}">
+                                        <div class="form-text">Certificates, case studies, or other supporting documents</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">🔗 Portfolio & References</label>
+                                        <textarea class="form-control" name="external_links" rows="3" placeholder="Portfolio: https://...&#10;LinkedIn: https://...&#10;Previous work: https://...">{{ form_data.get('external_links', '') if form_data else '' }}</textarea>
+                                        <div class="form-text">Portfolio website, LinkedIn, previous work examples, testimonials, etc.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 8: Management -->
+                        <div class="step-content" id="step-8" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-cog fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Step 8: Management Settings</h4>
+                                <p class="text-muted">Final settings for your service listing</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who can see this service?</label>
+                                        <select class="form-select form-select-lg" name="visibility">
+                                            <option value="public" {{ 'selected' if form_data and form_data.get('visibility') == 'public' else '' }}>🌐 Public - Everyone can see it</option>
+                                            <option value="private" {{ 'selected' if form_data and form_data.get('visibility') == 'private' else '' }}>🔒 Private - Only you can see it</option>
+                                            <option value="restricted" {{ 'selected' if form_data and form_data.get('visibility') == 'restricted' else '' }}>🚫 Restricted - Limited access</option>
+                                            <option value="members_only" {{ 'selected' if form_data and form_data.get('visibility') == 'members_only' else '' }}>👥 Members Only - Registered users only</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Verification Status</label>
+                                        <select class="form-select" name="verification_status">
+                                            <option value="pending" {{ 'selected' if form_data and form_data.get('verification_status') == 'pending' else '' }}>⏳ Pending - Awaiting verification</option>
+                                            <option value="verified" {{ 'selected' if form_data and form_data.get('verification_status') == 'verified' else '' }}>✅ Verified - Confirmed authentic</option>
+                                            <option value="unverified" {{ 'selected' if form_data and form_data.get('verification_status') == 'unverified' else '' }}>❌ Unverified - Not yet confirmed</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Service Expiration Date (Optional)</label>
+                                        <input type="date" class="form-control" name="expiration_date" value="{{ form_data.get('expiration_date', '') if form_data else '' }}">
+                                        <div class="form-text">Leave empty if this service doesn't expire</div>
+                                    </div>
+
+                                    <!-- Success Card -->
+                                    <div class="card bg-light mt-5">
+                                        <div class="card-body">
+                                            <div class="text-center">
+                                                <i class="fas fa-trophy fa-3x text-success mb-3"></i>
+                                                <h5 class="card-title text-success">🎉 Excellent Work!</h5>
+                                                <p class="card-text">
+                                                    You've provided comprehensive details for your service. 
+                                                    This will earn you maximum visibility and credibility points!
+                                                </p>
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-star me-2"></i>
+                                                    <strong>Your service will rank higher in search results and build more customer trust!</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-4 pt-4 border-top">
+                            <button type="button" id="prev-btn" class="btn btn-outline-secondary btn-lg" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                            <div class="flex-grow-1"></div>
+                            <button type="button" id="next-btn" class="btn btn-primary btn-lg">
+                                Next<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <div id="final-buttons" class="d-none">
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-primary btn-lg me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success btn-lg">
+                                    <i class="fas fa-star me-2"></i>Create Service
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check-lg .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.125em;
+}
+
+.form-check-lg .form-check-label {
+    font-size: 1.1rem;
+    padding-left: 0.5rem;
+}
+
+.step-content {
+    min-height: 500px;
+}
+
+.progress {
+    transition: all 0.3s ease;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.btn-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between small {
+        font-size: 0.7rem;
+    }
+    
+    .step-content {
+        min-height: 400px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 8;
+    
+    // Initialize form
+    updateProgress();
+    initializeFormLogic();
+    
+    // Next button handler
+    document.getElementById('next-btn').addEventListener('click', function() {
+        if (validateCurrentStep()) {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+    });
+    
+    // Previous button handler
+    document.getElementById('prev-btn').addEventListener('click', function() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+            updateProgress();
+        }
+    });
+    
+    function showStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(function(stepEl) {
+            stepEl.style.display = 'none';
+        });
+        
+        // Show current step
+        document.getElementById('step-' + step).style.display = 'block';
+        
+        // Update navigation buttons
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finalButtons = document.getElementById('final-buttons');
+        
+        if (step === 1) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+        }
+        
+        if (step === totalSteps) {
+            nextBtn.style.display = 'none';
+            finalButtons.classList.remove('d-none');
+        } else {
+            nextBtn.style.display = 'block';
+            finalButtons.classList.add('d-none');
+        }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function updateProgress() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const percentage = (currentStep / totalSteps) * 100;
+        
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', currentStep);
+        progressText.textContent = `Step ${currentStep} of ${totalSteps}`;
+    }
+    
+    function validateCurrentStep() {
+        const currentStepEl = document.getElementById('step-' + currentStep);
+        const requiredFields = currentStepEl.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(function(field) {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            // Show validation message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger mt-3';
+            alertDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Please fill in all required fields before continuing.';
+            
+            // Remove existing alerts
+            const existingAlerts = currentStepEl.querySelectorAll('.alert-danger');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Add new alert
+            currentStepEl.appendChild(alertDiv);
+            
+            // Scroll to first invalid field
+            const firstInvalid = currentStepEl.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+        }
+        
+        return isValid;
+    }
+    
+    function initializeFormLogic() {
+        // Category descriptions
+        const categoryDescriptions = {
+            'professional': 'Business consulting, legal services, financial advice, project management, etc.',
+            'creative': 'Graphic design, content writing, video production, photography, marketing, etc.',
+            'technical': 'Web development, software engineering, IT support, data analysis, etc.',
+            'educational': 'Teaching, tutoring, training, coaching, mentoring, course creation, etc.',
+            'personal': 'Health coaching, fitness training, life coaching, personal styling, etc.'
+        };
+        
+        // Sub-category options
+        const subCategories = {
+            'professional': ['Business Consulting', 'Legal Services', 'Financial Advisory', 'Project Management', 'HR Services', 'Other'],
+            'creative': ['Graphic Design', 'Content Writing', 'Video Production', 'Photography', 'Marketing', 'Branding', 'Other'],
+            'technical': ['Web Development', 'Software Development', 'IT Support', 'Data Analysis', 'Cybersecurity', 'Other'],
+            'educational': ['Tutoring', 'Online Courses', 'Training Programs', 'Coaching', 'Mentoring', 'Other'],
+            'personal': ['Health Coaching', 'Fitness Training', 'Life Coaching', 'Personal Styling', 'Therapy', 'Other']
+        };
+        
+        // Main category change handler
+        document.getElementById('main-category').addEventListener('change', function() {
+            const selectedCategory = this.value;
+            const descriptionDiv = document.getElementById('category-description');
+            const subCategorySelect = document.getElementById('sub-category');
+            const subCategorySection = document.getElementById('subcategory-section');
+            
+            if (selectedCategory && categoryDescriptions[selectedCategory]) {
+                descriptionDiv.querySelector('small').textContent = categoryDescriptions[selectedCategory];
+                descriptionDiv.style.display = 'block';
+                subCategorySection.style.display = 'block';
+                
+                // Update sub-categories
+                subCategorySelect.innerHTML = '<option value="">Select a sub-category...</option>';
+                if (subCategories[selectedCategory]) {
+                    subCategories[selectedCategory].forEach(function(subCat) {
+                        const option = document.createElement('option');
+                        option.value = subCat.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and');
+                        option.textContent = subCat;
+                        subCategorySelect.appendChild(option);
+                    });
+                    subCategorySelect.disabled = false;
+                }
+            } else {
+                descriptionDiv.style.display = 'none';
+                subCategorySection.style.display = 'none';
+                subCategorySelect.disabled = true;
+            }
+        });
+        
+        // Sub-category change handler
+        document.getElementById('sub-category').addEventListener('change', function() {
+            const customDiv = document.getElementById('custom-subcategory');
+            if (this.value === 'other') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+            }
+        });
+        
+        // Owner type change handler
+        document.getElementById('owner-type').addEventListener('change', function() {
+            const ownerDetails = document.getElementById('owner-details');
+            if (this.value === 'other') {
+                ownerDetails.style.display = 'block';
+            } else {
+                ownerDetails.style.display = 'none';
+            }
+        });
+        
+        // Character counter for short description
+        document.querySelector('[name="short_description"]').addEventListener('input', function() {
+            document.getElementById('char-count').textContent = this.value.length;
+        });
+        
+        // Unlimited quantity checkbox handler
+        document.getElementById('unlimited').addEventListener('change', function() {
+            const quantityInput = document.getElementById('quantity-input');
+            if (this.checked) {
+                quantityInput.disabled = true;
+                quantityInput.value = '';
+                quantityInput.placeholder = 'Unlimited';
+            } else {
+                quantityInput.disabled = false;
+                quantityInput.placeholder = 'Enter number of clients';
+            }
+        });
+        
+        // Pricing type change handler
+        document.getElementById('pricing-type').addEventListener('change', function() {
+            const priceFields = document.getElementById('price-fields');
+            if (this.value === 'paid' || this.value === 'hourly' || this.value === 'subscription') {
+                priceFields.style.display = 'block';
+            } else {
+                priceFields.style.display = 'none';
+            }
+        });
+        
+        // Initialize existing form values
+        initializeExistingValues();
+    }
+    
+    function initializeExistingValues() {
+        // Trigger category change if there's existing data
+        const categorySelect = document.getElementById('main-category');
+        if (categorySelect.value) {
+            categorySelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger sub-category change if there's existing data
+        const subCategorySelect = document.getElementById('sub-category');
+        if (subCategorySelect.value) {
+            subCategorySelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger owner type change if there's existing data
+        const ownerTypeSelect = document.getElementById('owner-type');
+        if (ownerTypeSelect.value) {
+            ownerTypeSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Trigger pricing change if there's existing data
+        const pricingSelect = document.getElementById('pricing-type');
+        if (pricingSelect.value) {
+            pricingSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Update character count if there's existing data
+        const shortDescTextarea = document.querySelector('[name="short_description"]');
+        if (shortDescTextarea.value) {
+            document.getElementById('char-count').textContent = shortDescTextarea.value.length;
+        }
+    }
+});
+</script>
+{% endblock %}
+

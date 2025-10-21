@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Add Fund{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>
+                    Quick Add Fund
+                </h4>
+                <div>
+                    <span class="badge bg-warning text-dark me-2">QUICK PATH</span>
+                    <a href="{{ url_for('profiles.create_fund') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bolt text-warning me-2"></i>
+                        <span class="fw-bold">Quick Add Mode</span>
+                        <span class="ms-auto text-muted">Just the essentials • 2-3 minutes</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Tell us about your fund</h4>
+                                <p class="text-muted">Just the essential details to get you started</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's your fund called? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required 
+                                               placeholder="e.g., Startup Investment Fund, Green Energy Fund, Education Grant">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Brief description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="200" required 
+                                                  placeholder="Describe your fund in a few sentences (max 200 characters)"></textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">Keep it concise and engaging</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/200</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of fund is this? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="investment">💰 Investment - Funding for businesses and startups</option>
+                                            <option value="grant">🎁 Grant - Non-repayable funding</option>
+                                            <option value="loan">🏦 Loan - Repayable funding with terms</option>
+                                            <option value="scholarship">🎓 Scholarship - Educational funding</option>
+                                            <option value="charity">❤️ Charity - Social impact funding</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who manages this fund? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required 
+                                               placeholder="e.g., Your Name, Your Organization, Fund Name">
+                                        <div class="form-text">This could be you, your organization, or fund management company</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Fund size or amount available? (Optional)</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" class="form-control" name="price" step="0.01" placeholder="0.00">
+                                            <select class="form-select" name="currency" style="max-width: 120px;">
+                                                <option value="AED">AED</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center mb-4">
+                            <div class="col-lg-8">
+                                <div class="alert alert-success">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-rocket fa-2x me-3"></i>
+                                        <div>
+                                            <h5 class="alert-heading mb-1">Almost there!</h5>
+                                            <p class="mb-0">Your fund will be live in seconds. You can always add more details later to improve its visibility and credibility points.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Save as Draft
+                            </button>
+                            <button type="submit" name="action" value="publish" class="btn btn-warning btn-lg px-5">
+                                <i class="fas fa-dollar-sign me-2"></i>Publish Fund
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shortDescTextarea = document.querySelector('[name="short_description"]');
+    const charCount = document.getElementById('char-count');
+    
+    if (shortDescTextarea && charCount) {
+        shortDescTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+});
+</script>
+{% endblock %}
+

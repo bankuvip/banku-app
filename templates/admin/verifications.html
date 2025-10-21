@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Item Verifications - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Item Verifications
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="refreshVerifications()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    {% if items.items %}
+                        {% for item in items.items %}
+                        <div class="border-bottom p-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-start">
+                                        <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                            <i class="fas fa-{{ 'box' if item.category == 'products' else 'cogs' if item.category == 'services' else 'brain' if item.category == 'knowledge' else 'lightbulb' }} text-warning"></i>
+                                            
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="text-decoration-none">
+                                                <h5 class="mb-1 text-primary">{{ item.title }}</h5>
+                                            </a>
+                                            <p class="text-muted mb-2">{{ item.detailed_description[:100] }}{% if item.detailed_description|length > 100 %}...{% endif %}</p>
+                                            <div class="d-flex gap-2 mb-2">
+                                                <span class="badge bg-secondary">{{ item.category.title() }}</span>
+                                                {% if item.category %}
+                                                <span class="badge bg-light text-dark">{{ item.category }}</span>
+                                                {% endif %}
+                                                {% if item.price %}
+                                                <span class="badge bg-success">${{ "%.2f"|format(item.price) }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="small">{{ item.profile.name }}</div>
+                                                    <div class="text-muted small">{{ item.profile.user.email }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Submitted</div>
+                                        <div>{{ item.created_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-success btn-sm" onclick="approveItem({{ item.id }})">
+                                            <i class="fas fa-check me-1"></i>Approve
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="rejectItem({{ item.id }})">
+                                            <i class="fas fa-times me-1"></i>Reject
+                                        </button>
+                                        <a href="{{ url_for('banks.item_detail', item_id=item.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle text-success fs-1 mb-3"></i>
+                        <h4 class="text-muted">All items verified!</h4>
+                        <p class="text-muted">No pending verifications at the moment.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if items.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Verifications pagination">
+                <ul class="pagination justify-content-center">
+                    {% if items.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.verifications', page=items.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in items.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != items.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.verifications', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if items.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.verifications', page=items.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rejectForm">
+                    <input type="hidden" id="rejectItemId" name="item_id">
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">Reason for rejection</label>
+                        <textarea class="form-control" id="rejectReason" name="reason" rows="3" required placeholder="Please provide a reason for rejecting this item..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmReject()">Reject Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshVerifications() {
+    location.reload();
+}
+
+function approveItem(itemId) {
+    if (confirm('Are you sure you want to approve this item?')) {
+        fetch(`/admin/verifications/${itemId}/approve`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while approving the item.');
+        });
+    }
+}
+
+function rejectItem(itemId) {
+    document.getElementById('rejectItemId').value = itemId;
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+function confirmReject() {
+    const itemId = document.getElementById('rejectItemId').value;
+    const reason = document.getElementById('rejectReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a reason for rejection.');
+        return;
+    }
+    
+    fetch(`/admin/verifications/${itemId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the item.');
+    });
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+

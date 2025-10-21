@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Create Need - AI Matching{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>Create New Need
+                </h1>
+                <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-brain me-2"></i>AI-Powered Need Creation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form id="createNeedForm">
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">Basic Information</h6>
+                            
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Need Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" required
+                                       placeholder="What do you need? (e.g., 'Need a web developer for my startup')">
+                                <div class="form-text">Be specific and descriptive for better AI matching</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Detailed Description *</label>
+                                <textarea class="form-control" id="description" name="description" rows="4" required
+                                          placeholder="Provide more details about your need..."></textarea>
+                                <div class="form-text">The more details you provide, the better our AI can match you</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="need_type" class="form-label">Need Type *</label>
+                                    <select class="form-select" id="need_type" name="need_type" required>
+                                        <option value="">Select Type</option>
+                                        <option value="product">Product</option>
+                                        <option value="service">Service</option>
+                                        <option value="event">Event</option>
+                                        <option value="experience">Experience</option>
+                                        <option value="opportunity">Opportunity</option>
+                                        <option value="information">Information</option>
+                                        <option value="observation">Observation</option>
+                                        <option value="hidden_gem">Hidden Gem</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="urgency_level" class="form-label">Urgency Level</label>
+                                    <select class="form-select" id="urgency_level" name="urgency_level">
+                                        <option value="low">Low - No rush</option>
+                                        <option value="medium" selected>Medium - Normal timeline</option>
+                                        <option value="high">High - Need soon</option>
+                                        <option value="urgent">Urgent - ASAP</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Requirements -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">Requirements</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="budget_min" class="form-label">Minimum Budget</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="budget_min" name="budget_min" 
+                                               placeholder="0" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="budget_max" class="form-label">Maximum Budget</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="budget_max" name="budget_max" 
+                                               placeholder="No limit" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" 
+                                           placeholder="City, State or Country">
+                                    <div class="form-text">Leave blank for remote/any location</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="timeline" class="form-label">Timeline</label>
+                                    <select class="form-select" id="timeline" name="timeline">
+                                        <option value="ASAP">ASAP</option>
+                                        <option value="1 week">Within 1 week</option>
+                                        <option value="1 month" selected>Within 1 month</option>
+                                        <option value="3 months">Within 3 months</option>
+                                        <option value="flexible">Flexible</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Requirements -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">Additional Requirements</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="experience_level" class="form-label">Experience Level</label>
+                                    <select class="form-select" id="experience_level" name="experience_level">
+                                        <option value="">Any level</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="expert">Expert</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="project_size" class="form-label">Project Size</label>
+                                    <select class="form-select" id="project_size" name="project_size">
+                                        <option value="">Any size</option>
+                                        <option value="small">Small</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="large">Large</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="special_requirements" class="form-label">Special Requirements</label>
+                                <textarea class="form-control" id="special_requirements" name="special_requirements" rows="3"
+                                          placeholder="Any special skills, certifications, or requirements..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">Privacy Settings</h6>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                                <label class="form-check-label" for="is_public">
+                                    Make this need public (others can see and respond)
+                                </label>
+                                <div class="form-text">Uncheck to keep this need private</div>
+                            </div>
+                        </div>
+
+                        <!-- AI Preview -->
+                        <div class="mb-4">
+                            <div class="alert alert-info">
+                                <i class="fas fa-robot me-2"></i>
+                                <strong>AI Matching Preview:</strong> Our AI will analyze your need and find the best matches based on your requirements, location, budget, and timeline.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-brain me-2"></i>Create Need & Find AI Matches
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('createNeedForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Need...';
+    submitBtn.disabled = true;
+    
+    // Collect form data
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Send request
+    fetch('{{ url_for("ai_matching.create_need") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> ${result.message}
+            `;
+            
+            // Insert alert before form
+            const form = document.getElementById('createNeedForm');
+            form.parentNode.insertBefore(alertDiv, form);
+            
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = `/ai-matching/need/${result.need_id}`;
+            }, 2000);
+        } else {
+            // Show error message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> ${result.message}
+            `;
+            
+            // Insert alert before form
+            const form = document.getElementById('createNeedForm');
+            form.parentNode.insertBefore(alertDiv, form);
+            
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Show error message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger';
+        alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> An error occurred while creating your need.
+        `;
+        
+        // Insert alert before form
+        const form = document.getElementById('createNeedForm');
+        form.parentNode.insertBefore(alertDiv, form);
+        
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Auto-save draft functionality
+let draftTimer;
+document.getElementById('createNeedForm').addEventListener('input', function() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => {
+        // Auto-save draft to localStorage
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        localStorage.setItem('need_draft', JSON.stringify(data));
+    }, 1000);
+});
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const draft = localStorage.getItem('need_draft');
+    if (draft) {
+        const data = JSON.parse(draft);
+        Object.keys(data).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+                element.value = data[key];
+            }
+        });
+    }
+});
+
+// Clear draft when form is submitted successfully
+document.getElementById('createNeedForm').addEventListener('submit', function() {
+    localStorage.removeItem('need_draft');
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

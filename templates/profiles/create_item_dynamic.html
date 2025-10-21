@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Item - {{ profile.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus-circle me-2"></i>Create New Item</h2>
+                {% if profile.slug %}
+                    <a href="{{ url_for('profiles.detail_by_slug', slug=profile.slug) }}" class="btn btn-outline-secondary">
+                {% else %}
+                    <a href="{{ url_for('profiles.detail_by_id', profile_id=profile.id) }}" class="btn btn-outline-secondary">
+                {% endif %}
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-robot me-2"></i>Choose Item Type
+                            </h5>
+                            <p class="text-muted mb-0">Select the type of item you want to create. Each type has its own guided chatbot form.</p>
+                        </div>
+                        <div class="card-body">
+                            {% if item_types %}
+                                <div class="row">
+                                    {% for item_type in item_types %}
+                                    <div class="col-lg-4 col-md-6 mb-4">
+                                        <div class="card h-100 item-type-card" 
+                                             data-item-type="{{ item_type.name }}"
+                                             style="cursor: pointer; transition: all 0.3s ease;"
+                                             onclick="selectItemType('{{ item_type.name }}')">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <div class="item-type-icon mx-auto" 
+                                                         style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: {{ item_type.button_color or '#007bff' }}20; border: 2px solid {{ item_type.border_color or item_type.button_color or '#007bff' }};">
+                                                        <i class="{{ item_type.icon_class or 'fas fa-box' }} fa-2x" 
+                                                           style="color: {{ item_type.text_color or item_type.button_color or '#007bff' }};"></i>
+                                                    </div>
+                                                </div>
+                                                <h5 class="card-title mb-2" style="color: {{ item_type.text_color or item_type.button_color or '#007bff' }};">
+                                                    {{ item_type.display_name }}
+                                                </h5>
+                                                {% if item_type.description %}
+                                                <p class="card-text text-muted small">
+                                                    {{ item_type.description[:100] }}{% if item_type.description|length > 100 %}...{% endif %}
+                                                </p>
+                                                {% endif %}
+                                                
+                                                <!-- Status indicators -->
+                                                <div class="mt-3">
+                                                    {% set mapping = item_type.storage_mappings|selectattr('is_active', 'equalto', true)|first %}
+                                                    {% if mapping %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-robot me-1"></i>Chatbot Ready
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>No Mapping
+                                                        </span>
+                                                    {% endif %}
+                                                    
+                                                    {% if not item_type.is_active %}
+                                                        <span class="badge bg-secondary ms-1">
+                                                            <i class="fas fa-pause me-1"></i>Inactive
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                                    <h4 class="text-muted">No Item Types Available</h4>
+                                    <p class="text-muted">Please contact an administrator to set up item types.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.item-type-card {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.item-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.item-type-card.selected {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+
+.item-type-card.disabled {
+    opacity: 0.6;
+    cursor: not-allowed !important;
+}
+
+.item-type-card.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+</style>
+
+<script>
+function selectItemType(itemTypeName) {
+    // Check if item type is disabled
+    const card = document.querySelector(`[data-item-type="${itemTypeName}"]`);
+    if (card.classList.contains('disabled')) {
+        return;
+    }
+    
+    // Redirect to the dynamic item creation route
+    window.location.href = `/profiles/create-${itemTypeName}`;
+}
+
+// Add disabled class to cards without chatbots or inactive items
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.item-type-card');
+    cards.forEach(card => {
+        const badges = card.querySelectorAll('.badge');
+        let hasChatbot = false;
+        let isActive = true;
+        
+        badges.forEach(badge => {
+            if (badge.classList.contains('bg-success')) {
+                hasChatbot = true;
+            }
+            if (badge.classList.contains('bg-secondary')) {
+                isActive = false;
+            }
+        });
+        
+        if (!hasChatbot || !isActive) {
+            card.classList.add('disabled');
+        }
+    });
+});
+</script>
+{% endblock %}
+

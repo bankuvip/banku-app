@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Advanced Add Auction{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-star me-2 text-primary"></i>Advanced Add Auction</h4>
+                <div>
+                    <span class="badge bg-primary me-2">ADVANCED PATH</span>
+                    <a href="{{ url_for('profiles.create_auction') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Advanced Auction Form Coming Soon!</h5>
+                        <p class="mb-0">The full 8-step interactive auction creation process is being developed. For now, please use the Quick Add option.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="{{ url_for('profiles.create_auction_form', path_type='quick') }}" class="btn btn-warning btn-lg">
+                    <i class="fas fa-bolt me-2"></i>Use Quick Add Instead
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

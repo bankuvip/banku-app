@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Add Service - Choose Your Path{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-university me-2 text-primary"></i>
+                    Add Your Service
+                </h4>
+                <a href="{{ url_for('profiles.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+
+            <!-- Service Definition -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-8">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is a Service?</h6>
+                        <p class="mb-2"><strong>Services are outputs of human effort (physical or mental) without independent existence.</strong> They cannot be detached from the person providing them, and are usually priced based on time or task.</p>
+                        <p class="mb-0"><strong>Key Note:</strong> Unlike products, services are tied to human freedom and ownership of time, effort, and creativity.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simple Path Selection -->
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center mb-4">
+                        <h4 class="text-primary">Choose Your Path</h4>
+                        <p class="text-muted">Select how you want to add your service</p>
+                    </div>
+                    
+                    <!-- Advanced Add Button -->
+                    <div class="mb-3">
+                        <a href="{{ url_for('profiles.create_service_form', path_type='advanced') }}" class="btn btn-primary btn-lg w-100 p-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-star fa-2x me-3"></i>
+                                <div class="text-start">
+                                    <div class="fw-bold">Advanced Add <span class="badge bg-light text-primary ms-1">Recommended</span></div>
+                                    <small>Step-by-step • 5-8 minutes • Maximum points</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <!-- Quick Add Button -->
+                    <div class="mb-3">
+                        <a href="{{ url_for('profiles.create_service_form', path_type='quick') }}" class="btn btn-warning btn-lg w-100 p-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-bolt fa-2x me-3"></i>
+                                <div class="text-start">
+                                    <div class="fw-bold">Quick Add</div>
+                                    <small>Fast & simple • 2-3 minutes • Basic points</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Popup Modal -->
+<div class="modal fade" id="welcomeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-university fa-4x text-primary mb-3"></i>
+                    <h2 class="text-primary">Welcome, {{ current_user.first_name }}!</h2>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="lead">In our app, every service you add earns two types of points:</p>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="p-4 bg-light rounded">
+                            <i class="fas fa-eye fa-2x text-info mb-3"></i>
+                            <h5 class="text-info">Visibility Points</h5>
+                            <p class="text-muted">Decide how high your service appears in search.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="p-4 bg-light rounded">
+                            <i class="fas fa-shield-alt fa-2x text-success mb-3"></i>
+                            <h5 class="text-success">Credibility Points</h5>
+                            <p class="text-muted">Build trust with customers as a verified service provider.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mb-4">
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-2">
+                            <div class="p-3">
+                                <i class="fas fa-bolt text-warning fa-2x mb-2"></i>
+                                <h6 class="text-warning">Quick Add</h6>
+                                <small>Your service goes live faster, but with fewer details it earns lower points, so it won't be highly recommended in search.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="p-3">
+                                <i class="fas fa-star text-primary fa-2x mb-2"></i>
+                                <h6 class="text-primary">Advanced Add</h6>
+                                <small>Every extra detail (description, experience, portfolio, pricing, location…) gives your service more visibility & credibility points.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-2">
+                            <div class="p-3 border rounded">
+                                <i class="fas fa-search fa-2x text-info mb-2"></i>
+                                <h6>Higher points = better ranking in search</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="p-3 border rounded">
+                                <i class="fas fa-certificate fa-2x text-success mb-2"></i>
+                                <h6>Verified services = more customer trust</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success mb-4">
+                    <p class="mb-0"><strong>The Advanced path doesn't take long, but it gives your service the power to stand out and reach more people.</strong></p>
+                </div>
+
+                <div class="mb-4">
+                    <h5 class="text-primary">Now, let's add your first service — and start your journey to success!</h5>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal">
+                    <i class="fas fa-rocket me-2"></i>Let's Get Started!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.modal-lg {
+    max-width: 800px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we should show the welcome popup
+    checkWelcomePopup();
+});
+
+function checkWelcomePopup() {
+    // Check if user should see welcome popup (once per day)
+    fetch('/profiles/check-welcome-popup', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.show_popup) {
+            const modal = new bootstrap.Modal(document.getElementById('welcomeModal'));
+            modal.show();
+            
+            // Update the user's last welcome popup time when modal is closed
+            document.getElementById('welcomeModal').addEventListener('hidden.bs.modal', function() {
+                updateWelcomePopupTime();
+            });
+        }
+    })
+    .catch(error => {
+        console.log('Welcome popup check failed:', error);
+    });
+}
+
+function updateWelcomePopupTime() {
+    fetch('/profiles/update-welcome-popup', {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .catch(error => {
+        console.log('Failed to update welcome popup time:', error);
+    });
+}
+</script>
+{% endblock %}
+

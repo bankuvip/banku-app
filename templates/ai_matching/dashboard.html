@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block title %}AI Matching Dashboard - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-brain me-2"></i>AI Matching Dashboard
+                </h1>
+                <a href="{{ url_for('deals.create') }}" class="btn btn-primary">
+                    <i class="fas fa-handshake me-2"></i>Create New Deal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ new_needs_count }}</h4>
+                            <p class="card-text">New Needs</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bullhorn fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ new_items_count }}</h4>
+                            <p class="card-text">New Items</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-box fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ connector_recommendations|length }}</h4>
+                            <p class="card-text">AI Matches</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-lightbulb fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">AI</h4>
+                            <p class="card-text">Powered</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-robot fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Needs -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="padding: 1.25rem 1.5rem;">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bullhorn me-2"></i>Recent Needs
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="refreshRecentNeeds()" title="Refresh Recent Needs">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#recentNeedsCollapse" aria-expanded="false">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="recentNeedsCollapse">
+                <div class="card-body">
+                        {% if recent_needs %}
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                {% for need in recent_needs[:6] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                            <div>
+                                <h6 class="mb-1">{{ need.title }}</h6>
+                                <small class="text-muted">{{ need.need_type.title() }} • {{ need.urgency_level.title() }}</small>
+                                        <br>
+                                        <small class="text-info">
+                                            <i class="fas fa-user me-1"></i>{{ need.user.first_name }} {{ need.user.last_name }}
+                                        </small>
+                            </div>
+                            <div class="text-end">
+                                        <a href="{{ url_for('ai_matching.need_detail', need_id=need.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                                {% if recent_needs|length > 6 %}
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted">Showing 6 of {{ recent_needs|length }} needs</small>
+                                    </div>
+                                {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+                                <h5>No Recent Needs</h5>
+                                <p class="text-muted">No needs have been added recently.</p>
+                        </div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Items -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="padding: 1.25rem 1.5rem;">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-box me-2"></i>Recent Items
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="refreshRecentItems()" title="Refresh Recent Items">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#recentItemsCollapse" aria-expanded="false">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="recentItemsCollapse">
+                <div class="card-body">
+                        {% if recent_items %}
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                {% for item in recent_items[:6] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                            <div>
+                                        <h6 class="mb-1">{{ item.title }}</h6>
+                                        <small class="text-muted">{{ item.category.title() if item.category else 'General' }}</small>
+                                        <br>
+                                        {% if item.tags %}
+                                            {% for tag in item.tags[:3] %}
+                                                <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-info">
+                                            <i class="fas fa-user me-1"></i>{{ item.creator.first_name if item.creator else 'Unknown' }} {{ item.creator.last_name if item.creator else '' }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                        <a href="{{ url_for('profiles.item_detail', item_id=item.id) }}" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                                {% if recent_items|length > 6 %}
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted">Showing 6 of {{ recent_items|length }} items</small>
+                                    </div>
+                                {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                                <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                                <h5>No Recent Items</h5>
+                                <p class="text-muted">No items have been added recently.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+    <!-- AI Recommendation Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="padding: 1.25rem 1.5rem;">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-brain me-2"></i>AI Recommendations
+                    </h5>
+                    <div>
+                        <button id="auto-generate-btn" class="btn btn-primary btn-sm me-2">
+                            <i class="fas fa-magic me-1"></i>Refresh My View
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#aiRecommendationsCollapse" aria-expanded="false">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="aiRecommendationsCollapse">
+                <div class="card-body">
+                        {% if connector_recommendations %}
+                            <div style="max-height: 500px; overflow-y: auto;">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 30%;">Need</th>
+                                                <th style="width: 5%;">Link</th>
+                                                <th style="width: 30%;">Item</th>
+                                                <th style="width: 15%;">Match Score</th>
+                                                <th style="width: 20%;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rec in connector_recommendations[:6] %}
+                                            <tr data-recommendation-id="{{ rec.id }}">
+                                                <td style="width: 30%;" class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="me-2">
+                                                            <i class="fas fa-bullhorn text-primary"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-1">{{ rec.need.title }}</h6>
+                                                            <small class="text-muted">{{ rec.need.description[:50] }}{% if rec.need.description|length > 50 %}...{% endif %}</small>
+                                                            <br>
+                                                            <small class="text-info">
+                                                                <i class="fas fa-user me-1"></i>{{ rec.need_user.first_name }} {{ rec.need_user.last_name }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center" style="width: 5%;">
+                                                    <i class="fas fa-link text-info" title="Links Need to Item"></i>
+                                                </td>
+                                                <td style="width: 30%;" class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="me-2">
+                                                            <i class="fas fa-box text-success"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-1">{{ rec.item.title }}</h6>
+                                                            <small class="text-muted">{{ rec.item.short_description[:50] }}{% if rec.item.short_description|length > 50 %}...{% endif %}</small>
+                                                            <br>
+                                                            <small class="text-info">
+                                                                <i class="fas fa-user me-1"></i>{{ rec.item_creator.first_name if rec.item_creator else 'Unknown' }} {{ rec.item_creator.last_name if rec.item_creator else '' }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="width: 15%;" class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="progress me-2" style="height: 15px; width: 60px;">
+                                                            <div class="progress-bar {% if rec.match_score >= 0.8 %}bg-success{% elif rec.match_score >= 0.6 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                 style="width: {{ rec.match_score * 100 }}%"></div>
+                                                        </div>
+                                                        <div class="d-flex flex-column align-items-center">
+                                                            <small class="fw-bold">{{ "%.1f"|format(rec.match_score * 100) }}%</small>
+                                                            <span class="badge bg-{{ 'success' if rec.confidence == 'high' else 'warning' if rec.confidence == 'medium' else 'info' }} small">
+                                                                {{ rec.confidence.title() }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center" style="width: 20%;">
+                                                    <div class="btn-group btn-group-sm d-flex justify-content-center" role="group">
+                                                        <!-- View Report Button -->
+                                                        <a href="{{ url_for('ai_matching.match_report', recommendation_id=rec.id) }}" 
+                                                           class="btn btn-outline-info btn-sm d-flex align-items-center justify-content-center" 
+                                                           title="View Match Report"
+                                                           style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-chart-line"></i>
+                                                        </a>
+                                                        
+                                                        <!-- Match Score Learning Button -->
+                                                        <button type="button" class="btn btn-outline-warning btn-sm match-score-btn d-flex align-items-center justify-content-center" 
+                                                                data-recommendation-id="{{ rec.id }}" 
+                                                                title="Rate Match Quality for AI Learning"
+                                                                style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-star"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Create Deal Button -->
+                                                        <button type="button" class="btn btn-success btn-sm create-deal-btn d-flex align-items-center justify-content-center" 
+                                                                data-recommendation-id="{{ rec.id }}" 
+                                                                title="Create Deal"
+                                                                style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-handshake"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Assign to Another Connector Button -->
+                                                        <button type="button" class="btn btn-outline-primary btn-sm assign-connector-btn d-flex align-items-center justify-content-center" 
+                                                                data-recommendation-id="{{ rec.id }}" 
+                                                                title="Assign to Another Connector"
+                                                                style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-user-plus"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Save Button -->
+                                                        <button type="button" class="btn btn-outline-success btn-sm save-btn d-flex align-items-center justify-content-center" 
+                                                                data-recommendation-id="{{ rec.id }}" 
+                                                                title="Save to My Deals"
+                                                                style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-save"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Delete Button -->
+                                                        <button type="button" class="btn btn-outline-danger btn-sm delete-btn d-flex align-items-center justify-content-center" 
+                                                                data-recommendation-id="{{ rec.id }}" 
+                                                                title="Delete from My Account"
+                                                                style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                            </div>
+                                                </td>
+                                            </tr>
+                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% if connector_recommendations|length > 6 %}
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted">Showing 6 of {{ connector_recommendations|length }} recommendations</small>
+                                    </div>
+                                {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                                <h5>No AI Recommendations Yet</h5>
+                                <p class="text-muted">Generate new recommendations to see AI-powered matches!</p>
+                                <button id="auto-generate-btn-empty" class="btn btn-primary">
+                                    <i class="fas fa-magic me-2"></i>Generate Recommendations
+                                </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-generate recommendations
+    document.getElementById('auto-generate-btn')?.addEventListener('click', function() {
+        generateRecommendations();
+    });
+    
+    document.getElementById('auto-generate-btn-empty')?.addEventListener('click', function() {
+        generateRecommendations();
+    });
+
+    // Collapse/Expand functionality with chevron rotation
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const target = document.querySelector(this.getAttribute('data-bs-target'));
+            const chevron = this.querySelector('i');
+            
+            if (target) {
+                target.addEventListener('shown.bs.collapse', function() {
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                });
+                
+                target.addEventListener('hidden.bs.collapse', function() {
+                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                });
+            }
+        });
+    });
+
+    // Action button event listeners (View Report now uses direct link)
+
+    document.querySelectorAll('.match-score-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.getAttribute('data-recommendation-id');
+            rateMatch(recommendationId);
+        });
+    });
+
+    document.querySelectorAll('.create-deal-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.getAttribute('data-recommendation-id');
+            createDeal(recommendationId);
+        });
+    });
+
+    document.querySelectorAll('.assign-connector-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.getAttribute('data-recommendation-id');
+            assignToConnector(recommendationId);
+        });
+    });
+
+    document.querySelectorAll('.save-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.getAttribute('data-recommendation-id');
+            saveToDeals(recommendationId);
+        });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.getAttribute('data-recommendation-id');
+            deleteRecommendation(recommendationId);
+        });
+    });
+
+    function generateRecommendations() {
+        showAlert('info', 'Generating AI recommendations...');
+        fetch('/ai-matching/auto-generate', {
+        method: 'POST',
+        headers: {
+             'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', `Generated ${data.count} new recommendations!`);
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => showAlert('error', 'Error generating recommendations'));
+    }
+
+    function createDeal(recommendationId) {
+        fetch(`/deals/create?recommendation_id=${recommendationId}`, {
+            method: 'GET'
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = response.url;
+            } else {
+                showAlert('error', 'Error redirecting to deal creation');
+            }
+        })
+        .catch(error => showAlert('error', 'Error creating deal'));
+    }
+
+    // viewMatchReport function removed - now using direct link
+
+    function rateMatch(recommendationId) {
+        const rating = prompt('Rate this match quality (1-100%):');
+        if (rating && rating >= 1 && rating <= 100) {
+            fetch(`/ai-matching/rate-match/${recommendationId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating: parseInt(rating) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Thank you! Your rating helps improve AI matching.');
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => showAlert('error', 'Error submitting rating'));
+        }
+    }
+
+    function assignToConnector(recommendationId) {
+        const connectorId = prompt('Enter Connector ID to assign this recommendation:');
+        if (connectorId) {
+            fetch(`/ai-matching/assign-connector/${recommendationId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ connector_id: connectorId })
+            })
+        .then(response => response.json())
+        .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Recommendation assigned to connector successfully!');
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => showAlert('error', 'Error assigning recommendation'));
+        }
+    }
+
+    function saveToDeals(recommendationId) {
+        fetch(`/ai-matching/save-to-deals/${recommendationId}`, {
+        method: 'POST',
+        headers: {
+             'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Recommendation saved to your deals!');
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => showAlert('error', 'Error saving to deals'));
+    }
+
+    function deleteRecommendation(recommendationId) {
+        if (confirm('Are you sure you want to delete this recommendation from your account?')) {
+            fetch(`/ai-matching/delete-recommendation/${recommendationId}`, {
+        method: 'POST',
+        headers: {
+             'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Recommendation deleted from your account.');
+                    const row = document.querySelector(`tr[data-recommendation-id="${recommendationId}"]`);
+                    if (row) row.remove();
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => showAlert('error', 'Error deleting recommendation'));
+        }
+    }
+
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'error' ? 'alert-danger' : 
+                          type === 'info' ? 'alert-info' : 'alert-warning';
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.top = '20px';
+        alert.style.right = '20px';
+        alert.style.zIndex = '9999';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => alert.remove(), 5000);
+    }
+
+});
+
+// Global functions for refresh buttons
+function refreshRecentNeeds() {
+    const button = event.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    // Add press animation
+    button.style.transform = 'scale(0.95)';
+    button.style.transition = 'transform 0.1s ease';
+    
+    // Show loading state
+    icon.classList.add('fa-spin');
+    button.disabled = true;
+    
+    fetch('{{ url_for("ai_matching.refresh_recent_needs") }}', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the recent needs content
+            const needsContainer = document.querySelector('#recentNeedsCollapse .card-body');
+            needsContainer.innerHTML = data.html;
+            showAlert('success', 'Recent needs refreshed successfully!');
+        } else {
+            showAlert('error', 'Failed to refresh recent needs');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to refresh recent needs');
+    })
+    .finally(() => {
+        // Remove loading state
+        icon.classList.remove('fa-spin');
+        button.disabled = false;
+        
+        // Reset button animation
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 100);
+    });
+}
+
+function refreshRecentItems() {
+    const button = event.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    // Add press animation
+    button.style.transform = 'scale(0.95)';
+    button.style.transition = 'transform 0.1s ease';
+    
+    // Show loading state
+    icon.classList.add('fa-spin');
+    button.disabled = true;
+    
+    fetch('{{ url_for("ai_matching.refresh_recent_items") }}', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the recent items content
+            const itemsContainer = document.querySelector('#recentItemsCollapse .card-body');
+            itemsContainer.innerHTML = data.html;
+            showAlert('success', 'Recent items refreshed successfully!');
+        } else {
+            showAlert('error', 'Failed to refresh recent items');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to refresh recent items');
+    })
+    .finally(() => {
+        // Remove loading state
+        icon.classList.remove('fa-spin');
+        button.disabled = false;
+        
+        // Reset button animation
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 100);
+    });
+}
+</script>
+{% endblock %}

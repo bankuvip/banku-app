@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Create Deal - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-university me-2"></i>Create New Deal
+                    </h4>
+                    <p class="text-muted mb-0">Set up a new deal between providers and consumers</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" class="needs-validation" novalidate id="dealForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">
+                                    <i class="fas fa-tag me-1"></i>Deal Title *
+                                </label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       placeholder="Enter a descriptive title for your deal" required>
+                                <div class="invalid-feedback">Please provide a deal title.</div>
+                                <div class="form-text">Choose a clear, descriptive title that explains what the deal is about.</div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="total_amount" class="form-label">
+                                    <i class="fas fa-calculator me-1"></i>Amount *
+                                </label>
+                                <input type="number" class="form-control" id="total_amount" name="total_amount" 
+                                       step="0.01" min="0" placeholder="0.00" required>
+                                <div class="invalid-feedback">Please provide a valid amount.</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="currency" class="form-label">
+                                    <i class="fas fa-coins me-1"></i>Currency
+                                </label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="USD" selected>USD - US Dollar ($)</option>
+                                    <option value="EUR">EUR - Euro (€)</option>
+                                    <option value="GBP">GBP - British Pound (£)</option>
+                                    <option value="JPY">JPY - Japanese Yen (¥)</option>
+                                    <option value="AUD">AUD - Australian Dollar (A$)</option>
+                                    <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                                    <option value="CHF">CHF - Swiss Franc (Fr)</option>
+                                    <option value="CNH">CNH - Chinese Yuan (¥)</option>
+                                    <option value="AED">AED - UAE Dirham (د.إ)</option>
+                                    <option value="SAR">SAR - Saudi Riyal (ر.س)</option>
+                                </select>
+                                <div class="form-text">Select the currency for this deal.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Description *
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                      placeholder="Describe the details of this deal, including what will be provided, timeline, and any special requirements..." required></textarea>
+                            <div class="invalid-feedback">Please provide a description.</div>
+                            <div class="form-text">Provide detailed information about what this deal involves.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="need_url" class="form-label">
+                                    <i class="fas fa-bullhorn me-1"></i>Need Link *
+                                </label>
+                                <input type="url" class="form-control" id="need_url" name="need_url" 
+                                       placeholder="https://banku.com/needs/123" required>
+                                <div class="invalid-feedback">Please provide a valid need link.</div>
+                                <div class="form-text">Paste the link to the need that this deal will fulfill.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="item_url" class="form-label">
+                                    <i class="fas fa-box me-1"></i>Item Link *
+                                </label>
+                                <input type="url" class="form-control" id="item_url" name="item_url" 
+                                       placeholder="https://banku.com/items/456" required>
+                                <div class="invalid-feedback">Please provide a valid item link.</div>
+                                <div class="form-text">Paste the link to the item that will fulfill the need.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="consumer_id" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Consumer (Auto-filled)
+                                </label>
+                                <input type="text" class="form-control" id="consumer_display" readonly>
+                                <input type="hidden" id="consumer_id" name="consumer_id">
+                                <div class="form-text">Consumer will be auto-selected based on the need.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="provider_id" class="form-label">
+                                    <i class="fas fa-user-tie me-1"></i>Provider (Auto-filled)
+                                </label>
+                                <input type="text" class="form-control" id="provider_display" readonly>
+                                <input type="hidden" id="provider_id" name="provider_id">
+                                <div class="form-text">Provider will be auto-selected based on the item.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="connector_type" class="form-label">
+                                    <i class="fas fa-handshake me-1"></i>Connector
+                                </label>
+                                <select class="form-select" id="connector_type" name="connector_type">
+                                    <option value="me" selected>Me ({{ current_user.first_name }} {{ current_user.last_name }})</option>
+                                    <option value="other">Other Connector</option>
+                                </select>
+                                <div class="form-text">Choose who will facilitate this deal.</div>
+                            </div>
+                            <div class="col-md-6 mb-3" id="connector_url_field" style="display: none;">
+                                <label for="connector_url" class="form-label">
+                                    <i class="fas fa-link me-1"></i>Connector Link
+                                </label>
+                                <input type="url" class="form-control" id="connector_url" name="connector_url" 
+                                       placeholder="https://banku.com/users/123">
+                                <div class="invalid-feedback">Please provide a valid connector link.</div>
+                                <div class="form-text">Paste the link to the connector's profile.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('deals.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Deals
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Create Deal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Enhanced form validation and submission
+document.getElementById('dealForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Get form data
+    const formData = new FormData(this);
+    const connectorType = formData.get('connector_type');
+    const connectorId = connectorType === 'me' ? '{{ current_user.id }}' : formData.get('connector_id');
+    
+    const data = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        total_amount: parseFloat(formData.get('total_amount')),
+        consumer_id: formData.get('consumer_id'),
+        provider_id: formData.get('provider_id'),
+        need_url: formData.get('need_url'),
+        item_url: formData.get('item_url'),
+        connector_id: connectorId || null,
+        currency: formData.get('currency') || 'USD'
+    };
+    
+    // Validate required fields
+    if (!data.title || !data.description || !data.total_amount || !data.need_url || !data.item_url || !data.consumer_id || !data.provider_id) {
+        showAlert('error', 'Please fill in all required fields and provide both need and item URLs.');
+        return;
+    }
+    
+    if (data.total_amount <= 0) {
+        showAlert('error', 'Total amount must be greater than 0.');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating Deal...';
+    submitBtn.disabled = true;
+    
+    // Submit form
+    fetch('/deals/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Deal created successfully!');
+            setTimeout(() => {
+                window.location.href = '/deals/';
+            }, 1500);
+        } else {
+            showAlert('error', data.message || 'Failed to create deal.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'An error occurred while creating the deal.');
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => alert.remove(), 5000);
+}
+
+// Real-time validation
+document.getElementById('total_amount').addEventListener('input', function() {
+    const value = parseFloat(this.value);
+    if (value < 0) {
+        this.setCustomValidity('Amount cannot be negative');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// Auto-populate consumer and provider based on need and item URLs
+document.getElementById('need_url').addEventListener('blur', function() {
+    const needUrl = this.value.trim();
+    if (needUrl) {
+        // Extract need ID from URL (e.g., /needs/123)
+        const needIdMatch = needUrl.match(/\/needs\/(\d+)/);
+        if (needIdMatch) {
+            const needId = needIdMatch[1];
+            fetchNeedData(needId);
+        } else {
+            showAlert('error', 'Invalid need URL format. Expected: /needs/123');
+        }
+    } else {
+        clearConsumerData();
+    }
+});
+
+document.getElementById('item_url').addEventListener('blur', function() {
+    const itemUrl = this.value.trim();
+    if (itemUrl) {
+        // Extract item ID from URL (e.g., /items/456)
+        const itemIdMatch = itemUrl.match(/\/items\/(\d+)/);
+        if (itemIdMatch) {
+            const itemId = itemIdMatch[1];
+            fetchItemData(itemId);
+        } else {
+            showAlert('error', 'Invalid item URL format. Expected: /items/456');
+        }
+    } else {
+        clearProviderData();
+    }
+});
+
+function fetchNeedData(needId) {
+    fetch(`/api/needs/${needId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('consumer_id').value = data.need.user_id;
+                document.getElementById('consumer_display').value = `${data.need.user.first_name} ${data.need.user.last_name}`;
+            } else {
+                showAlert('error', 'Need not found or access denied');
+                clearConsumerData();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching need:', error);
+            showAlert('error', 'Failed to fetch need data');
+            clearConsumerData();
+        });
+}
+
+function fetchItemData(itemId) {
+    fetch(`/api/items/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('provider_id').value = data.item.creator_id;
+                document.getElementById('provider_display').value = `${data.item.creator.first_name} ${data.item.creator.last_name}`;
+                
+                // Auto-fill total amount with item price
+                if (data.item.price > 0) {
+                    document.getElementById('total_amount').value = data.item.price.toFixed(2);
+                }
+            } else {
+                showAlert('error', 'Item not found or access denied');
+                clearProviderData();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching item:', error);
+            showAlert('error', 'Failed to fetch item data');
+            clearProviderData();
+        });
+}
+
+function clearConsumerData() {
+    document.getElementById('consumer_id').value = '';
+    document.getElementById('consumer_display').value = '';
+}
+
+function clearProviderData() {
+    document.getElementById('provider_id').value = '';
+    document.getElementById('provider_display').value = '';
+}
+
+// Handle connector type selection
+document.getElementById('connector_type').addEventListener('change', function() {
+    const connectorUrlField = document.getElementById('connector_url_field');
+    const connectorUrlInput = document.getElementById('connector_url');
+    
+    if (this.value === 'other') {
+        connectorUrlField.style.display = 'block';
+        connectorUrlInput.required = true;
+    } else {
+        connectorUrlField.style.display = 'none';
+        connectorUrlInput.required = false;
+        connectorUrlInput.value = '';
+    }
+});
+
+// Auto-populate connector data from URL
+document.getElementById('connector_url').addEventListener('blur', function() {
+    const connectorUrl = this.value.trim();
+    if (connectorUrl) {
+        // Extract user ID from URL (e.g., /users/123)
+        const userIdMatch = connectorUrl.match(/\/users\/(\d+)/);
+        if (userIdMatch) {
+            const userId = userIdMatch[1];
+            fetchConnectorData(userId);
+        } else {
+            showAlert('error', 'Invalid connector URL format. Expected: /users/123');
+        }
+    }
+});
+
+function fetchConnectorData(userId) {
+    fetch(`/api/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Store connector ID for form submission
+                document.getElementById('connector_id').value = data.user.id;
+                showAlert('success', `Connector set to: ${data.user.first_name} ${data.user.last_name}`);
+            } else {
+                showAlert('error', 'User not found or access denied');
+                document.getElementById('connector_id').value = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching connector:', error);
+            showAlert('error', 'Failed to fetch connector data');
+            document.getElementById('connector_id').value = '';
+        });
+}
+
+// Add hidden input for connector_id
+const connectorIdInput = document.createElement('input');
+connectorIdInput.type = 'hidden';
+connectorIdInput.id = 'connector_id';
+connectorIdInput.name = 'connector_id';
+connectorIdInput.value = '{{ current_user.id }}'; // Default to current user
+document.getElementById('dealForm').appendChild(connectorIdInput);
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

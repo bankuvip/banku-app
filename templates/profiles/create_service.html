@@ -1,0 +1,820 @@
+{% extends "base.html" %}
+
+{% block title %}Create Service{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-university me-2"></i>Create Service</h4>
+                <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Item Types
+                </a>
+            </div>
+
+            <!-- Service Definition -->
+            <div class="alert alert-info mb-4">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is a Service?</h6>
+                <p class="mb-2"><strong>Services are outputs of human effort (physical or mental) without independent existence.</strong> They cannot be detached from the person providing them, and are usually priced based on time or task.</p>
+                <p class="mb-0"><strong>Key Note:</strong> Unlike products, services are tied to human freedom and ownership of time, effort, and creativity.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Section 1: Category & Classification -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-tags me-2"></i>1. Category & Classification</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="service-category" class="form-label">Service Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="service-category" name="service_category" required>
+                                        <option value="">Select category...</option>
+                                        <option value="marketing">Marketing</option>
+                                        <option value="design">Design</option>
+                                        <option value="consulting">Consulting</option>
+                                        <option value="it">IT</option>
+                                        <option value="legal">Legal</option>
+                                        <option value="finance">Finance</option>
+                                        <option value="education">Education</option>
+                                        <option value="health">Health & Wellness</option>
+                                        <option value="writing">Writing & Content</option>
+                                        <option value="translation">Translation</option>
+                                        <option value="photography">Photography</option>
+                                        <option value="video">Video & Audio</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="logistics">Logistics</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="custom-service-category-container" style="display: none;">
+                                    <label for="custom-service-category" class="form-label">Custom Category</label>
+                                    <input type="text" class="form-control" id="custom-service-category" name="custom_service_category" placeholder="Enter custom category">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="service-subcategory" class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="service-subcategory" name="service_subcategory" required>
+                                        <option value="">Select sub-category...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#classification-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="classification-icon"></i>Optional Classification Details
+                                </h6>
+                                <div class="collapse" id="classification-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="industry-field" class="form-label">Industry / Field</label>
+                                            <select class="form-select" id="industry-field" name="industry_field">
+                                                <option value="">Select industry...</option>
+                                                <option value="tech">Tech</option>
+                                                <option value="education">Education</option>
+                                                <option value="healthcare">Healthcare</option>
+                                                <option value="finance">Finance</option>
+                                                <option value="retail">Retail</option>
+                                                <option value="manufacturing">Manufacturing</option>
+                                                <option value="real-estate">Real Estate</option>
+                                                <option value="hospitality">Hospitality</option>
+                                                <option value="government">Government</option>
+                                                <option value="nonprofit">Non-profit</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3" id="custom-industry-container" style="display: none;">
+                                            <label for="custom-industry" class="form-label">Custom Industry</label>
+                                            <input type="text" class="form-control" id="custom-industry" name="custom_industry" placeholder="Enter custom industry">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="use-case" class="form-label">Use Case / Application</label>
+                                            <select class="form-select" id="use-case" name="use_case">
+                                                <option value="">Select use case...</option>
+                                                <option value="b2b">B2B</option>
+                                                <option value="b2c">B2C</option>
+                                                <option value="government">Government</option>
+                                                <option value="ngo">NGO</option>
+                                                <option value="startup">Startup</option>
+                                                <option value="enterprise">Enterprise</option>
+                                                <option value="personal">Personal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Provider & Ownership -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-tie me-2"></i>2. Provider & Ownership</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="service-provider" class="form-label">Service Provider <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="service-provider" name="service_provider" placeholder="Name / Company" required>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#provider-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="provider-icon"></i>Optional Provider Details
+                                </h6>
+                                <div class="collapse" id="provider-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="provider-location" class="form-label">Location / Base of Operation</label>
+                                            <input type="text" class="form-control" id="provider-location" name="provider_location" placeholder="City, Country">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="provider-website" class="form-label">Official Website / Portfolio Link</label>
+                                            <input type="url" class="form-control" id="provider-website" name="provider_website" placeholder="https://example.com">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="owner-license" class="form-label">Owner / License Holder</label>
+                                            <input type="text" class="form-control" id="owner-license" name="owner_license" placeholder="If different from provider">
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label for="contact-info" class="form-label">Contact Information</label>
+                                            <textarea class="form-control" id="contact-info" name="contact_info" rows="3" placeholder="Email, phone, social links"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>3. Basic Information</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="service-title" class="form-label">Service Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="service-title" name="service_title" placeholder="Clear name of service" required>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="short-description" class="form-label">Short Description <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="short-description" name="short_description" maxlength="200" placeholder="One-line summary of what the service does" required>
+                                    <div class="form-text"><span id="char-count-short">0</span>/200 characters</div>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="keywords-tags" class="form-label">Keywords / Tags <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="keywords-tags" name="keywords_tags" placeholder="web design, consulting, remote" required>
+                                    <small class="text-muted">Separate with commas</small>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#basic-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="basic-icon"></i>Optional Information Details
+                                </h6>
+                                <div class="collapse" id="basic-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="detailed-description" class="form-label">Detailed Description</label>
+                                            <textarea class="form-control" id="detailed-description" name="detailed_description" rows="4" placeholder="Longer explanation of how it works, process, outcomes"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="features-highlights" class="form-label">Features & Highlights</label>
+                                            <textarea class="form-control" id="features-highlights" name="features_highlights" rows="4" placeholder="• 24/7 support&#10;• Expert staff&#10;• Quick delivery"></textarea>
+                                            <small class="text-muted">Use bullet points</small>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="service-scope" class="form-label">Service Scope</label>
+                                            <textarea class="form-control" id="service-scope" name="service_scope" rows="4" placeholder="What's included / excluded"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Service Specifications & Status -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>4. Service Specifications & Status</h5>
+                            
+                            <!-- All fields are optional in this section -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="service-type" class="form-label">Service Type</label>
+                                    <select class="form-select" id="service-type" name="service_type">
+                                        <option value="">Select type...</option>
+                                        <option value="one-time">One-time</option>
+                                        <option value="ongoing">Ongoing</option>
+                                        <option value="subscription">Subscription</option>
+                                        <option value="package">Package</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="service-format" class="form-label">Service Format</label>
+                                    <select class="form-select" id="service-format" name="service_format">
+                                        <option value="">Select format...</option>
+                                        <option value="online">Online</option>
+                                        <option value="on-site">On-site</option>
+                                        <option value="hybrid">Hybrid</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="duration" class="form-label">Duration</label>
+                                    <input type="text" class="form-control" id="duration" name="duration" placeholder="Hours / Days / Weeks / Custom">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="condition" class="form-label">Condition</label>
+                                    <select class="form-select" id="condition" name="condition">
+                                        <option value="">Select condition...</option>
+                                        <option value="available">Available</option>
+                                        <option value="limited-slots">Limited Slots</option>
+                                        <option value="pilot">Pilot</option>
+                                        <option value="beta">Beta</option>
+                                        <option value="retired">Retired</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="archived">Archived</option>
+                                        <option value="expired">Expired</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="warranty-guarantee" class="form-label">Warranty / Guarantee</label>
+                                    <select class="form-select" id="warranty-guarantee" name="warranty_guarantee">
+                                        <option value="">Select guarantee...</option>
+                                        <option value="no-guarantee">No guarantee</option>
+                                        <option value="money-back">Money-back</option>
+                                        <option value="service-warranty">Service warranty</option>
+                                        <option value="performance-guarantee">Performance guarantee</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Requirements & Dependencies -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-list-check me-2"></i>5. Requirements & Dependencies</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="prerequisites" class="form-label">Prerequisites</label>
+                                    <textarea class="form-control" id="prerequisites" name="prerequisites" rows="3" placeholder="What client must provide: documents, access, materials"></textarea>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="system-requirements" class="form-label">System / Tool Requirements</label>
+                                    <textarea class="form-control" id="system-requirements" name="system_requirements" rows="3" placeholder="If software-related service"></textarea>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="dependencies" class="form-label">Dependencies</label>
+                                    <textarea class="form-control" id="dependencies" name="dependencies" rows="3" placeholder="If it requires another service/product to work"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: Quantity & Availability -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-calendar-check me-2"></i>6. Quantity & Availability</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="capacity" class="form-label">Capacity</label>
+                                    <select class="form-select" id="capacity" name="capacity">
+                                        <option value="unlimited">Unlimited</option>
+                                        <option value="limited">Limited</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3" id="capacity-details" style="display: none;">
+                                    <label for="capacity-number" class="form-label">Number of Clients/Projects</label>
+                                    <input type="number" class="form-control" id="capacity-number" name="capacity_number" placeholder="Per month">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="availability-start" class="form-label">Availability Start</label>
+                                    <input type="date" class="form-control" id="availability-start" name="availability_start">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="availability-end" class="form-label">Availability End</label>
+                                    <input type="date" class="form-control" id="availability-end" name="availability_end">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="working-hours" class="form-label">Working Hours / Schedule</label>
+                                    <input type="text" class="form-control" id="working-hours" name="working_hours" placeholder="Fixed hours, flexible, on-demand">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="geographic-availability" class="form-label">Geographic Availability</label>
+                                    <select class="form-select" id="geographic-availability" name="geographic_availability">
+                                        <option value="">Select availability...</option>
+                                        <option value="local">Local</option>
+                                        <option value="national">National</option>
+                                        <option value="international">International</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7: Value & Pricing -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-dollar-sign me-2"></i>7. Value & Pricing</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="pricing-model" class="form-label">Pricing Model</label>
+                                    <select class="form-select" id="pricing-model" name="pricing_model">
+                                        <option value="">Select model...</option>
+                                        <option value="by-hour">By Hour</option>
+                                        <option value="by-session">By Session</option>
+                                        <option value="by-task">By Task</option>
+                                        <option value="by-project">By Project</option>
+                                        <option value="subscription">Subscription</option>
+                                        <option value="retainer">Retainer</option>
+                                        <option value="negotiable">Negotiable</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="price-type" class="form-label">Price</label>
+                                    <select class="form-select" id="price-type" name="price_type">
+                                        <option value="free">Free</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="hybrid">Hybrid</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="price-amount-container" style="display: none;">
+                                    <label for="price-amount" class="form-label">Price Amount</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="price-amount" name="price_amount" step="0.01" placeholder="0.00">
+                                        <select class="form-select" name="currency" style="max-width: 100px;">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="AED">AED</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                            <option value="QAR">QAR</option>
+                                            <option value="KWD">KWD</option>
+                                            <option value="BHD">BHD</option>
+                                            <option value="OMR">OMR</option>
+                                            <option value="EGP">EGP</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#pricing-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="pricing-icon"></i>Optional Pricing Details
+                                </h6>
+                                <div class="collapse" id="pricing-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="custom-quote" class="form-label">Custom Quote Option</label>
+                                            <select class="form-select" id="custom-quote" name="custom_quote">
+                                                <option value="no">No</option>
+                                                <option value="yes">Yes</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="cost-breakdown" class="form-label">Cost Breakdown</label>
+                                            <textarea class="form-control" id="cost-breakdown" name="cost_breakdown" rows="2" placeholder="Base fee, taxes, additional charges"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 8: Discounts / Offers -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-percent me-2"></i>8. Discounts / Offers</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="discount-type" class="form-label">Discount Type</label>
+                                    <select class="form-select" id="discount-type" name="discount_type">
+                                        <option value="">No discount</option>
+                                        <option value="percentage">Percentage (%)</option>
+                                        <option value="fixed">Fixed Amount</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3" id="discount-value-container" style="display: none;">
+                                    <label for="discount-value" class="form-label">Discount Value</label>
+                                    <input type="number" class="form-control" id="discount-value" name="discount_value" placeholder="10 or 50.00">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="offer-validity" class="form-label">Offer Validity</label>
+                                    <input type="date" class="form-control" id="offer-validity" name="offer_validity">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="package-deals" class="form-label">Package Deals</label>
+                                    <input type="text" class="form-control" id="package-deals" name="package_deals" placeholder="Bundled services / Referral offers">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 9: Payments -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-credit-card me-2"></i>9. Payments</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="payment-terms" class="form-label">Payment Terms</label>
+                                    <select class="form-select" id="payment-terms" name="payment_terms">
+                                        <option value="">Select terms...</option>
+                                        <option value="before-work">Before Work</option>
+                                        <option value="during-work">During Work</option>
+                                        <option value="on-delivery">On Delivery</option>
+                                        <option value="after-completion">After Completion</option>
+                                        <option value="installments">Installments</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="payment-methods" class="form-label">Payment Methods</label>
+                                    <input type="text" class="form-control" id="payment-methods" name="payment_methods" placeholder="Cash, Bank Transfer, Credit Card, PayPal, Crypto">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="refund-policy" class="form-label">Refund Policy</label>
+                                    <select class="form-select" id="refund-policy" name="refund_policy">
+                                        <option value="">Select policy...</option>
+                                        <option value="no-refund">No Refund</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="full">Full</option>
+                                        <option value="time-limited">Time-Limited</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 10: Delivery & Execution -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-truck me-2"></i>10. Delivery & Execution</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="delivery-method" class="form-label">Delivery Method</label>
+                                    <select class="form-select" id="delivery-method" name="delivery_method">
+                                        <option value="">Select method...</option>
+                                        <option value="online-meeting">Online Meeting</option>
+                                        <option value="on-site-visit">On-site Visit</option>
+                                        <option value="hybrid">Hybrid</option>
+                                        <option value="digital-output">Digital Output</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="estimated-delivery" class="form-label">Estimated Delivery Time</label>
+                                    <input type="text" class="form-control" id="estimated-delivery" name="estimated_delivery" placeholder="2 days, 1 week">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="follow-up-support" class="form-label">Follow-up / Support</label>
+                                    <select class="form-select" id="follow-up-support" name="follow_up_support">
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="support-duration-container" style="display: none;">
+                                    <label for="support-duration" class="form-label">Support Duration</label>
+                                    <input type="text" class="form-control" id="support-duration" name="support_duration" placeholder="1 month, 3 months">
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#delivery-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="delivery-icon"></i>Optional Execution Details
+                                </h6>
+                                <div class="collapse" id="delivery-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="execution-steps" class="form-label">Execution Steps</label>
+                                            <textarea class="form-control" id="execution-steps" name="execution_steps" rows="4" placeholder="Step-by-step breakdown of how service is delivered"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 11: Media & Proofs -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-images me-2"></i>11. Media & Proofs</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="images" class="form-label">Images</label>
+                                    <input type="file" class="form-control mb-2" name="images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links (separate with commas)">
+                                    <small class="text-muted">Screenshots, portfolio examples, branding</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="videos" class="form-label">Videos</label>
+                                    <input type="file" class="form-control mb-2" name="videos" multiple accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="YouTube, Vimeo, etc.">
+                                    <small class="text-muted">Intro video, case study demo</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="documents" class="form-label">Documents / Files</label>
+                                    <input type="file" class="form-control mb-2" name="documents" multiple accept=".pdf,.doc,.docx,.ppt,.pptx">
+                                    <input type="url" class="form-control" name="document_links" placeholder="Document links">
+                                    <small class="text-muted">PDF brochure, service agreement, proposal template</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="external-links" class="form-label">External Links</label>
+                                    <textarea class="form-control" id="external-links" name="external_links" rows="3" placeholder="Portfolio: https://...&#10;Client case studies: https://...&#10;References: https://..."></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="proofs" class="form-label">Proofs</label>
+                                    <textarea class="form-control" id="proofs" name="proofs" rows="3" placeholder="Certificates, Licenses, Accreditations"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="testimonials" class="form-label">Client Testimonials / Reviews</label>
+                                    <textarea class="form-control" id="testimonials" name="testimonials" rows="3" placeholder="Client feedback and reviews"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 12: Language & Localization -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-globe me-2"></i>12. Language & Localization</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="languages-supported" class="form-label">Languages Supported</label>
+                                    <input type="text" class="form-control" id="languages-supported" name="languages_supported" placeholder="English, Arabic, French">
+                                    <small class="text-muted">Service delivery languages</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="localization-options" class="form-label">Localization Options</label>
+                                    <input type="text" class="form-control" id="localization-options" name="localization_options" placeholder="Translation, cultural adaptation, time zone support">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 13: Management & Metadata -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cog me-2"></i>13. Management & Metadata</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="created-date" class="form-label">Created Date</label>
+                                    <input type="date" class="form-control" id="created-date" name="created_date" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="last-updated" class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" id="last-updated" name="last_updated" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="visibility" class="form-label">Visibility</label>
+                                    <select class="form-select" id="visibility" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="restricted">Restricted</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="verification-status" class="form-label">Verification Status</label>
+                                    <select class="form-select" id="verification-status" name="verification_status">
+                                        <option value="pending">Pending Verification</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="unverified">Unverified</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#metadata-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="metadata-icon"></i>Optional Metadata
+                                </h6>
+                                <div class="collapse" id="metadata-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="expiration-date" class="form-label">Expiration Date</label>
+                                            <input type="date" class="form-control" id="expiration-date" name="expiration_date">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="service-version" class="form-label">Service Version / Edition</label>
+                                            <input type="text" class="form-control" id="service-version" name="service_version" placeholder="v1.0, 2025 Edition">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="admin-notes" class="form-label">Admin Notes / Internal Comments</label>
+                                            <textarea class="form-control" id="admin-notes" name="admin_notes" rows="2" placeholder="Internal comments"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn btn-outline-success me-2">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>Create Service
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Set current date for created and last updated fields
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created-date').value = today;
+    document.getElementById('last-updated').value = today;
+});
+
+// Character counter for short description
+document.getElementById('short-description').addEventListener('input', function() {
+    document.getElementById('char-count-short').textContent = this.value.length;
+});
+
+// Service category change handler
+document.getElementById('service-category').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-service-category-container');
+    const subcategorySelect = document.getElementById('service-subcategory');
+    
+    if (this.value === 'other') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+    
+    // Update subcategories based on main category
+    updateSubcategories(this.value, subcategorySelect);
+});
+
+// Industry field change handler
+document.getElementById('industry-field').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-industry-container');
+    if (this.value === 'other') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+});
+
+// Capacity change handler
+document.getElementById('capacity').addEventListener('change', function() {
+    const capacityDetails = document.getElementById('capacity-details');
+    if (this.value === 'limited') {
+        capacityDetails.style.display = 'block';
+    } else {
+        capacityDetails.style.display = 'none';
+    }
+});
+
+// Price type change handler
+document.getElementById('price-type').addEventListener('change', function() {
+    const priceContainer = document.getElementById('price-amount-container');
+    if (this.value === 'paid' || this.value === 'hybrid') {
+        priceContainer.style.display = 'block';
+    } else {
+        priceContainer.style.display = 'none';
+    }
+});
+
+// Discount type change handler
+document.getElementById('discount-type').addEventListener('change', function() {
+    const discountContainer = document.getElementById('discount-value-container');
+    if (this.value === 'percentage' || this.value === 'fixed') {
+        discountContainer.style.display = 'block';
+    } else {
+        discountContainer.style.display = 'none';
+    }
+});
+
+// Follow-up support change handler
+document.getElementById('follow-up-support').addEventListener('change', function() {
+    const supportContainer = document.getElementById('support-duration-container');
+    if (this.value === 'yes') {
+        supportContainer.style.display = 'block';
+    } else {
+        supportContainer.style.display = 'none';
+    }
+});
+
+// Collapse/Expand icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-right');
+                trigger.classList.add('fa-chevron-down');
+            }
+        });
+        
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-down');
+                trigger.classList.add('fa-chevron-right');
+            }
+        });
+    });
+});
+
+// Function to update subcategories based on main category
+function updateSubcategories(category, subcategorySelect) {
+    // Clear existing options
+    subcategorySelect.innerHTML = '<option value="">Select sub-category...</option>';
+    
+    const subcategories = {
+        'marketing': ['Digital Marketing', 'Social Media', 'SEO/SEM', 'Content Marketing', 'Email Marketing', 'Advertising', 'Branding', 'Market Research'],
+        'design': ['Web Design', 'Graphic Design', 'UI/UX Design', 'Logo Design', 'Print Design', '3D Design', 'Interior Design', 'Fashion Design'],
+        'consulting': ['Business Consulting', 'Strategy Consulting', 'Management Consulting', 'Financial Consulting', 'HR Consulting', 'IT Consulting', 'Marketing Consulting'],
+        'it': ['Web Development', 'Mobile App Development', 'Software Development', 'System Administration', 'Cybersecurity', 'Data Analysis', 'Cloud Services', 'IT Support'],
+        'legal': ['Contract Review', 'Legal Advice', 'Document Preparation', 'Intellectual Property', 'Corporate Law', 'Employment Law', 'Real Estate Law'],
+        'finance': ['Accounting', 'Bookkeeping', 'Tax Preparation', 'Financial Planning', 'Investment Advice', 'Audit Services', 'Payroll Services'],
+        'education': ['Tutoring', 'Online Courses', 'Training Programs', 'Workshops', 'Certification Programs', 'Language Learning', 'Skill Development'],
+        'health': ['Fitness Training', 'Nutrition Consulting', 'Mental Health Counseling', 'Wellness Coaching', 'Massage Therapy', 'Alternative Medicine'],
+        'writing': ['Content Writing', 'Copywriting', 'Technical Writing', 'Creative Writing', 'Editing & Proofreading', 'Translation', 'Blog Writing'],
+        'translation': ['Document Translation', 'Website Translation', 'Interpretation', 'Localization', 'Subtitling', 'Voice-over Translation'],
+        'photography': ['Portrait Photography', 'Event Photography', 'Product Photography', 'Real Estate Photography', 'Stock Photography', 'Photo Editing'],
+        'video': ['Video Production', 'Video Editing', 'Animation', 'Voice-over', 'Audio Production', 'Podcast Production', 'Live Streaming'],
+        'maintenance': ['Home Maintenance', 'IT Maintenance', 'Equipment Maintenance', 'Cleaning Services', 'Repair Services', 'Preventive Maintenance'],
+        'logistics': ['Shipping & Delivery', 'Warehousing', 'Supply Chain Management', 'Inventory Management', 'Transportation', 'Courier Services']
+    };
+    
+    if (subcategories[category]) {
+        subcategories[category].forEach(function(subcat) {
+            const option = document.createElement('option');
+            option.value = subcat.toLowerCase().replace(/\s+/g, '-');
+            option.textContent = subcat;
+            subcategorySelect.appendChild(option);
+        });
+    }
+}
+</script>
+{% endblock %}age see idea 

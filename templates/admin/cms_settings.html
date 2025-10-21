@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Site Settings - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-cog me-2"></i>Site Settings
+                </h1>
+                <a href="{{ url_for('admin.cms_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to CMS
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Website Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm">
+                        <!-- General Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>General Settings
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="siteName" class="form-label">Site Name</label>
+                                    <input type="text" class="form-control" id="siteName" name="site_name" value="{{ settings.get('site_name', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="siteTagline" class="form-label">Site Tagline</label>
+                                    <input type="text" class="form-control" id="siteTagline" name="site_tagline" value="{{ settings.get('site_tagline', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="siteDescription" class="form-label">Site Description</label>
+                                    <textarea class="form-control" id="siteDescription" name="site_description" rows="3">{{ settings.get('site_description', '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Appearance Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-palette me-2"></i>Appearance
+                                </h5>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="primaryColor" class="form-label">Primary Color</label>
+                                    <input type="color" class="form-control form-control-color" id="primaryColor" name="primary_color" value="{{ settings.get('primary_color', '#007AFF') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="secondaryColor" class="form-label">Secondary Color</label>
+                                    <input type="color" class="form-control form-control-color" id="secondaryColor" name="secondary_color" value="{{ settings.get('secondary_color', '#5856D6') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="logoUrl" class="form-label">Logo URL</label>
+                                    <input type="url" class="form-control" id="logoUrl" name="logo_url" value="{{ settings.get('logo_url', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-envelope me-2"></i>Contact Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contactEmail" class="form-label">Contact Email</label>
+                                    <input type="email" class="form-control" id="contactEmail" name="contact_email" value="{{ settings.get('contact_email', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contactPhone" class="form-label">Contact Phone</label>
+                                    <input type="tel" class="form-control" id="contactPhone" name="contact_phone" value="{{ settings.get('contact_phone', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="contactAddress" class="form-label">Contact Address</label>
+                                    <textarea class="form-control" id="contactAddress" name="contact_address" rows="2">{{ settings.get('contact_address', '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social Media -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-share-alt me-2"></i>Social Media
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="facebookUrl" class="form-label">Facebook URL</label>
+                                    <input type="url" class="form-control" id="facebookUrl" name="facebook_url" value="{{ settings.get('facebook_url', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="twitterUrl" class="form-label">Twitter URL</label>
+                                    <input type="url" class="form-control" id="twitterUrl" name="twitter_url" value="{{ settings.get('twitter_url', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="linkedinUrl" class="form-label">LinkedIn URL</label>
+                                    <input type="url" class="form-control" id="linkedinUrl" name="linkedin_url" value="{{ settings.get('linkedin_url', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="instagramUrl" class="form-label">Instagram URL</label>
+                                    <input type="url" class="form-control" id="instagramUrl" name="instagram_url" value="{{ settings.get('instagram_url', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-cogs me-2"></i>System Settings
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode" {% if settings.get('maintenance_mode') == 'true' %}checked{% endif %}>
+                                        <label class="form-check-label" for="maintenanceMode">
+                                            Enable Maintenance Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="footerText" class="form-label">Footer Text</label>
+                                    <input type="text" class="form-control" id="footerText" name="footer_text" value="{{ settings.get('footer_text', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">Reset</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission
+    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        
+        // Collect all form data
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        fetch('/admin/cms/settings/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const btn = document.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Saved!';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-primary');
+                }, 2000);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving settings.');
+        });
+    });
+});
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset all settings to their current values?')) {
+        location.reload();
+    }
+}
+</script>
+{% endblock %}
+
+
+
+

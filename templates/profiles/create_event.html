@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Create Event</h4>
+                <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Item Types
+                </a>
+            </div>
+
+            <!-- Event Definition -->
+            <div class="alert alert-info mb-4" style="border-color: #6f42c1; background-color: #f8f5ff;">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is an Event?</h6>
+                <p class="mb-2"><strong>Events are organized gatherings or activities that bring people together for a specific purpose.</strong> They have a defined time, place, and objective.</p>
+                <p class="mb-0"><strong>Examples:</strong> Conferences, workshops, webinars, networking events, exhibitions, festivals, training sessions.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Section 1: Event Classification -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-tags me-2"></i>1. Event Classification</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="event-category" class="form-label">Event Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="event-category" name="event_category" required>
+                                        <option value="">Select category...</option>
+                                        <option value="conference">Conference</option>
+                                        <option value="workshop">Workshop</option>
+                                        <option value="webinar">Webinar</option>
+                                        <option value="networking">Networking</option>
+                                        <option value="exhibition">Exhibition</option>
+                                        <option value="festival">Festival</option>
+                                        <option value="training">Training</option>
+                                        <option value="seminar">Seminar</option>
+                                        <option value="meetup">Meetup</option>
+                                        <option value="competition">Competition</option>
+                                        <option value="social">Social Event</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="custom-event-category-container" style="display: none;">
+                                    <label for="custom-event-category" class="form-label">Custom Category</label>
+                                    <input type="text" class="form-control" id="custom-event-category" name="custom_event_category" placeholder="Enter custom category">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="event-type" class="form-label">Event Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="event-type" name="event_type" required>
+                                        <option value="">Select type...</option>
+                                        <option value="in-person">In-Person</option>
+                                        <option value="virtual">Virtual</option>
+                                        <option value="hybrid">Hybrid</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="target-audience" class="form-label">Target Audience <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="target-audience" name="target_audience" required>
+                                        <option value="">Select audience...</option>
+                                        <option value="professionals">Professionals</option>
+                                        <option value="students">Students</option>
+                                        <option value="entrepreneurs">Entrepreneurs</option>
+                                        <option value="general-public">General Public</option>
+                                        <option value="industry-specific">Industry Specific</option>
+                                        <option value="members-only">Members Only</option>
+                                        <option value="invite-only">Invite Only</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#classification-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="classification-icon"></i>Optional Classification Details
+                                </h6>
+                                <div class="collapse" id="classification-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="industry-focus" class="form-label">Industry Focus</label>
+                                            <select class="form-select" id="industry-focus" name="industry_focus">
+                                                <option value="">Select industry...</option>
+                                                <option value="tech">Technology</option>
+                                                <option value="business">Business</option>
+                                                <option value="education">Education</option>
+                                                <option value="healthcare">Healthcare</option>
+                                                <option value="finance">Finance</option>
+                                                <option value="marketing">Marketing</option>
+                                                <option value="design">Design</option>
+                                                <option value="nonprofit">Non-profit</option>
+                                                <option value="government">Government</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="event-tags" class="form-label">Tags & Keywords</label>
+                                            <input type="text" class="form-control" id="event-tags" name="event_tags" placeholder="networking, startup, innovation">
+                                            <small class="text-muted">Separate with commas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Event Organizer -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-tie me-2"></i>2. Event Organizer</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="organizer-name" class="form-label">Organizer Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="organizer-name" name="organizer_name" placeholder="Organization / Person" required>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="organizer-email" class="form-label">Contact Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="organizer-email" name="organizer_email" placeholder="contact@example.com" required>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#organizer-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="organizer-icon"></i>Optional Organizer Details
+                                </h6>
+                                <div class="collapse" id="organizer-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="organizer-website" class="form-label">Website</label>
+                                            <input type="url" class="form-control" id="organizer-website" name="organizer_website" placeholder="https://example.com">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="organizer-phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="organizer-phone" name="organizer_phone" placeholder="+1 234 567 8900">
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label for="organizer-bio" class="form-label">Organizer Bio</label>
+                                            <textarea class="form-control" id="organizer-bio" name="organizer_bio" rows="3" placeholder="Brief description of the organizer"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Basic Event Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>3. Basic Event Information</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="event-title" class="form-label">Event Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="event-title" name="event_title" placeholder="Clear, descriptive event name" required>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="short-description" class="form-label">Short Description <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="short-description" name="short_description" rows="3" maxlength="200" placeholder="Brief summary of the event (max 200 characters)" required></textarea>
+                                    <div class="form-text"><span id="char-count-short">0</span>/200 characters</div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#basic-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="basic-icon"></i>Optional Event Details
+                                </h6>
+                                <div class="collapse" id="basic-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="detailed-description" class="form-label">Detailed Description</label>
+                                            <textarea class="form-control" id="detailed-description" name="detailed_description" rows="5" placeholder="Full event description, agenda, what attendees will learn"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="event-objectives" class="form-label">Event Objectives</label>
+                                            <textarea class="form-control" id="event-objectives" name="event_objectives" rows="3" placeholder="• Main goals of the event&#10;• What attendees will gain"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="agenda-highlights" class="form-label">Agenda Highlights</label>
+                                            <textarea class="form-control" id="agenda-highlights" name="agenda_highlights" rows="3" placeholder="• Key sessions&#10;• Notable speakers&#10;• Special activities"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Date & Time -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>4. Date & Time</h5>
+                            
+                            <!-- Required Fields -->
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="start-date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="start-date" name="start_date" required>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="start-time" class="form-label">Start Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="start-time" name="start_time" required>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="end-date" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="end-date" name="end_date">
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="end-time" class="form-label">End Time</label>
+                                    <input type="time" class="form-control" id="end-time" name="end_time">
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#datetime-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="datetime-icon"></i>Optional Time Details
+                                </h6>
+                                <div class="collapse" id="datetime-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="timezone" class="form-label">Timezone</label>
+                                            <select class="form-select" id="timezone" name="timezone">
+                                                <option value="">Select timezone...</option>
+                                                <option value="UTC">UTC</option>
+                                                <option value="GMT">GMT</option>
+                                                <option value="EST">EST</option>
+                                                <option value="PST">PST</option>
+                                                <option value="GST">GST (UAE)</option>
+                                                <option value="CET">CET</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="registration-deadline" class="form-label">Registration Deadline</label>
+                                            <input type="datetime-local" class="form-control" id="registration-deadline" name="registration_deadline">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="duration" class="form-label">Duration</label>
+                                            <input type="text" class="form-control" id="duration" name="duration" placeholder="2 hours, 1 day, 3 days">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Location & Venue -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-map-marker-alt me-2"></i>5. Location & Venue</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="venue-name" class="form-label">Venue Name</label>
+                                    <input type="text" class="form-control" id="venue-name" name="venue_name" placeholder="Conference center, hotel, online platform">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="venue-address" class="form-label">Address</label>
+                                    <input type="text" class="form-control" id="venue-address" name="venue_address" placeholder="Full address or online meeting link">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="city" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="city" name="city" placeholder="City name">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="country" class="form-label">Country</label>
+                                    <input type="text" class="form-control" id="country" name="country" placeholder="Country name">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="capacity" class="form-label">Capacity</label>
+                                    <input type="number" class="form-control" id="capacity" name="capacity" placeholder="Maximum attendees">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: Registration & Pricing -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-dollar-sign me-2"></i>6. Registration & Pricing</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="registration-type" class="form-label">Registration Type</label>
+                                    <select class="form-select" id="registration-type" name="registration_type">
+                                        <option value="free">Free</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="donation">Donation Based</option>
+                                        <option value="invite-only">Invite Only</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3" id="price-container" style="display: none;">
+                                    <label for="ticket-price" class="form-label">Ticket Price</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="ticket-price" name="ticket_price" step="0.01" placeholder="0.00">
+                                        <select class="form-select" name="currency" style="max-width: 100px;">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="AED">AED</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="SAR">SAR</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="registration-link" class="form-label">Registration Link</label>
+                                    <input type="url" class="form-control" id="registration-link" name="registration_link" placeholder="https://eventbrite.com/...">
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#pricing-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="pricing-icon"></i>Optional Pricing Details
+                                </h6>
+                                <div class="collapse" id="pricing-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="early-bird-price" class="form-label">Early Bird Price</label>
+                                            <input type="number" class="form-control" id="early-bird-price" name="early_bird_price" step="0.01" placeholder="Discounted price">
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="group-discount" class="form-label">Group Discount</label>
+                                            <input type="text" class="form-control" id="group-discount" name="group_discount" placeholder="10% off for 5+ people">
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label for="pricing-tiers" class="form-label">Pricing Tiers</label>
+                                            <textarea class="form-control" id="pricing-tiers" name="pricing_tiers" rows="3" placeholder="• Student: $50&#10;• Regular: $100&#10;• VIP: $200"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 7: Speakers & Agenda -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-microphone me-2"></i>7. Speakers & Agenda</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="speakers" class="form-label">Speakers</label>
+                                    <textarea class="form-control" id="speakers" name="speakers" rows="4" placeholder="• Speaker Name - Title, Company&#10;• Jane Doe - CEO, Tech Corp&#10;• John Smith - Expert in AI"></textarea>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="agenda" class="form-label">Detailed Agenda</label>
+                                    <textarea class="form-control" id="agenda" name="agenda" rows="5" placeholder="9:00 AM - Registration&#10;10:00 AM - Opening Keynote&#10;11:00 AM - Panel Discussion&#10;12:00 PM - Lunch Break"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 8: Media & Promotion -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-images me-2"></i>8. Media & Promotion</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="event-images" class="form-label">Event Images</label>
+                                    <input type="file" class="form-control mb-2" name="event_images" multiple accept="image/*">
+                                    <input type="url" class="form-control" name="image_links" placeholder="Or paste image links">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="promotional-video" class="form-label">Promotional Video</label>
+                                    <input type="file" class="form-control mb-2" name="promotional_video" accept="video/*">
+                                    <input type="url" class="form-control" name="video_links" placeholder="YouTube, Vimeo links">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="event-website" class="form-label">Event Website</label>
+                                    <input type="url" class="form-control" id="event-website" name="event_website" placeholder="https://event-website.com">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="social-media" class="form-label">Social Media</label>
+                                    <textarea class="form-control" id="social-media" name="social_media" rows="3" placeholder="Facebook: https://...&#10;Twitter: @event&#10;LinkedIn: https://..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 9: Requirements & Logistics -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>9. Requirements & Logistics</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="requirements" class="form-label">Attendee Requirements</label>
+                                    <textarea class="form-control" id="requirements" name="requirements" rows="3" placeholder="What attendees need to bring or prepare"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="technical-requirements" class="form-label">Technical Requirements</label>
+                                    <textarea class="form-control" id="technical-requirements" name="technical_requirements" rows="3" placeholder="Equipment, software, internet connection"></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="accessibility" class="form-label">Accessibility</label>
+                                    <textarea class="form-control" id="accessibility" name="accessibility" rows="2" placeholder="Wheelchair accessible, sign language, etc."></textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="catering" class="form-label">Catering / Refreshments</label>
+                                    <textarea class="form-control" id="catering" name="catering" rows="2" placeholder="Meals, snacks, dietary restrictions"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 10: Management & Metadata -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-cog me-2"></i>10. Management & Metadata</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="created-date" class="form-label">Created Date</label>
+                                    <input type="date" class="form-control" id="created-date" name="created_date" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="last-updated" class="form-label">Last Updated</label>
+                                    <input type="date" class="form-control" id="last-updated" name="last_updated" readonly>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="event-status" class="form-label">Event Status</label>
+                                    <select class="form-select" id="event-status" name="event_status">
+                                        <option value="planning">Planning</option>
+                                        <option value="registration-open">Registration Open</option>
+                                        <option value="registration-closed">Registration Closed</option>
+                                        <option value="ongoing">Ongoing</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="postponed">Postponed</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="visibility" class="form-label">Visibility</label>
+                                    <select class="form-select" id="visibility" name="visibility">
+                                        <option value="public">Public</option>
+                                        <option value="private">Private</option>
+                                        <option value="restricted">Restricted</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Optional Fields (Collapsible) -->
+                            <div class="mt-3">
+                                <h6 class="text-muted cursor-pointer" data-bs-toggle="collapse" data-bs-target="#management-optional" aria-expanded="false">
+                                    <i class="fas fa-chevron-right me-2" id="management-icon"></i>Optional Management Details
+                                </h6>
+                                <div class="collapse" id="management-optional">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="admin-notes" class="form-label">Admin Notes</label>
+                                            <textarea class="form-control" id="admin-notes" name="admin_notes" rows="3" placeholder="Internal notes and comments"></textarea>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label for="follow-up-actions" class="form-label">Follow-up Actions</label>
+                                            <textarea class="form-control" id="follow-up-actions" name="follow_up_actions" rows="3" placeholder="Post-event activities, surveys, recordings"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profiles.create_item_redirect', profile_id=current_user.profiles[0].id) if current_user.profiles else '#' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <div>
+                                <button type="submit" name="action" value="draft" class="btn me-2" style="color: #6f42c1; border-color: #6f42c1;">
+                                    <i class="fas fa-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn text-white" style="background-color: #6f42c1; border-color: #6f42c1;">
+                                    <i class="fas fa-calendar-alt me-2"></i>Create Event
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-pointer:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Set current date for created and last updated fields
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created-date').value = today;
+    document.getElementById('last-updated').value = today;
+});
+
+// Character counter for short description
+document.getElementById('short-description').addEventListener('input', function() {
+    document.getElementById('char-count-short').textContent = this.value.length;
+});
+
+// Event category change handler
+document.getElementById('event-category').addEventListener('change', function() {
+    const customContainer = document.getElementById('custom-event-category-container');
+    if (this.value === 'other') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+});
+
+// Registration type change handler
+document.getElementById('registration-type').addEventListener('change', function() {
+    const priceContainer = document.getElementById('price-container');
+    if (this.value === 'paid') {
+        priceContainer.style.display = 'block';
+    } else {
+        priceContainer.style.display = 'none';
+    }
+});
+
+// Collapse/Expand icon rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(collapseEl) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-right');
+                trigger.classList.add('fa-chevron-down');
+            }
+        });
+        
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            const trigger = document.querySelector(`[data-bs-target="#${collapseEl.id}"] i`);
+            if (trigger) {
+                trigger.classList.remove('fa-chevron-down');
+                trigger.classList.add('fa-chevron-right');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+

@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}Create Bank{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-database me-2"></i>Create Bank</h2>
+                <a href="{{ url_for('admin.banks_management') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Banks
+                </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Bank Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="bankForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Bank Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <div class="form-text">A descriptive name for this bank (e.g., "Bank of Companies")</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="slug" class="form-label">URL Slug <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="slug" name="slug" required 
+                                           pattern="[a-z0-9\-]+" 
+                                           placeholder="e.g., creative-ideas, tech-products">
+                                    <div class="form-text">
+                                        <strong>Required:</strong> URL-friendly name that appears after /banks/ (e.g., /banks/creative-ideas)<br>
+                                        <small class="text-muted">Only lowercase letters, numbers, and hyphens allowed</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                    <div class="form-text">Explain what this bank stores</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="bank_type" class="form-label">Bank Type</label>
+                                    <select class="form-select" id="bank_type" name="bank_type" required>
+                                        <option value="">Select bank type...</option>
+                                        <option value="items">Items</option>
+                                        <option value="organizations">Organizations</option>
+                                        <option value="users">Users</option>
+                                    </select>
+                                    <div class="form-text">What type of data will this bank store?</div>
+                                </div>
+                                
+                                <!-- Items Type Selection -->
+                                <div class="mb-3" id="item_type_group" style="display: none;">
+                                    <label for="item_type_id" class="form-label">Item Type</label>
+                                    <select class="form-select" id="item_type_id" name="item_type_id">
+                                        <option value="">All Items (show everything)</option>
+                                        {% for item_type in item_types %}
+                                        <option value="{{ item_type.id }}">{{ item_type.display_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Choose specific item type or leave empty to show all items</div>
+                                </div>
+                                
+                                <!-- Organization Type Selection -->
+                                <div class="mb-3" id="organization_type_group" style="display: none;">
+                                    <label for="organization_type_id" class="form-label">Organization Type</label>
+                                    <select class="form-select" id="organization_type_id" name="organization_type_id">
+                                        <option value="">All Organizations (show everything)</option>
+                                        {% for org_type in organization_types %}
+                                        <option value="{{ org_type.id }}">{{ org_type.display_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Choose specific organization type or leave empty to show all organizations</div>
+                                </div>
+                                
+                                <!-- User Filter Selection -->
+                                <div class="mb-3" id="user_filter_group" style="display: none;">
+                                    <label for="user_filter" class="form-label">Profile Type Filter</label>
+                                    <select class="form-select" id="user_filter" name="user_filter">
+                                        <option value="">All Profile Types</option>
+                                        {% for profile_type in profile_types %}
+                                        <option value="{{ profile_type.name }}">{{ profile_type.display_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Choose which profile type to display in this bank, or leave empty to show all users</div>
+                                </div>
+                                
+                                <!-- Privacy Filter Selection -->
+                                <div class="mb-3" id="privacy_filter_group" style="display: none;">
+                                    <label for="privacy_filter" class="form-label">Privacy Filter</label>
+                                    <select class="form-select" id="privacy_filter" name="privacy_filter">
+                                        <option value="all">All (Public + Private)</option>
+                                        <option value="public">Public Only</option>
+                                        <option value="private">Private Only</option>
+                                    </select>
+                                    <div class="form-text">Choose which privacy level to display in this bank</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="icon" class="form-label">Icon</label>
+                                            <div class="row">
+                                                <div class="col-8">
+                                                    <input type="text" class="form-control" id="icon" name="icon" 
+                                                           value="fas fa-database" placeholder="e.g., fas fa-database, fab fa-github">
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="icon-preview text-center p-2 border rounded" style="min-height: 38px; display: flex; align-items: center; justify-content: center;">
+                                                        <i id="iconPreview" class="fas fa-database fs-4" style="color: #007bff;"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-text">
+                                                Type any FontAwesome icon code (e.g., <code>fas fa-database</code>, <code>fab fa-github</code>)
+                                                <br><small class="text-muted">
+                                                    <strong>Common prefixes:</strong> <code>fas</code> (solid), <code>far</code> (regular), <code>fab</code> (brands)
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="color" class="form-label">Color</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="color" name="color" value="#2988a8">
+                                                <input type="text" class="form-control" id="color_text" name="color_text" value="#2988a8" placeholder="#2988a8">
+                                            </div>
+                                            <div class="form-text">
+                                                Choose a color for this bank
+                                                <br><small class="text-muted">Use hex color values (e.g., #2988a8, #007bff, #28a745)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="sort_order" class="form-label">Display Order</label>
+                                    <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                                           value="0" min="0" step="1">
+                                    <div class="form-text">Lower numbers appear first (0 = highest priority)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                                        <label class="form-check-label" for="is_public">
+                                            Public Bank
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Public banks are visible to all users</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="collector_ids" class="form-label">Connect Collectors</label>
+                                    <select class="form-select" id="collector_ids" name="collector_ids" multiple>
+                                        {% for collector in collectors %}
+                                        <option value="{{ collector.id }}">{{ collector.name }} ({{ collector.data_type }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Select which collectors should feed data into this bank</div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create Bank
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Help</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Bank Types:</h6>
+                            <ul class="small">
+                                <li><strong>Organizations:</strong> Companies, teams, projects</li>
+                                <li><strong>Users:</strong> User profiles by type</li>
+                                <li><strong>Items:</strong> Products, services, ideas, etc.</li>
+                            </ul>
+                            
+                            <h6>Organization Types:</h6>
+                            <ul class="small">
+                                <li><strong>Company:</strong> Business organizations</li>
+                                <li><strong>Team:</strong> Work teams</li>
+                                <li><strong>Project:</strong> Project groups</li>
+                                <li><strong>Community:</strong> Community groups</li>
+                            </ul>
+                            
+                            <h6>Profile Types:</h6>
+                            <ul class="small">
+                                <li><strong>Person:</strong> General personal profiles</li>
+                                <li><strong>Professional:</strong> Business professionals</li>
+                                <li><strong>Freelancer:</strong> Independent contractors</li>
+                                <li><strong>Entrepreneur:</strong> Startup founders</li>
+                                <li><strong>Investor:</strong> Investment professionals</li>
+                                <li><strong>Volunteer:</strong> Community volunteers</li>
+                            </ul>
+                            
+                            <h6>Collectors:</h6>
+                            <p class="small">Select collectors that will automatically feed data into this bank. Only collectors matching the bank type will be available.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide type selection based on bank type
+document.getElementById('bank_type').addEventListener('change', function() {
+    const itemTypeGroup = document.getElementById('item_type_group');
+    const orgTypeGroup = document.getElementById('organization_type_group');
+    const userFilterGroup = document.getElementById('user_filter_group');
+    const privacyFilterGroup = document.getElementById('privacy_filter_group');
+    
+    // Hide all groups first
+    itemTypeGroup.style.display = 'none';
+    orgTypeGroup.style.display = 'none';
+    userFilterGroup.style.display = 'none';
+    privacyFilterGroup.style.display = 'none';
+    
+    // Show appropriate group based on selection
+    if (this.value === 'items') {
+        itemTypeGroup.style.display = 'block';
+        // Items don't have privacy settings, so hide privacy filter
+        privacyFilterGroup.style.display = 'none';
+    } else if (this.value === 'organizations') {
+        orgTypeGroup.style.display = 'block';
+        privacyFilterGroup.style.display = 'block';
+    } else if (this.value === 'users') {
+        userFilterGroup.style.display = 'block';
+        privacyFilterGroup.style.display = 'block';
+    }
+});
+
+        // Sync color picker with text input
+        // Color picker functionality
+        document.getElementById('color').addEventListener('input', function() {
+            const color = this.value;
+            const colorText = document.getElementById('color_text');
+            const iconPreview = document.getElementById('iconPreview');
+            
+            // Update text input with hex color
+            colorText.value = color;
+            
+            // Update icon preview color
+            if (iconPreview) {
+                iconPreview.style.color = color;
+            }
+        });
+
+        // Allow manual hex color input
+        document.getElementById('color_text').addEventListener('input', function() {
+            const color = this.value;
+            const colorPicker = document.getElementById('color');
+            const iconPreview = document.getElementById('iconPreview');
+            
+            // Validate hex color format
+            if (/^#[0-9A-F]{6}$/i.test(color)) {
+                colorPicker.value = color;
+                if (iconPreview) {
+                    iconPreview.style.color = color;
+                }
+            }
+        });
+
+        // Update icon preview when icon changes
+        document.getElementById('icon').addEventListener('input', function() {
+            const iconPreview = document.getElementById('iconPreview');
+            if (iconPreview) {
+                const iconValue = this.value.trim();
+                if (iconValue) {
+                    // Split the icon value to get prefix and icon name
+                    const parts = iconValue.split(' ');
+                    if (parts.length >= 2) {
+                        iconPreview.className = `${parts[0]} ${parts[1]} fs-4`;
+                    } else {
+                        // If only one part, assume it's the icon name and add fas prefix
+                        iconPreview.className = `fas ${parts[0]} fs-4`;
+                    }
+                } else {
+                    iconPreview.className = 'fas fa-database fs-4';
+                }
+            }
+        });
+
+// Auto-generate slug from name
+document.getElementById('name').addEventListener('input', function() {
+    const slugField = document.getElementById('slug');
+    if (!slugField.value) { // Only auto-generate if slug is empty
+        const slug = this.value
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single
+            .trim('-'); // Remove leading/trailing hyphens
+        slugField.value = slug;
+    }
+});
+
+// Validate slug format
+document.getElementById('slug').addEventListener('input', function() {
+    const value = this.value;
+    const isValid = /^[a-z0-9-]+$/.test(value);
+    
+    if (value && !isValid) {
+        this.setCustomValidity('Only lowercase letters, numbers, and hyphens allowed');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('bankForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        name: formData.get('name'),
+        slug: formData.get('slug'),
+        description: formData.get('description'),
+        bank_type: formData.get('bank_type'),
+        item_type_id: formData.get('item_type_id') ? parseInt(formData.get('item_type_id')) : null,
+        organization_type_id: formData.get('organization_type_id') ? parseInt(formData.get('organization_type_id')) : null,
+        user_filter: formData.get('user_filter'),
+        privacy_filter: formData.get('privacy_filter') || 'all',
+        organization_type: formData.get('organization_type'), // Keep for backward compatibility
+        icon: formData.get('icon'),
+        color: formData.get('color'),
+        sort_order: parseInt(formData.get('sort_order')) || 0,
+        is_public: formData.get('is_public') === 'on',
+        collector_ids: Array.from(document.getElementById('collector_ids').selectedOptions).map(option => parseInt(option.value))
+    };
+    
+    fetch('{{ url_for("admin.create_bank") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': formData.get('csrf_token')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Bank created successfully!');
+            window.location.href = '{{ url_for("admin.banks_management") }}';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the bank.');
+    });
+});
+
+// Initialize color picker with default color
+document.addEventListener('DOMContentLoaded', function() {
+    const defaultColor = '#2988a8';
+    document.getElementById('color').value = defaultColor;
+    document.getElementById('color_text').value = defaultColor;
+    const iconPreview = document.getElementById('iconPreview');
+    if (iconPreview) {
+        iconPreview.style.color = defaultColor;
+    }
+});
+</script>
+{% endblock %}

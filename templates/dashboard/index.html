@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BankU{% endblock %}
+
+<!-- Template functions for dynamic buttons -->
+{% set button_gradients = {
+    'primary': 'linear-gradient(135deg, #667eea, #764ba2)',
+    'success': 'linear-gradient(135deg, #28a745, #20c997)',
+    'warning': 'linear-gradient(135deg, #ffc107, #fd7e14)',
+    'danger': 'linear-gradient(135deg, #dc3545, #e83e8c)',
+    'info': 'linear-gradient(135deg, #17a2b8, #6f42c1)',
+    'secondary': 'linear-gradient(135deg, #6c757d, #495057)',
+    'dark': 'linear-gradient(135deg, #343a40, #212529)'
+} %}
+
+{% macro get_button_gradient(color) %}
+    {{ button_gradients.get(color, button_gradients['primary']) }}
+{% endmacro %}
+
+{% macro get_button_url(button) %}
+    {% if button.target_type == 'page' %}
+        {{ button.target_value }}
+    {% elif button.target_type == 'chatbot' %}
+        {{ url_for('chatbot.flow', flow_id=button.target_value) }}
+    {% elif button.target_type == 'external' %}
+        {{ button.target_value }}
+    {% else %}
+        #
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Welcome Section - Match Stats Width -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-center">
+                <div class="welcome-compact">
+                    <div class="text-center">
+                        <h2 class="welcome-title mb-1">
+                            Welcome back, {{ current_user.first_name }}! 👋
+                        </h2>
+                        <p class="welcome-subtitle mb-0">
+                            Here's what's happening with your BankU account today.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards - Inline Responsive -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <div class="stat-card-inline">
+                <div class="d-flex align-items-center">
+                        <div class="stat-icon-compact bg-gradient-primary text-white me-2">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div>
+                            <div class="stat-number-compact">{{ stats.total_views }}</div>
+                            <div class="stat-label-compact">Total Views</div>
+                        </div>
+            </div>
+        </div>
+        
+                <div class="stat-card-inline">
+                <div class="d-flex align-items-center">
+                        <div class="stat-icon-compact bg-gradient-success text-white me-2">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <div>
+                            <div class="stat-number-compact">{{ stats.active_deals }}</div>
+                            <div class="stat-label-compact">Active Deals</div>
+                        </div>
+            </div>
+        </div>
+        
+                <div class="stat-card-inline">
+                <div class="d-flex align-items-center">
+                        <div class="stat-icon-compact bg-gradient-warning text-white me-2">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                            <div class="stat-number-compact">{{ stats.coming_deals }}</div>
+                            <div class="stat-label-compact">Pending Deals</div>
+                        </div>
+            </div>
+        </div>
+        
+                <div class="stat-card-inline">
+                <div class="d-flex align-items-center">
+                        <div class="stat-icon-compact bg-gradient-info text-white me-2">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div>
+                            <div class="stat-number-compact">${{ "%.2f"|format(stats.wallet_balance) }}</div>
+                            <div class="stat-label-compact">Wallet Balance</div>
+                        </div>
+            </div>
+        </div>
+        
+                <div class="stat-card-inline">
+                <div class="d-flex align-items-center">
+                        <div class="stat-icon-compact bg-gradient-success text-white me-2">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div>
+                            <div class="stat-number-compact">${{ "%.2f"|format(stats.total_earnings) }}</div>
+                            <div class="stat-label-compact">Total Earnings</div>
+                        </div>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Cards - Centered and Close -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold mb-0">Quick Actions</h3>
+                <p class="text-muted small">Choose an action to get started</p>
+            </div>
+        </div>
+        
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-center gap-4 quick-actions-grid">
+        {% if dashboard_buttons %}
+            {% for button in dashboard_buttons %}
+                    <div class="action-card-square" data-url="{{ get_button_url(button) }}" onclick="navigateToUrl(this)">
+                        <div class="action-icon-square">
+                        <i class="{{ button.icon_class }}" style="color: {{ button.button_color if button.button_color.startswith('#') else '#007bff' }} !important;" title="Color: {{ button.button_color }}"></i>
+                        </div>
+                        <h5 class="action-title-square">{{ button.button_label }}</h5>
+                        <p class="action-description-square">{{ button.button_description or 'Click to get started' }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Default Action Cards -->
+                    <div class="action-card-square" data-url="{{ url_for('profiles.create_item_redirect') }}" onclick="navigateToUrl(this)">
+                        <div class="action-icon-square">
+                        <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h5 class="action-title-square">Add New</h5>
+                        <p class="action-description-square">Create a new item or service</p>
+            </div>
+            
+                    <div class="action-card-square" data-url="{{ url_for('dashboard.add_info') }}" onclick="navigateToUrl(this)">
+                        <div class="action-icon-square">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                        <h5 class="action-title-square">Add Need</h5>
+                        <p class="action-description-square">Post what you need or are looking for</p>
+            </div>
+            
+                    <div class="action-card-square" data-url="{{ url_for('profiles.create') }}" onclick="navigateToUrl(this)">
+                        <div class="action-icon-square">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h5 class="action-title-square">New Organization</h5>
+                        <p class="action-description-square">Create a company, team, or project organization</p>
+        </div>
+        
+                    <div class="action-card-square" data-url="{{ url_for('wallet.index') }}" onclick="navigateToUrl(this)">
+                        <div class="action-icon-square">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <h5 class="action-title-square">My Wallet</h5>
+                        <p class="action-description-square">Manage earnings and withdraw funds</p>
+        </div>
+                    {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<style>
+/* Dashboard Specific Styles */
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Compact Welcome Section - Match Stats Width */
+.welcome-compact {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--gray-200);
+    width: 836px; /* Match 4 stats buttons width on desktop (200px × 4 + 36px gaps) */
+    max-width: 836px;
+}
+
+
+.welcome-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+}
+
+.welcome-subtitle {
+    font-size: 0.95rem;
+    color: var(--gray-600);
+    margin: 0;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Compact Stats Cards */
+.stat-card-compact {
+    background: white;
+    border-radius: 16px;
+    padding: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.stat-card-compact:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Half Width Compact Stats Cards */
+.stat-card-compact-half {
+    background: white;
+    border-radius: 16px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+    max-width: 50%;
+    margin: 0 auto;
+}
+
+.stat-card-compact-half:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Inline Responsive Stats Cards */
+.stat-card-inline {
+    background: white;
+    border-radius: 16px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+    min-width: 200px;
+    flex: 0 0 auto;
+}
+
+.stat-card-inline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.stat-card-inline:hover .stat-icon-compact {
+    transform: scale(1.1);
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+    
+    .welcome-compact {
+        padding: 1rem;
+        width: 412px; /* Match 2 stats buttons width on tablet (200px × 2 + 12px gap) */
+        max-width: 412px;
+    }
+    
+    .welcome-title {
+        font-size: 1.25rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.85rem;
+    }
+    
+    
+    .stat-card-inline {
+        min-width: 140px;
+        padding: 0.6rem 0.8rem;
+        flex: 1 1 calc(50% - 0.5rem);
+        max-width: calc(50% - 0.5rem);
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.5rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 0.75rem;
+    }
+    
+    .welcome-compact {
+        padding: 0.75rem;
+        width: 100%; /* Match full width on mobile like stats */
+        max-width: 100%;
+    }
+    
+    .welcome-title {
+        font-size: 1.1rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    
+    .stat-card-inline {
+        min-width: 100%;
+        padding: 0.5rem 0.75rem;
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-icon-compact {
+        width: 28px;
+        height: 28px;
+        border-radius: 25%; /* Even more pronounced rounded corners */
+        aspect-ratio: 1 / 1; /* Ensure it stays square */
+        font-size: 0.75rem;
+    }
+    
+    .stat-number-compact {
+        font-size: 0.9rem;
+    }
+    
+    .stat-label-compact {
+        font-size: 0.65rem;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.25rem !important;
+        flex-direction: column;
+    }
+    
+    
+    .text-center.mb-4 h3 {
+        font-size: 1.1rem;
+    }
+    
+    .text-center.mb-4 p {
+        font-size: 0.8rem;
+    }
+
+    /* Ensure quick action cards render 2 per row on mobile */
+    .quick-actions-grid .action-card-square {
+        width: calc(50% - 0.5rem);
+        max-width: calc(50% - 0.5rem);
+        flex: 1 1 calc(50% - 0.5rem);
+        height: 180px;
+    }
+    /* Override global flex column for quick actions grid to allow wrapping */
+    .quick-actions-grid {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+    }
+}
+
+/* Tablet adjustments to prefer 2 per row as well */
+@media (max-width: 768px) and (min-width: 577px) {
+    .action-card-square {
+        width: calc(50% - 0.75rem);
+        max-width: calc(50% - 0.75rem);
+        flex: 1 1 calc(50% - 0.75rem);
+    }
+}
+
+/* Square Action Cards - Balanced sizing */
+.action-card-square {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: 200px;
+    width: 200px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex: 0 0 auto;
+}
+
+/* Make all Bootstrap cards on dashboard rounded */
+.card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.action-card-square:hover .action-icon-square {
+    background: linear-gradient(135deg, #5a6fd8, #6a4190);
+    transform: scale(1.05);
+}
+
+.action-card-square:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.action-icon-square {
+    width: 100px;
+    height: 100px;
+    border-radius: 25%; /* Even more pronounced rounded corners */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    margin-bottom: 1rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    aspect-ratio: 1 / 1; /* Ensure it stays square */
+}
+
+.action-icon-square i {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    font-size: 0.8em; /* Keep icon slightly smaller than its background */
+    line-height: 1;
+}
+
+.action-title-square {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
+
+.action-description-square {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* Mobile-optimized action cards */
+@media (max-width: 992px) {
+    .action-card-square {
+        height: 160px;
+        width: 160px;
+        padding: 1rem;
+    }
+    
+    .action-icon-square {
+        width: 70px;
+        height: 70px;
+        border-radius: 25%; /* Even more pronounced rounded corners */
+        aspect-ratio: 1 / 1; /* Ensure it stays square */
+        font-size: 2.2rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .action-title-square {
+        font-size: 0.9rem;
+    }
+    
+    .action-description-square {
+        font-size: 0.75rem;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.8rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .action-card-square {
+        height: 140px;
+        width: 140px;
+        padding: 0.8rem;
+    }
+    
+    .action-icon-square {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-title-square {
+        font-size: 0.85rem;
+    }
+    
+    .action-description-square {
+        font-size: 0.7rem;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.6rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .action-card-square {
+        height: 120px;
+        width: 120px;
+        padding: 0.6rem;
+    }
+    
+    .action-icon-square {
+        width: 50px;
+        height: 50px;
+        font-size: 1.7rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .action-title-square {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+    
+    .action-description-square {
+        font-size: 0.6rem;
+        line-height: 1.3;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.5rem !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-compact {
+        width: 100%; /* Match full width on small mobile like stats */
+        max-width: 100%;
+    }
+    
+    .action-card-square {
+        height: 100px;
+        width: 100px;
+        padding: 0.5rem;
+    }
+    
+    .action-icon-square {
+        width: 40px;
+        height: 40px;
+        border-radius: 25%; /* Even more pronounced rounded corners */
+        aspect-ratio: 1 / 1; /* Ensure it stays square */
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .action-title-square {
+        font-size: 0.7rem;
+        line-height: 1.1;
+    }
+    
+    .action-description-square {
+        font-size: 0.55rem;
+        line-height: 1.2;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.4rem !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .welcome-compact {
+        width: 100%; /* Match full width on very small mobile like stats */
+        max-width: 100%;
+    }
+    
+    .action-card-square {
+        height: 90px;
+        width: 90px;
+        padding: 0.4rem;
+    }
+    
+    .action-icon-square {
+        width: 36px;
+        height: 36px;
+        border-radius: 25%; /* Even more pronounced rounded corners */
+        aspect-ratio: 1 / 1; /* Ensure it stays square */
+        font-size: 1.4rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .action-title-square {
+        font-size: 0.65rem;
+        line-height: 1.1;
+    }
+    
+    .action-description-square {
+        font-size: 0.5rem;
+        line-height: 1.1;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.3rem !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+    }
+}
+
+.stat-icon-compact {
+    width: 35px;
+    height: 35px;
+    border-radius: 25%; /* Even more pronounced rounded corners */
+    aspect-ratio: 1 / 1; /* Ensure it stays square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.stat-icon-compact i {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.stat-number-compact {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1;
+}
+
+.stat-label-compact {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+}
+
+.text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-6 {
+        font-size: 2rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .action-card {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+
+<script>
+// Navigation function for action cards
+function navigateToUrl(element) {
+    const url = element.getAttribute('data-url');
+    if (url && url !== '#') {
+        window.location.href = url;
+    }
+}
+
+// Track page view
+document.addEventListener('DOMContentLoaded', function() {
+    // Track dashboard page view
+    fetch('/analytics/track', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            event_type: 'page_view',
+            event_name: 'dashboard',
+            properties: {
+                user_id: {{ current_user.id }},
+                page: 'dashboard'
+            }
+        })
+    }).catch(console.error);
+    
+    // Track button clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.action-card')) {
+            const button = e.target.closest('.action-card');
+            const buttonName = button.querySelector('.action-title')?.textContent || 'Unknown Button';
+            
+            fetch('/analytics/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    event_type: 'button_click',
+                    event_name: buttonName,
+                    properties: {
+                        user_id: {{ current_user.id }},
+                        button_name: buttonName,
+                        page: 'dashboard'
+                    }
+                })
+            }).catch(console.error);
+        }
+    });
+    
+});
+</script>
+{% endblock %}

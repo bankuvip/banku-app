@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Shield Background -->
+  <path d="M16 2 L6 6 L6 20 C6 24 16 30 16 30 C16 30 26 24 26 20 L26 6 Z" fill="#1e40af" stroke="#1e3a8a" stroke-width="1"/>
+  
+  <!-- Bank Building Inside Shield -->
+  <rect x="10" y="12" width="12" height="8" fill="white" rx="1"/>
+  <polygon points="8,12 16,8 24,12" fill="white"/>
+  
+  <!-- Bank Columns -->
+  <rect x="11" y="12" width="1" height="8" fill="#1e40af"/>
+  <rect x="14" y="12" width="1" height="8" fill="#1e40af"/>
+  <rect x="17" y="12" width="1" height="8" fill="#1e40af"/>
+  <rect x="20" y="12" width="1" height="8" fill="#1e40af"/>
+  
+  <!-- Bank Symbol -->
+  <text x="16" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="4" font-weight="bold" fill="#1e40af">B</text>
+  
+  <!-- Shield Border -->
+  <path d="M16 2 L6 6 L6 20 C6 24 16 30 16 30 C16 30 26 24 26 20 L26 6 Z" fill="none" stroke="#fbbf24" stroke-width="0.5"/>
+</svg>

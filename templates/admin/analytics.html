@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-4">
+                <i class="fas fa-chart-bar me-2"></i>Analytics Dashboard
+            </h1>
+        </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users text-primary fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ analytics.users_this_month }}</h3>
+                    <p class="card-text text-muted">New Users This Month</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-university text-success fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ analytics.deals_this_month }}</h3>
+                    <p class="card-text text-muted">Deals This Month</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign text-warning fs-1 mb-2"></i>
+                    <h3 class="card-title">${{ "%.2f"|format(analytics.revenue_this_month) }}</h3>
+                    <p class="card-text text-muted">Revenue This Month</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-trophy text-info fs-1 mb-2"></i>
+                    <h3 class="card-title">{{ analytics.top_earners|length }}</h3>
+                    <p class="card-text text-muted">Top Earners</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Top Earners -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Top Earners</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics.top_earners %}
+                        {% for user, earnings in analytics.top_earners %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h6>
+                                <p class="text-muted small mb-0">{{ user.email }}</p>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-success">${{ "%.2f"|format(earnings) }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No earnings data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Platform Statistics -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Platform Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="p-3">
+                                <i class="fas fa-box text-primary fs-2 mb-2"></i>
+                                <h4 class="mb-1" id="total-products">-</h4>
+                                <p class="text-muted mb-0">Total Products</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="p-3">
+                                <i class="fas fa-cogs text-success fs-2 mb-2"></i>
+                                <h4 class="mb-1" id="total-services">-</h4>
+                                <p class="text-muted mb-0">Total Services</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="p-3">
+                                <i class="fas fa-brain text-warning fs-2 mb-2"></i>
+                                <h4 class="mb-1" id="total-knowledge">-</h4>
+                                <p class="text-muted mb-0">Knowledge Items</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="p-3">
+                                <i class="fas fa-lightbulb text-info fs-2 mb-2"></i>
+                                <h4 class="mb-1" id="total-needs">-</h4>
+                                <p class="text-muted mb-0">Needs Posted</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Analytics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Platform Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="p-4">
+                                <i class="fas fa-chart-line text-primary fs-1 mb-3"></i>
+                                <h4>Growth Tracking</h4>
+                                <p class="text-muted">Monitor user growth and platform adoption over time.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-4">
+                                <i class="fas fa-university text-success fs-1 mb-3"></i>
+                                <h4>Deal Success</h4>
+                                <p class="text-muted">Track successful deals and completion rates.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-4">
+                                <i class="fas fa-dollar-sign text-warning fs-1 mb-3"></i>
+                                <h4>Revenue Analysis</h4>
+                                <p class="text-muted">Analyze revenue streams and commission tracking.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load additional statistics
+async function loadPlatformStats() {
+    try {
+        const response = await fetch('/banks/stats');
+        const data = await response.json();
+        
+        document.getElementById('total-products').textContent = data.products || 0;
+        document.getElementById('total-services').textContent = data.services || 0;
+        document.getElementById('total-knowledge').textContent = data.knowledge || 0;
+        document.getElementById('total-needs').textContent = data.needs || 0;
+    } catch (error) {
+        console.error('Error loading platform stats:', error);
+    }
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadPlatformStats();
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

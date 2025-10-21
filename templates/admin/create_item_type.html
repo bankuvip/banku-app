@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}Create Item Type - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Create New Item Type</h2>
+                <a href="{{ url_for('admin.dynamic_item_types') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Item Types
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Item Type Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="createItemTypeForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="name" class="form-label">Internal Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="name" name="name" required>
+                                            <div class="form-text">Unique identifier (e.g., 'product', 'service', 'need')</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="display_name" class="form-label">Display Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="display_name" name="display_name" required>
+                                            <div class="form-text">Name shown to users</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                    <div class="form-text">Optional description of this item type</div>
+                                </div>
+
+                                <!-- Category and subcategory fields removed - ItemTypes ARE the categories -->
+
+                                <hr class="my-4">
+                                <h6 class="text-muted mb-3">Visual Styling</h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="icon_class" class="form-label">Icon Class</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="icon_class" name="icon_class" value="fas fa-box">
+                                                <span class="input-group-text">
+                                                    <i id="icon_preview" class="fas fa-box"></i>
+                                                </span>
+                                            </div>
+                                            <div class="form-text">FontAwesome icon class (e.g., 'fas fa-box', 'fas fa-university')</div>
+                                            
+                                            <!-- Icon picker -->
+                                            <div class="mt-2">
+                                                <label class="form-label small">Quick Pick Icons:</label>
+                                                <div class="d-flex flex-wrap gap-2" id="icon_picker">
+                                                    <!-- Business & Commerce -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-box">
+                                                        <i class="fas fa-box"></i> Box
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-university">
+                                                        <i class="fas fa-university"></i> Handshake
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-dollar-sign">
+                                                        <i class="fas fa-dollar-sign"></i> Dollar
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-shopping-cart">
+                                                        <i class="fas fa-shopping-cart"></i> Cart
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-store">
+                                                        <i class="fas fa-store"></i> Store
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-briefcase">
+                                                        <i class="fas fa-briefcase"></i> Briefcase
+                                                    </button>
+                                                    
+                                                    <!-- Technology & Development -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-code">
+                                                        <i class="fas fa-code"></i> Code
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-laptop-code">
+                                                        <i class="fas fa-laptop-code"></i> Laptop
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-mobile-alt">
+                                                        <i class="fas fa-mobile-alt"></i> Mobile
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-database">
+                                                        <i class="fas fa-database"></i> Database
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-cloud">
+                                                        <i class="fas fa-cloud"></i> Cloud
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-cog">
+                                                        <i class="fas fa-cog"></i> Settings
+                                                    </button>
+                                                    
+                                                    <!-- Creative & Ideas -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-lightbulb">
+                                                        <i class="fas fa-lightbulb"></i> Lightbulb
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-palette">
+                                                        <i class="fas fa-palette"></i> Palette
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-pen">
+                                                        <i class="fas fa-pen"></i> Pen
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-paint-brush">
+                                                        <i class="fas fa-paint-brush"></i> Brush
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-camera">
+                                                        <i class="fas fa-camera"></i> Camera
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-video">
+                                                        <i class="fas fa-video"></i> Video
+                                                    </button>
+                                                    
+                                                    <!-- Projects & Management -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-project-diagram">
+                                                        <i class="fas fa-project-diagram"></i> Project
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-tasks">
+                                                        <i class="fas fa-tasks"></i> Tasks
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-chart-line">
+                                                        <i class="fas fa-chart-line"></i> Chart
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-calendar-alt">
+                                                        <i class="fas fa-calendar-alt"></i> Calendar
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-clock">
+                                                        <i class="fas fa-clock"></i> Clock
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-flag">
+                                                        <i class="fas fa-flag"></i> Flag
+                                                    </button>
+                                                    
+                                                    <!-- Communication & Social -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-comments">
+                                                        <i class="fas fa-comments"></i> Comments
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-envelope">
+                                                        <i class="fas fa-envelope"></i> Email
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-phone">
+                                                        <i class="fas fa-phone"></i> Phone
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-users">
+                                                        <i class="fas fa-users"></i> Users
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-user-friends">
+                                                        <i class="fas fa-user-friends"></i> Friends
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-share-alt">
+                                                        <i class="fas fa-share-alt"></i> Share
+                                                    </button>
+                                                    
+                                                    <!-- Status & Actions -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-star">
+                                                        <i class="fas fa-star"></i> Star
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-heart">
+                                                        <i class="fas fa-heart"></i> Heart
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-thumbs-up">
+                                                        <i class="fas fa-thumbs-up"></i> Thumbs Up
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-check-circle">
+                                                        <i class="fas fa-check-circle"></i> Check
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-exclamation-triangle">
+                                                        <i class="fas fa-exclamation-triangle"></i> Warning
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-times-circle">
+                                                        <i class="fas fa-times-circle"></i> Cancel
+                                                    </button>
+                                                    
+                                                    <!-- Specialized -->
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-gavel">
+                                                        <i class="fas fa-gavel"></i> Gavel
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-gem">
+                                                        <i class="fas fa-gem"></i> Gem
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-bullseye">
+                                                        <i class="fas fa-bullseye"></i> Bullseye
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-eye">
+                                                        <i class="fas fa-eye"></i> Eye
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-info-circle">
+                                                        <i class="fas fa-info-circle"></i> Info
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm icon-option" data-icon="fas fa-question-circle">
+                                                        <i class="fas fa-question-circle"></i> Question
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="button_color" class="form-label">Button Color</label>
+                                            <select class="form-select" id="button_color" name="button_color">
+                                                <option value="primary">Primary (Blue)</option>
+                                                <option value="success">Success (Green)</option>
+                                                <option value="warning">Warning (Yellow)</option>
+                                                <option value="danger">Danger (Red)</option>
+                                                <option value="info">Info (Cyan)</option>
+                                                <option value="secondary">Secondary (Gray)</option>
+                                                <option value="dark">Dark (Black)</option>
+                                                <option value="purple">Purple</option>
+                                            </select>
+                                            <div class="form-text">Color theme for the item type card</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="border_color" class="form-label">Border Color</label>
+                                            <input type="color" class="form-control form-control-color" id="border_color" name="border_color" value="#007bff">
+                                            <div class="form-text">Custom border color (hex code)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="text_color" class="form-label">Text Color</label>
+                                            <input type="color" class="form-control form-control-color" id="text_color" name="text_color" value="#007bff">
+                                            <div class="form-text">Custom text color (hex code)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+                                <h6 class="text-muted mb-3">Completion Configuration</h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="completion_action" class="form-label">Completion Action</label>
+                                            <select class="form-select" id="completion_action" name="completion_action">
+                                                <option value="message">Show Message Only</option>
+                                                <option value="redirect">Redirect to URL</option>
+                                                <option value="both">Message + Redirect</option>
+                                            </select>
+                                            <div class="form-text">What happens after completion</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="redirect_url" class="form-label">Redirect URL</label>
+                                            <input type="text" class="form-control" id="redirect_url" name="redirect_url">
+                                            <div class="form-text">URL to redirect to (if applicable)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="completion_message" class="form-label">Completion Message</label>
+                                    <textarea class="form-control" id="completion_message" name="completion_message" rows="2">Item created successfully!</textarea>
+                                    <div class="form-text">Message shown after completion</div>
+                                </div>
+
+                                <hr class="my-4">
+                                <h6 class="text-muted mb-3">Display Settings</h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="order_index" class="form-label">Order Index</label>
+                                            <input type="number" class="form-control" id="order_index" name="order_index" value="0">
+                                            <div class="form-text">Lower numbers appear first</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                                <label class="form-check-label" for="is_active">
+                                                    Active
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="is_visible" name="is_visible" checked>
+                                                <label class="form-check-label" for="is_visible">
+                                                    Visible
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('admin.dynamic_item_types') }}" class="btn btn-secondary">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create Item Type
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Preview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="itemTypePreview">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6 id="previewDisplayName" class="mb-2">Item Type Name</h6>
+                                    <p id="previewDescription" class="text-muted small mb-2">Description will appear here</p>
+                                    <div class="d-flex gap-2">
+                                        <span id="previewCategory" class="badge bg-info">Category</span>
+                                        <span id="previewSubcategory" class="badge bg-light text-dark" style="display: none;">Subcategory</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="border rounded p-3">
+                                    <h6 class="mb-2">Configuration</h6>
+                                    <div class="small">
+                                        <div class="mb-1">
+                                            <strong>Action:</strong> <span id="previewAction" class="text-muted">Message</span>
+                                        </div>
+                                        <div class="mb-1">
+                                            <strong>Data Storage:</strong> <span class="text-info">Managed via Data Storage Mappings</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Help</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Categories:</h6>
+                            <ul class="small">
+                                <li><strong>Products:</strong> Physical or digital items</li>
+                                <li><strong>Services:</strong> Professional services</li>
+                                <li><strong>Experiences:</strong> Learning experiences</li>
+                                <li><strong>Opportunities:</strong> Business opportunities</li>
+                                <li><strong>Events:</strong> Events and gatherings</li>
+                                <li><strong>Information:</strong> Knowledge and data</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Completion Actions:</h6>
+                            <ul class="small">
+                                <li><strong>Message Only:</strong> Show success message</li>
+                                <li><strong>Redirect:</strong> Redirect to specific URL</li>
+                                <li><strong>Both:</strong> Show message then redirect</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Data Storage:</h6>
+                            <p class="small text-muted">Chatbot and bank connections are now managed via the <strong>Data Storage Mappings</strong> page. This allows for more flexible configuration of how data flows from chatbots to storage banks.</p>
+                            <a href="{{ url_for('admin.dynamic_data_mappings') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-cog me-1"></i>Manage Data Storage Mappings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createItemTypeForm');
+    const previewDisplayName = document.getElementById('previewDisplayName');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewCategory = document.getElementById('previewCategory');
+    const previewSubcategory = document.getElementById('previewSubcategory');
+    const previewChatbot = document.getElementById('previewChatbot');
+    const previewBank = document.getElementById('previewBank');
+    const previewAction = document.getElementById('previewAction');
+
+    // Update preview when inputs change
+    function updatePreview() {
+        const displayName = document.getElementById('display_name').value || 'Item Type Name';
+        const description = document.getElementById('description').value || 'Description will appear here';
+        const chatbotId = document.getElementById('chatbot_id').value;
+        const bankId = document.getElementById('bank_id').value;
+        const action = document.getElementById('completion_action').value;
+
+        previewDisplayName.textContent = displayName;
+        previewDescription.textContent = description;
+        
+        // Hide subcategory since it's not used anymore
+        previewSubcategory.style.display = 'none';
+
+        // Chatbot and bank preview removed - now managed via Data Storage Mappings
+
+        // Update action
+        const actionText = {
+            'message': 'Message Only',
+            'redirect': 'Redirect to URL',
+            'both': 'Message + Redirect'
+        };
+        previewAction.textContent = actionText[action] || 'Message';
+    }
+
+    // Add event listeners
+    document.getElementById('display_name').addEventListener('input', updatePreview);
+    document.getElementById('description').addEventListener('input', updatePreview);
+    // Category and subcategory fields removed - ItemTypes ARE the categories
+    // Chatbot and bank fields removed - now managed via Data Storage Mappings
+    document.getElementById('completion_action').addEventListener('change', updatePreview);
+
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert checkboxes
+        data.is_active = document.getElementById('is_active').checked;
+        data.is_visible = document.getElementById('is_visible').checked;
+        
+        // Convert empty strings to null for optional fields
+        // Chatbot and bank fields removed - now managed via Data Storage Mappings
+        if (!data.redirect_url) data.redirect_url = null;
+        
+        fetch('{{ url_for("admin.create_item_type") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': formData.get('csrf_token')
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("admin.dynamic_item_types") }}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the item type.');
+        });
+    });
+
+    // Icon preview functionality
+    const iconInput = document.getElementById('icon_class');
+    const iconPreview = document.getElementById('icon_preview');
+    
+    // Update preview when typing
+    iconInput.addEventListener('input', function() {
+        iconPreview.className = this.value || 'fas fa-box';
+    });
+    
+    // Handle icon picker buttons
+    document.querySelectorAll('.icon-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const iconClass = this.dataset.icon;
+            iconInput.value = iconClass;
+            iconPreview.className = iconClass;
+            
+            // Update button states
+            document.querySelectorAll('.icon-option').forEach(btn => btn.classList.remove('btn-primary'));
+            this.classList.add('btn-primary');
+        });
+    });
+    
+    // Initialize preview
+    updatePreview();
+});
+</script>
+{% endblock %}

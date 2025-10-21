@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}My Needs - AI Matching{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>My Needs
+                    </h1>
+                    <p class="text-muted">{{ needs|length }} needs created</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('ai_matching.create_need') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Need
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Needs List
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="statusFilter" id="allNeeds" checked>
+                            <label class="btn btn-outline-secondary" for="allNeeds">All</label>
+                            
+                            <input type="radio" class="btn-check" name="statusFilter" id="activeNeeds">
+                            <label class="btn btn-outline-secondary" for="activeNeeds">Active</label>
+                            
+                            <input type="radio" class="btn-check" name="statusFilter" id="fulfilledNeeds">
+                            <label class="btn btn-outline-secondary" for="fulfilledNeeds">Fulfilled</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if needs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Budget</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Matches</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for need in needs %}
+                                    <tr data-status="{{ need.status }}">
+                                        <td>
+                                            <div>
+                                                <div class="fw-semibold">{{ need.title }}</div>
+                                                <div class="text-muted small">{{ need.description[:100] }}{% if need.description|length > 100 %}...{% endif %}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ need.category }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {% if need.budget_range %}
+                                                    {{ need.budget_range }}
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {% if need.location %}
+                                                    {{ need.location }}
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if need.status == 'active' else 'secondary' if need.status == 'fulfilled' else 'warning' }}">
+                                                {{ need.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {% set match_count = need.matches|length %}
+                                                {% if match_count > 0 %}
+                                                    <span class="badge bg-success">{{ match_count }} matches</span>
+                                                {% else %}
+                                                    <span class="text-muted">No matches</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {{ need.created_at.strftime('%b %d, %Y') }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('ai_matching.view_need', need_id=need.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-success" onclick="findMatches({{ need.id }})">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="editNeed({{ need.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteNeed({{ need.id }}, '{{ need.title }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-lightbulb text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">No needs created yet</h5>
+                            <p class="text-muted">Create your first need to start finding matching items.</p>
+                            <a href="{{ url_for('ai_matching.create_need') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Need
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter needs by status
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('input[name="statusFilter"]');
+    const rows = document.querySelectorAll('tbody tr');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const filter = this.id;
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (filter === 'allNeeds') {
+                    row.style.display = '';
+                } else if (filter === 'activeNeeds' && status === 'active') {
+                    row.style.display = '';
+                } else if (filter === 'fulfilledNeeds' && status === 'fulfilled') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+function findMatches(needId) {
+    fetch('{{ url_for("ai_matching.matches", need_id=0) }}'.replace('0', needId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'refresh'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{{ url_for("ai_matching.view_need", need_id=0) }}'.replace('0', needId);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while searching for matches.');
+    });
+}
+
+function editNeed(needId) {
+    window.location.href = '{{ url_for("ai_matching.create_need") }}?edit=' + needId;
+}
+
+function deleteNeed(needId, needTitle) {
+    if (confirm(`Are you sure you want to delete "${needTitle}"?`)) {
+        fetch('{{ url_for("ai_matching.create_need") }}', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                need_id: needId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the need.');
+        });
+    }
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

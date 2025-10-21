@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}My Organizations{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-building me-2"></i>My Organizations</h2>
+                <a href="{{ url_for('organizations.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create New Organization
+                </a>
+            </div>
+            
+            {% if organizations %}
+            <div class="row">
+                {% for organization in organizations %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3">
+                                    {% if organization.logo %}
+                                        <img src="{{ organization.logo }}?v={{ organization.updated_at.strftime('%Y%m%d%H%M%S') if organization.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ organization.name }} Logo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                                    {% else %}
+                                        <i class="{{ organization.organization_type.icon_class }} fa-2x text-{{ organization.organization_type.color_class }}"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-1">{{ organization.name }}</h5>
+                                    <span class="badge bg-{{ organization.organization_type.color_class }}">
+                                        {{ organization.organization_type.display_name }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <p class="card-text text-muted">{{ organization.description[:100] }}{% if organization.description|length > 100 %}...{% endif %}</p>
+                            
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <div class="small text-muted">Members</div>
+                                    <div class="fw-bold">{{ organization.member_count }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Content</div>
+                                    <div class="fw-bold">{{ organization.content_count }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="small text-muted">Status</div>
+                                    <div>
+                                        {% if organization.status == 'active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif organization.status == 'pending_verification' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif organization.status == 'closed' %}
+                                            <span class="badge bg-secondary">Closed</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ organization.status.title() }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="small text-muted">
+                                    <i class="fas fa-{{ 'globe' if organization.is_public else 'lock' }} me-1"></i>
+                                    {{ 'Public' if organization.is_public else 'Private' }}
+                                    {% if organization.is_verified %}
+                                        <i class="fas fa-shield-alt text-primary ms-1" title="Verified"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('organizations.view', slug=organization.slug) }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center" title="View Organization" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-eye text-dark"></i>
+                                    </a>
+                                    {% if organization.status == 'active' %}
+                                    <a href="{{ url_for('organizations.settings', slug=organization.slug) }}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" title="Organization Settings" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-cog text-dark"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <small class="text-muted">
+                                Created {{ organization.created_at.strftime('%B %d, %Y') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">No Organizations Yet</h4>
+                <p class="text-muted mb-4">Create your first organization to start collaborating with others!</p>
+                <a href="{{ url_for('organizations.create') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Create Your First Organization
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

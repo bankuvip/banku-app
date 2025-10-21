@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Wallet Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-wallet me-2"></i>Wallet Management
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('admin.withdrawal_requests') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-clock me-1"></i>Pending Withdrawals ({{ stats.pending_withdrawals }})
+                    </a>
+                    <a href="{{ url_for('admin.wallet_transactions') }}" class="btn btn-outline-info">
+                        <i class="fas fa-list me-1"></i>All Transactions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Wallets</h6>
+                            <h3 class="mb-0">{{ stats.total_wallets }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-wallet fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Wallets</h6>
+                            <h3 class="mb-0">{{ stats.active_wallets }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Balance</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(stats.total_balance) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Withdrawals</h6>
+                            <h3 class="mb-0">{{ stats.pending_withdrawals }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Withdrawal Requests -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Withdrawal Requests</h5>
+                    <a href="{{ url_for('admin.withdrawal_requests') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_withdrawals %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for withdrawal in recent_withdrawals %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('admin.user_wallet_detail', user_id=withdrawal.user_id) }}">
+                                                {{ withdrawal.user.username }}
+                                            </a>
+                                        </td>
+                                        <td>${{ "%.2f"|format(withdrawal.amount) }}</td>
+                                        <td>{{ withdrawal.payment_method.replace('_', ' ').title() }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if withdrawal.status == 'pending' %}warning{% elif withdrawal.status == 'approved' %}success{% elif withdrawal.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                                {{ withdrawal.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ withdrawal.created_at.strftime('%m/%d/%Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No withdrawal requests</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Transactions</h5>
+                    <a href="{{ url_for('admin.wallet_transactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Balance</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('admin.user_wallet_detail', user_id=transaction.user_id) }}">
+                                                {{ transaction.user.username }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if transaction.transaction_type == 'deposit' %}success{% elif transaction.transaction_type == 'withdrawal' %}warning{% else %}secondary{% endif %}">
+                                                {{ transaction.transaction_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td class="{% if transaction.transaction_type in ['deposit', 'refund'] %}text-success{% else %}text-danger{% endif %}">
+                                            {% if transaction.transaction_type in ['deposit', 'refund'] %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                                        </td>
+                                        <td>${{ "%.2f"|format(transaction.balance_after) }}</td>
+                                        <td>{{ transaction.created_at.strftime('%m/%d/%Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No transactions</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.withdrawal_requests') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-clock me-2"></i>Process Withdrawals
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.wallet_transactions') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-list me-2"></i>View All Transactions
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>User Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="exportWalletData()">
+                                <i class="fas fa-download me-2"></i>Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportWalletData() {
+    // Implement wallet data export functionality
+    alert('Wallet data export functionality will be implemented');
+}
+</script>
+{% endblock %}

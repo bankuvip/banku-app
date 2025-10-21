@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}{{ flow.name }} - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-robot me-2"></i>{{ flow.name }}
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.chatbots') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Chatbots
+                    </a>
+                    <a href="{{ url_for('admin.edit_chatbot', flow_id=flow.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Flow Information -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Flow Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Name:</strong><br>
+                        <span class="text-muted">{{ flow.name }}</span>
+                    </div>
+                    
+                    {% if flow.description %}
+                    <div class="mb-3">
+                        <strong>Description:</strong><br>
+                        <span class="text-muted">{{ flow.description }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong><br>
+                        {% if flow.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Questions:</strong><br>
+                        <span class="text-muted">{{ flow.questions|length }} questions</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Created:</strong><br>
+                        <span class="text-muted">{{ flow.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong><br>
+                        <span class="text-muted">{{ flow.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin.edit_chatbot', flow_id=flow.id) }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Flow
+                        </a>
+                        <a href="{{ url_for('admin.chatbot_responses', flow_id=flow.id) }}" class="btn btn-info">
+                            <i class="fas fa-comments me-2"></i>View Responses
+                        </a>
+                        <a href="{{ url_for('admin.chatbot_step_blocks', flow_id=flow.id) }}" class="btn btn-info">
+                            <i class="fas fa-layer-group me-2"></i>Step Blocks
+                        </a>
+                        <a href="{{ url_for('admin.chatbot_analytics', flow_id=flow.id) }}" class="btn btn-warning">
+                            <i class="fas fa-chart-bar me-2"></i>Analytics
+                        </a>
+                        <button type="button" class="btn btn-{% if flow.is_active %}warning{% else %}success{% endif %}" 
+                                onclick="toggleFlow({{ flow.id }})">
+                            <i class="fas fa-{% if flow.is_active %}pause{% else %}play{% endif %} me-2"></i>
+                            {% if flow.is_active %}Deactivate{% else %}Activate{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Questions Preview -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Questions Preview</h5>
+                </div>
+                <div class="card-body">
+                    {% if flow.questions %}
+                        <div class="questions-preview">
+                            {% for question in flow.questions %}
+                            <div class="question-preview mb-4 p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">Question {{ loop.index }}</h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-{% if question.is_required %}danger{% else %}secondary{% endif %}">
+                                            {% if question.is_required %}Required{% else %}Optional{% endif %}
+                                        </span>
+                                        <span class="badge bg-info">{{ question.question_type|title }}</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="mb-2"><strong>{{ question.question_text }}</strong></p>
+                                
+                                {% if question.placeholder %}
+                                <p class="text-muted small mb-2">Placeholder: "{{ question.placeholder }}"</p>
+                                {% endif %}
+                                
+                                {% if question.help_text %}
+                                <p class="text-muted small mb-2">{{ question.help_text }}</p>
+                                {% endif %}
+                                
+                                <!-- Show options for select/radio/checkbox -->
+                                {% if question.options and question.question_type in ['select', 'radio', 'checkbox'] %}
+                                <div class="options-preview">
+                                    <strong class="small">Options:</strong>
+                                    <ul class="list-unstyled small text-muted mb-0">
+                                        {% for option in question.options %}
+                                        <li>• {{ option }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Show validation rules -->
+                                {% if question.validation_rules %}
+                                <div class="validation-preview">
+                                    <strong class="small">Validation:</strong>
+                                    <ul class="list-unstyled small text-muted mb-0">
+                                        {% if question.validation_rules.min_length %}
+                                        <li>• Min length: {{ question.validation_rules.min_length }}</li>
+                                        {% endif %}
+                                        {% if question.validation_rules.max_length %}
+                                        <li>• Max length: {{ question.validation_rules.max_length }}</li>
+                                        {% endif %}
+                                        {% if question.validation_rules.pattern %}
+                                        <li>• Pattern: {{ question.validation_rules.pattern }}</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-question-circle text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No Questions</h5>
+                            <p class="text-muted">This flow doesn't have any questions yet.</p>
+                            <a href="{{ url_for('admin.edit_chatbot', flow_id=flow.id) }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Add Questions
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFlow(flowId) {
+    fetch(`/admin/chatbots/${flowId}/toggle`, {
+        method: 'POST',
+        headers: {
+            
+            'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the flow status.');
+    });
+}
+</script>
+{% endblock %}

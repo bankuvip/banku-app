@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}System Health{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-heartbeat me-2"></i>System Health</h2>
+                <button class="btn btn-outline-primary" onclick="refreshHealth()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="overall-score">--</h4>
+                            <p class="card-text">Overall Health Score</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-heart fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="response-time">--</h4>
+                            <p class="card-text">Avg Response Time (ms)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tachometer-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="error-rate">--</h4>
+                            <p class="card-text">Error Rate (%)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="active-users">--</h4>
+                            <p class="card-text">Active Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-microchip me-2"></i>CPU Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="cpu-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="cpu-text">0%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-memory me-2"></i>Memory Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="memory-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="memory-text">0%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health History Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Health History (Last 24 Hours)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="healthChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Health Records -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Health Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Score</th>
+                                    <th>Response Time</th>
+                                    <th>Error Rate</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                </tr>
+                            </thead>
+                            <tbody id="health-records">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let healthChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadHealthData();
+    initializeChart();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadHealthData, 30000);
+});
+
+function loadHealthData() {
+    fetch('/admin/analytics/health/data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateHealthDisplay(data.health);
+            } else {
+                console.error('Error loading health data:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading health data:', error);
+        });
+}
+
+function updateHealthDisplay(healthData) {
+    if (healthData && healthData.length > 0) {
+        const latest = healthData[0];
+        
+        // Update overview cards
+        document.getElementById('overall-score').textContent = latest.overall_score.toFixed(1);
+        document.getElementById('response-time').textContent = latest.response_time_avg ? latest.response_time_avg.toFixed(2) : '--';
+        document.getElementById('error-rate').textContent = latest.error_rate ? latest.error_rate.toFixed(2) : '--';
+        document.getElementById('active-users').textContent = latest.active_users || '--';
+        
+        // Update progress bars
+        const cpuUsage = latest.cpu_usage || 0;
+        const memoryUsage = latest.memory_usage || 0;
+        
+        document.getElementById('cpu-progress').style.width = cpuUsage + '%';
+        document.getElementById('cpu-text').textContent = cpuUsage.toFixed(1) + '%';
+        
+        document.getElementById('memory-progress').style.width = memoryUsage + '%';
+        document.getElementById('memory-text').textContent = memoryUsage.toFixed(1) + '%';
+        
+        // Update chart
+        updateChart(healthData);
+        
+        // Update table
+        updateHealthTable(healthData);
+    }
+}
+
+function updateChart(healthData) {
+    const labels = healthData.map(h => new Date(h.recorded_at).toLocaleTimeString());
+    const scores = healthData.map(h => h.overall_score);
+    const responseTimes = healthData.map(h => h.response_time_avg || 0);
+    const errorRates = healthData.map(h => h.error_rate || 0);
+    
+    if (healthChart) {
+        healthChart.destroy();
+    }
+    
+    const ctx = document.getElementById('healthChart').getContext('2d');
+    healthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Health Score',
+                data: scores,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }, {
+                label: 'Response Time (ms)',
+                data: responseTimes,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1,
+                yAxisID: 'y1'
+            }, {
+                label: 'Error Rate (%)',
+                data: errorRates,
+                borderColor: 'rgb(255, 205, 86)',
+                backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                tension: 0.1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    min: 0,
+                    max: 100
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+function updateHealthTable(healthData) {
+    const tbody = document.getElementById('health-records');
+    tbody.innerHTML = '';
+    
+    healthData.slice(0, 10).forEach(record => {
+        const row = document.createElement('tr');
+        
+        const statusClass = record.health_status === 'healthy' ? 'success' : 
+                           record.health_status === 'warning' ? 'warning' : 'danger';
+        
+        row.innerHTML = `
+            <td>${new Date(record.recorded_at).toLocaleString()}</td>
+            <td><span class="badge bg-${statusClass}">${record.health_status}</span></td>
+            <td>${record.overall_score.toFixed(1)}</td>
+            <td>${record.response_time_avg ? record.response_time_avg.toFixed(2) + 'ms' : '--'}</td>
+            <td>${record.error_rate ? record.error_rate.toFixed(2) + '%' : '--'}</td>
+            <td>${record.cpu_usage ? record.cpu_usage.toFixed(1) + '%' : '--'}</td>
+            <td>${record.memory_usage ? record.memory_usage.toFixed(1) + '%' : '--'}</td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function initializeChart() {
+    const ctx = document.getElementById('healthChart').getContext('2d');
+    healthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+function refreshHealth() {
+    loadHealthData();
+}
+</script>
+{% endblock %}

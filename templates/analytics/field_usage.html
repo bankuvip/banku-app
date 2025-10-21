@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Field Usage Analytics - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Field Usage Analytics
+                </h1>
+                <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ field_usage_data|length }}</h4>
+                    <p class="card-text">Total Field Combinations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ top_fields_by_type|length }}</h4>
+                    <p class="card-text">Item Types Tracked</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ field_usage_data|sum(attribute='total_searches') }}</h4>
+                    <p class="card-text">Total Search Events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Fields by Item Type -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trophy me-2"></i>Top Fields by Item Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item_type, fields in top_fields_by_type.items() %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-tag me-2"></i>{{ item_type.title() }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if fields %}
+                                        {% for field in fields %}
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>{{ field.field_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ field.total_searches }} searches</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-{% if field.total_searches >= 100 %}success{% elif field.total_searches >= 50 %}warning{% else %}secondary{% endif %}">
+                                                    {{ "%.1f"|format(field.search_frequency) }}/user
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted">No search data yet</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Field Usage Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Detailed Field Usage
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Type</th>
+                                    <th>Field Name</th>
+                                    <th>Total Searches</th>
+                                    <th>Unique Searches</th>
+                                    <th>Search Frequency</th>
+                                    <th>Last Used</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for field in field_usage_data %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ field.item_type.title() }}</span>
+                                    </td>
+                                    <td>
+                                        <code>{{ field.field_name }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ field.total_searches }}</strong>
+                                    </td>
+                                    <td>{{ field.unique_searches }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if field.search_frequency >= 5 %}success{% elif field.search_frequency >= 3 %}warning{% else %}secondary{% endif %}">
+                                            {{ "%.1f"|format(field.search_frequency) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if field.last_used %}
+                                            <small>{{ field.last_used[:10] }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Never</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if field.total_searches >= 100 %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-rocket me-1"></i>High Priority
+                                            </span>
+                                        {% elif field.total_searches >= 50 %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-arrow-up me-1"></i>Medium Priority
+                                            </span>
+                                        {% elif field.total_searches >= 20 %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-eye me-1"></i>Watch
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-clock me-1"></i>Low Priority
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.table th {
+    border-top: none;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Optimization Suggestions - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Optimization Suggestions
+                </h1>
+                <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ suggestions|selectattr('priority', 'equalto', 'high')|list|length }}</h4>
+                    <p class="card-text">High Priority</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ suggestions|selectattr('priority', 'equalto', 'medium')|list|length }}</h4>
+                    <p class="card-text">Medium Priority</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h4 class="card-title">{{ suggestions|selectattr('priority', 'equalto', 'low')|list|length }}</h4>
+                    <p class="card-text">Low Priority</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Database Structure -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-database me-2"></i>Current Database Structure
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Your Item table currently has <strong>{{ current_columns|length }} columns</strong>.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Core Fields (Always Fast):</h6>
+                            <div class="mb-2">
+                                {% for field in ['id', 'title', 'category', 'price', 'location', 'created_at'] %}
+                                    {% if field in current_columns %}
+                                        <span class="badge bg-success me-1 mb-1">{{ field }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Category-Specific Fields (Fast for Common Searches):</h6>
+                            <div class="mb-2">
+                                {% for field in current_columns %}
+                                    {% if field not in ['id', 'title', 'category', 'subcategory', 'price', 'location', 'created_at', 'updated_at', 'profile_id', 'tags', 'images_media', 'owner_type', 'owner_name', 'owner_link', 'pricing_type', 'currency', 'is_available', 'is_verified', 'rating', 'review_count', 'views', 'search_analytics', 'type_data', 'field_usage_stats'] %}
+                                        <span class="badge bg-primary me-1 mb-1">{{ field }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optimization Suggestions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-rocket me-2"></i>AI-Powered Optimization Suggestions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if suggestions %}
+                        {% for suggestion in suggestions %}
+                        <div class="card mb-3 border-{% if suggestion.priority == 'high' %}danger{% elif suggestion.priority == 'medium' %}warning{% else %}info{% endif %}">
+                            <div class="card-header bg-{% if suggestion.priority == 'high' %}danger{% elif suggestion.priority == 'medium' %}warning{% else %}info{% endif %} text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-{% if suggestion.type == 'promote_to_indexed' %}database{% elif suggestion.type == 'promote_to_column' %}arrow-up{% else %}eye{% endif %} me-2"></i>
+                                        {{ suggestion.type.replace('_', ' ').title() }}
+                                    </h6>
+                                    <span class="badge bg-white text-{% if suggestion.priority == 'high' %}danger{% elif suggestion.priority == 'medium' %}warning{% else %}info{% endif %}">
+                                        {{ suggestion.priority.title() }} Priority
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6>{{ suggestion.item_type.title() }} - {{ suggestion.field_name }}</h6>
+                                        <p class="text-muted">{{ suggestion.reason }}</p>
+                                        <div class="alert alert-light">
+                                            <strong>Recommended Action:</strong> {{ suggestion.action }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        {% if suggestion.type == 'promote_to_indexed' %}
+                                            <button class="btn btn-outline-primary btn-sm" onclick="addIndex('{{ suggestion.field_name }}')">
+                                                <i class="fas fa-plus me-2"></i>Add Index
+                                            </button>
+                                        {% elif suggestion.type == 'promote_to_column' %}
+                                            <button class="btn btn-outline-success btn-sm" onclick="addColumn('{{ suggestion.field_name }}', '{{ suggestion.item_type }}')">
+                                                <i class="fas fa-arrow-up me-2"></i>Promote Field
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-outline-info btn-sm" onclick="optimizeUI('{{ suggestion.field_name }}', '{{ suggestion.item_type }}')">
+                                                <i class="fas fa-eye me-2"></i>Optimize UI
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5>No Optimization Suggestions</h5>
+                            <p class="text-muted">Your system is already well-optimized! Continue collecting data to get more insights.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Implementation Guide -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-book me-2"></i>Implementation Guide
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-database me-2"></i>Add Database Index</h6>
+                            <p class="text-muted">For fields with high search frequency, add database indexes to improve query performance.</p>
+                            <code>CREATE INDEX idx_item_fieldname ON item(fieldname);</code>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-arrow-up me-2"></i>Promote to Column</h6>
+                            <p class="text-muted">Move frequently searched fields from JSON storage to dedicated database columns.</p>
+                            <code>ALTER TABLE item ADD COLUMN fieldname VARCHAR(100);</code>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-eye me-2"></i>Optimize UI</h6>
+                            <p class="text-muted">Make popular fields more prominent in search interfaces and forms.</p>
+                            <code>Move field higher in form order</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addIndex(fieldName) {
+    if (confirm(`Add database index for ${fieldName}? This will improve search performance.`)) {
+        // Here you would implement the actual index creation
+        alert(`Index for ${fieldName} would be created here. In production, this would run a database migration.`);
+    }
+}
+
+function addColumn(fieldName, itemType) {
+    if (confirm(`Promote ${fieldName} to a dedicated column for ${itemType}? This will improve search performance.`)) {
+        // Here you would implement the actual column addition
+        alert(`Column ${fieldName} would be added here. In production, this would run a database migration.`);
+    }
+}
+
+function optimizeUI(fieldName, itemType) {
+    if (confirm(`Optimize UI for ${fieldName} in ${itemType}? This will make the field more prominent.`)) {
+        // Here you would implement the actual UI optimization
+        alert(`UI optimization for ${fieldName} would be implemented here.`);
+    }
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

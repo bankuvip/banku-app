@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Add Auction - Choose Your Path{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-gavel me-2 text-primary"></i>
+                    Add Your Auction
+                </h4>
+                <a href="{{ url_for('profiles.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-8">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What is an Auction?</h6>
+                        <p class="mb-2"><strong>Auctions are competitive bidding processes where items or services are sold to the highest bidder.</strong> They create market-driven pricing through competition.</p>
+                        <p class="mb-0"><strong>Examples:</strong> Art auctions, estate sales, charity auctions, online bidding, government auctions, liquidation sales.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center mb-4">
+                        <h4 class="text-primary">Choose Your Path</h4>
+                        <p class="text-muted">Select how you want to add your auction</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <a href="{{ url_for('profiles.create_auction_form', path_type='advanced') }}" class="btn btn-primary btn-lg w-100 p-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-star fa-2x me-3"></i>
+                                <div class="text-start">
+                                    <div class="fw-bold">Advanced Add <span class="badge bg-light text-primary ms-1">Recommended</span></div>
+                                    <small>Step-by-step • 5-8 minutes • Maximum points</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <a href="{{ url_for('profiles.create_auction_form', path_type='quick') }}" class="btn btn-warning btn-lg w-100 p-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-bolt fa-2x me-3"></i>
+                                <div class="text-start">
+                                    <div class="fw-bold">Quick Add</div>
+                                    <small>Fast & simple • 2-3 minutes • Basic points</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-university me-2"></i>Bank Management</h2>
+                <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create New Bank
+                </a>
+            </div>
+
+            <!-- Banks List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Configured Banks</h5>
+                </div>
+                <div class="card-body">
+                    {% if banks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Content Count</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bank in banks %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ bank.sort_order or 0 }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="{{ bank.icon or 'fas fa-database' }} me-2" 
+                                                   style="color: {{ bank.color or '#007bff' }}; font-size: 1.2em;"></i>
+                                                <strong>{{ bank.name }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ bank.bank_type.title() }}</span>
+                                            {% if bank.organization_type %}
+                                                <br><small class="text-muted">{{ bank.organization_type.title() }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if bank.description %}
+                                                {{ bank.description[:50] }}{% if bank.description|length > 50 %}...{% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ bank.content_count }}</span>
+                                        </td>
+                                        <td>
+                                            {% if bank.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('banks.bank_items', bank_slug=bank.slug) }}" 
+                                                   class="btn btn-outline-primary" title="View Bank">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('admin.edit_bank', bank_id=bank.id) }}" 
+                                                   class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger delete-btn" 
+                                                        data-bank-id="{{ bank.id }}" 
+                                                        data-bank-name="{{ bank.name }}"
+                                                        title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-university fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No banks configured</h5>
+                            <p class="text-muted">Create your first bank to get started.</p>
+                            <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Bank
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the bank <strong id="deleteBankName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone and will remove all content from this bank.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete Bank</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let deleteBankId = null;
+    
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteBankId = this.dataset.bankId;
+            document.getElementById('deleteBankName').textContent = this.dataset.bankName;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (deleteBankId) {
+            fetch(`/admin/banks/${deleteBankId}/delete`, {
+        method: 'POST',
+        headers: {
+            
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the bank.');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

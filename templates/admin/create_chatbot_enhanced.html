@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Enhanced{% endif %} Chatbot Creator - BankU{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot-creator.css') }}?v={{ range(1000, 9999) | random }}">
+<script>
+    {% if is_edit and flow_data %}
+    window.isEditMode = true;
+    window.flowData = {{ flow_data | tojson | safe }};
+    {% else %}
+    window.isEditMode = false;
+    window.flowData = null;
+    {% endif %}
+</script>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-1">
+                                <i class="fas fa-robot me-2"></i>{% if is_edit %}Edit{% else %}Enhanced{% endif %} Chatbot Creator
+                            </h3>
+                            <p class="mb-0 opacity-75">{% if is_edit %}Edit your chatbot with advanced branching logic{% else %}Create intelligent chatbots with advanced branching logic{% endif %}</p>
+                        </div>
+                        <a href="/admin/chatbots" class="btn btn-light btn-sm" style="color: #374151; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.3);">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Chatbots
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <!-- Form wrapper for auto-save -->
+                    <div id="chatbot-form">
+                    
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Chatbot Name *</label>
+                            <input type="text" class="form-control form-control-lg" id="chatbotName" placeholder="Enter chatbot name" value="{% if flow_data %}{{ flow_data.name }}{% endif %}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Description</label>
+                            <input type="text" class="form-control form-control-lg" id="chatbotDescription" placeholder="Brief description (optional)" value="{% if flow_data %}{{ flow_data.description }}{% endif %}">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Steps Section -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0"><i class="fas fa-layer-group me-2 text-primary"></i>Steps</h4>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addStep()">
+                            <i class="fas fa-plus me-1"></i>Add Step
+                        </button>
+                    </div>
+                    
+                    <div id="stepsContainer">
+                        <!-- Steps will be added here -->
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewChatbot()">
+                            <i class="fas fa-eye me-1"></i>Preview
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="createChatbot()" id="submit-btn">
+                                <i class="fas fa-check me-1"></i>
+                                <span id="submit-text">{% if is_edit %}Update{% else %}Create{% endif %} Chatbot</span>
+                                <span id="submit-spinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                            </button>
+                            
+                            <!-- Status Indicator -->
+                            <div id="status-indicator" class="mt-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-cog fa-spin me-2"></i>
+                                    <span id="status-text">Processing...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    </div> <!-- End chatbot-form wrapper -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step Template -->
+<template id="stepTemplate">
+    <div class="card mb-3 step-item">
+        <div class="card-header step-header">
+            <div class="step-header-content">
+                <div class="step-title-section">
+                    <div class="step-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="step-info">
+                        <div class="step-title-display">Step 1</div>
+                        <div class="step-description-display">Step description</div>
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge step-required-badge">Required</span>
+                        <span class="badge step-questions-count">0 questions</span>
+                    </div>
+                </div>
+                <div class="step-controls">
+                    <button type="button" class="btn btn-sm btn-icon" onclick="moveStepUp(this)" title="Move Up">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon" onclick="moveStepDown(this)" title="Move Down">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-success" onclick="addQuestion(this)" title="Add Question">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-toggle" onclick="toggleStep(this)" title="Expand">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="removeStep(this)" title="Delete Step">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Expanded Form (hidden when collapsed) -->
+            <div class="step-form-section">
+                <!-- Step Name and Required on same line -->
+                <div class="row g-2 mt-2">
+                    <div class="col-md-9">
+                        <label class="form-label">Step Name</label>
+                        <input type="text" class="form-control form-control-sm step-name" placeholder="Step Name" onchange="updateStepDisplay(this)">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Required</label>
+                        <select class="form-select form-select-sm step-required" onchange="updateStepDisplay(this)">
+                            <option value="true">Required</option>
+                            <option value="false">Optional</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Description on separate line -->
+                <div class="row g-2 mt-2">
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control form-control-sm step-description" placeholder="Step Description" onchange="updateStepDisplay(this)">
+                    </div>
+                </div>
+                
+                <!-- Completion Message on separate line -->
+                <div class="row g-2 mt-2">
+                    <div class="col-12">
+                        <label class="form-label">Completion Message</label>
+                        <input type="text" class="form-control form-control-sm step-message" placeholder="Message shown when step is completed">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body step-content">
+            <div class="questions-container">
+                <!-- Questions will be added here -->
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Question Template -->
+<template id="questionTemplate">
+    <div class="card mb-2 question-item" data-question-id="">
+        <div class="card-header question-header">
+            <div class="question-header-content">
+                <div class="question-title-section">
+                    <div class="question-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="question-info">
+                        <div class="question-title-display">Question 1</div>
+                        <div class="question-type-display">Text Input</div>
+                    </div>
+                    <div class="question-badges">
+                        <span class="badge question-required-badge optional">Optional</span>
+                        <span class="badge question-default-badge">Show</span>
+                        <span class="badge question-branching-badge" style="display: none;">Branching</span>
+                    </div>
+                </div>
+                <div class="question-controls">
+                    <button type="button" class="btn btn-sm btn-icon" onclick="moveQuestionUp(this)" title="Move Up">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon" onclick="moveQuestionDown(this)" title="Move Down">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="duplicateQuestion(this)" title="Duplicate">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-toggle" onclick="toggleQuestion(this)" title="Expand">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="removeQuestion(this)" title="Delete Question">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Expanded Form (hidden when collapsed) -->
+            <div class="question-form-section">
+                <!-- Question Text and Type on same line -->
+                <div class="row g-2 mt-2">
+                    <div class="col-md-9">
+                        <label class="form-label">Question Text</label>
+                        <input type="text" class="form-control form-control-sm question-text" placeholder="Question Text" onchange="updateQuestionDisplay(this)">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select form-select-sm question-type" onchange="updateQuestionConfig(this)">
+                            <option value="text">Text</option>
+                            <option value="email">Email</option>
+                            <option value="phone">Phone</option>
+                            <option value="number">Number</option>
+                            <option value="select">Multiple Choice</option>
+                            <option value="dropdown">Dropdown</option>
+                            <option value="radio">Radio Buttons</option>
+                            <option value="checkbox">Checkboxes</option>
+                            <option value="cascading_dropdown">Cascading Dropdown</option>
+                            <option value="number_unit">Number + Unit</option>
+                            <option value="location">Location</option>
+                            <option value="images">Images Upload</option>
+                            <option value="videos">Videos Upload</option>
+                            <option value="audio">Audio Upload</option>
+                            <option value="files_documents">Files Upload</option>
+                            <option value="tags">Tags</option>
+                            <option value="url">URL</option>
+                            <option value="date">Date</option>
+                            <option value="textarea">Long Text</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Default View, Settings, and Branching on same line -->
+                <div class="row g-2 mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Default View</label>
+                        <select class="form-select form-select-sm default-view" onchange="updateQuestionDisplay(this)">
+                            <option value="show">Show by Default</option>
+                            <option value="hide">Hide by Default</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Settings</label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check form-check-sm">
+                                <input class="form-check-input question-required" type="checkbox" onchange="updateQuestionDisplay(this)">
+                                <label class="form-check-label small">Required</label>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small">Question Type</label>
+                            <select class="form-select form-select-sm question-classification" onchange="updateQuestionDisplay(this)">
+                                <option value="essential">Essential</option>
+                                <option value="additional">Additional</option>
+                            </select>
+                        </div>
+                        <div class="mt-2 question-field-mapping" style="display: none;">
+                            <label class="form-label small">Map to Field</label>
+                            <select class="form-select form-select-sm question-field-mapping-select" onchange="updateFieldMappingOptions(this)">
+                                <option value="">Select field...</option>
+                                <option value="title">Title</option>
+                                <option value="description">Description</option>
+                                <option value="short_description">Short Description</option>
+                                <option value="detailed_description">Detailed Description</option>
+                                <option value="category">Category</option>
+                                <option value="subcategory">Subcategory</option>
+                                <option value="category_subcategory">Category + Subcategory (Cascading)</option>
+                                <option value="tags">Tags</option>
+                                <option value="location">Location</option>
+                                <option value="price">Price</option>
+                                <option value="currency">Currency</option>
+                                <option value="pricing_type">Pricing Type</option>
+                                <option value="feasibility">Feasibility</option>
+                                <option value="timeline">Timeline</option>
+                                <option value="budget">Budget</option>
+                                <option value="target_audience">Target Audience</option>
+                                <option value="benefits">Benefits</option>
+                                <option value="requirements">Requirements</option>
+                                <option value="contact_info">Contact Information</option>
+                                <option value="website">Website</option>
+                                <option value="social_media">Social Media</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Branching</label>
+                        <div class="form-check form-check-sm">
+                            <input class="form-check-input branching-enabled" type="checkbox" onchange="toggleBranching(this)">
+                            <label class="form-check-label small">Enable Rules</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Placeholder</label>
+                        <input type="text" class="form-control form-control-sm question-placeholder" placeholder="Enter placeholder text">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Help Text</label>
+                        <input type="text" class="form-control form-control-sm question-help" placeholder="Additional help text">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body question-content collapsed">
+            <!-- Question Configuration -->
+            <div class="question-config">
+
+                <!-- Options Section (for select, radio, checkbox) -->
+                <div class="options-section" style="display: none;">
+                    <label class="form-label">Options (one per line)</label>
+                    <textarea class="form-control question-options" rows="4" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+                </div>
+
+                <!-- Cascading Dropdown Section -->
+                <div class="cascading-section" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Primary Label</label>
+                            <input type="text" class="form-control cascading-primary" placeholder="e.g., Category">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Secondary Label</label>
+                            <input type="text" class="form-control cascading-secondary" placeholder="e.g., Subcategory">
+                        </div>
+                    </div>
+                    <div class="cascading-categories">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Categories</label>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCategory(this)">
+                                <i class="fas fa-plus me-1"></i>Add Category
+                            </button>
+                        </div>
+                        <div class="categories-container">
+                            <!-- Categories will be added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Number + Unit Section -->
+                <div class="number-unit-section" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Number Label</label>
+                            <input type="text" class="form-control number-label" placeholder="Amount">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Unit Label</label>
+                            <input type="text" class="form-control unit-label" placeholder="Currency">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Unit Options</label>
+                            <textarea class="form-control unit-options" rows="3" placeholder="USD&#10;EUR&#10;GBP"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Upload Section -->
+                <div class="media-section" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Upload Label</label>
+                            <input type="text" class="form-control media-upload-label" placeholder="Upload files">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">URL Label</label>
+                            <input type="text" class="form-control media-url-label" placeholder="Or provide URLs">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Max Files</label>
+                            <input type="number" class="form-control media-max-files" value="5" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Max Size (MB)</label>
+                            <input type="number" class="form-control media-max-size" value="10" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input media-enable-upload" type="checkbox" checked>
+                                <label class="form-check-label">Enable Upload</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input media-enable-url" type="checkbox" checked>
+                                <label class="form-check-label">Enable URL</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question type specific configurations will be added here -->
+                <div class="question-type-config"></div>
+
+                <!-- Branching Rules Section -->
+                <div class="branching-section" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-code-branch me-1"></i>Branching Rules</h6>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="refreshRuleTargets(this)" title="Refresh Target Options">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="addBranchingRule(this)">
+                        <i class="fas fa-plus me-1"></i>Add Rule
+                    </button>
+                </div>
+                </div>
+                    <div class="branching-rules-container">
+                        <!-- Branching rules will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Category Template -->
+<template id="categoryTemplate">
+    <div class="card mb-2 category-item">
+        <div class="card-body p-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" class="form-control category-name" placeholder="Category Name">
+                </div>
+                <div class="col-md-7">
+                    <textarea class="form-control category-subcategories" rows="4" placeholder="{Personal Banking}&#10;Checking Account&#10;Savings Account&#10;{Business}&#10;Business Account&#10;Commercial Loan"></textarea>
+                    <small class="text-muted">
+                        <strong>Multi-line format:</strong><br>
+                        {Group Name}<br>
+                        Item1<br>
+                        Item2<br>
+                        {Another Group}<br>
+                        Item3<br>
+                        Item4<br><br>
+                        <strong>Single-line format:</strong> {Group Name} Item1, Item2 {Another Group} Item3, Item4<br>
+                        <strong>Simple list:</strong> Item1, Item2, Item3
+                    </small>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeCategory(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Branching Rule Template -->
+<template id="branchingRuleTemplate">
+    <div class="card mb-2 branching-rule">
+        <div class="card-body p-3">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label small">If Answer Is</label>
+                    <input type="text" class="form-control form-control-sm rule-condition" placeholder="Yes">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Then</label>
+                    <select class="form-select form-select-sm rule-action" onchange="updateRuleTarget(this)">
+                        <option value="show_question">Show Question</option>
+                        <option value="hide_question">Hide Question</option>
+                        <option value="go_to">Go to Step</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Target</label>
+                    <select class="form-select form-select-sm rule-target">
+                        <option value="">Select...</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Message (Optional)</label>
+                    <input type="text" class="form-control form-control-sm rule-message" placeholder="Custom message">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm mt-3" onclick="removeBranchingRule(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="{{ url_for('static', filename='js/chatbot-creator.js') }}?v={{ range(1000, 9999) | random }}"></script>
+{% endblock %}

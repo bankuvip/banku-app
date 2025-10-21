@@ -1,0 +1,761 @@
+{% extends "base.html" %}
+
+{% block title %}{{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Organization Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <!-- First Row: Logo + Name -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-4">
+                            <div class="organization-logo">
+                                {% if organization.logo %}
+                                    <img src="{{ organization.logo }}?v={{ organization.updated_at.strftime('%Y%m%d%H%M%S') if organization.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ organization.name }} Logo" class="organization-custom-logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                                {% else %}
+                                    <i class="{{ organization.organization_type.icon_class }} fa-4x text-{{ organization.organization_type.color_class }}"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="mb-2">{{ organization.name }}</h1>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-{{ organization.organization_type.color_class }} fs-6">
+                                    {{ organization.organization_type.display_name }}
+                                </span>
+                                {% if organization.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif organization.status == 'pending_verification' %}
+                                    <span class="badge bg-warning">Pending Verification</span>
+                                {% elif organization.status == 'closed' %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-lock me-1"></i>Closed
+                                        {% if organization.closed_at %}
+                                            <small class="ms-1">({{ organization.closed_at.strftime('%Y-%m-%d') }})</small>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                                {% if organization.is_verified %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-shield-alt me-1"></i>Verified
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Closed Organization Message -->
+                            {% if organization.status == 'closed' %}
+                                <div class="alert alert-warning mt-2 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    This organization is currently closed.
+                                    {% if organization.closed_reason %}
+                                        <strong>Reason:</strong> {{ organization.closed_reason }}
+                                    {% endif %}
+                                    {% if membership and membership.role == 'owner' %}
+                                        <br><small>As the owner, you can reopen this organization at any time.</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Second Row: Settings & Leave Buttons -->
+                    {% if membership %}
+                        <div class="d-flex justify-content-end">
+                            <div class="d-flex gap-2">
+                                {% if membership.role == 'owner' %}
+                                    <!-- Settings Button -->
+                                    <a href="{{ url_for('organizations.settings', slug=organization.slug) }}" class="btn btn-secondary">
+                                        <i class="fas fa-cog me-2"></i>Settings
+                                    </a>
+                                    
+                                    <!-- Reopen Organization Button (only for closed organizations) -->
+                                    {% if organization.status == 'closed' %}
+                                        <button type="button" class="btn btn-success" onclick="reopenOrganization()">
+                                            <i class="fas fa-play me-2"></i>Reopen Organization
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                <!-- Leave Button -->
+                                <form method="POST" action="{{ url_for('organizations.leave', slug=organization.slug) }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-danger" 
+                                            onclick="return confirm('Are you sure you want to leave this organization?')">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Leave
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% elif organization.is_public and organization.status == 'active' %}
+                        <div class="d-flex justify-content-end">
+                            <!-- Join Button -->
+                            <a href="{{ url_for('organizations.join', slug=organization.slug) }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Join Organization
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header p-0">
+                    <ul class="nav nav-tabs nav-fill" id="organizationTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">
+                                <i class="fas fa-home me-2"></i>Home
+                            </button>
+                        </li>
+                        {% if can_view_members %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">
+                                <i class="fas fa-users me-2"></i>Members
+                            </button>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">
+                                <i class="fas fa-box me-2"></i>Items
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="needs-tab" data-bs-toggle="tab" data-bs-target="#needs" type="button" role="tab">
+                                <i class="fas fa-lightbulb me-2"></i>Needs
+                            </button>
+                        </li>
+                        {% if can_view_activity %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                                <i class="fas fa-history me-2"></i>Activity
+                            </button>
+                        </li>
+                        {% endif %}
+                        {% if can_view_about %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
+                                <i class="fas fa-info-circle me-2"></i>About
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="tab-content" id="organizationTabContent">
+                    <!-- Home Tab -->
+                    <div class="tab-pane fade show active" id="home" role="tabpanel">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <h4 class="mb-3">About {{ organization.name }}</h4>
+                                    {% if organization.description %}
+                                        <p class="lead">{{ organization.description }}</p>
+                                    {% else %}
+                                        <p class="text-muted">No description available for this organization.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title">Quick Stats</h5>
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <div class="h4 text-primary">{{ organization.member_count }}</div>
+                                                    <small class="text-muted">Members</small>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="h4 text-success">{{ organization.content_count }}</div>
+                                                    <small class="text-muted">Items</small>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="h4 text-info">{{ organization.created_at.strftime('%Y') }}</div>
+                                                    <small class="text-muted">Founded</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Members Tab -->
+                    {% if can_view_members %}
+                    <div class="tab-pane fade" id="members" role="tabpanel">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Members ({{ members|length }})</h4>
+                                {% if membership and membership.role in ['owner', 'admin'] %}
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-success" onclick="window.location.href='{{ url_for('organizations.members', slug=organization.slug) }}#inviteMember'">
+                                        <i class="fas fa-user-plus me-2"></i>Invite Member
+                                    </button>
+                                    <a href="{{ url_for('organizations.members', slug=organization.slug) }}" class="btn btn-primary">
+                                        <i class="fas fa-cog me-2"></i>Manage Members
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if members %}
+                                <div class="row">
+                                    {% for member in members %}
+                                    <div class="col-lg-6 col-xl-4 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3">
+                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                            {{ member.user.username[0].upper() }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">{{ member.user.username }}</h6>
+                                                        <span class="badge bg-{{ 'warning' if member.role == 'owner' else 'info' if member.role == 'admin' else 'secondary' }}">
+                                                            {{ member.role.title() }}
+                                                        </span>
+                                                        <div class="small text-muted">
+                                                            Joined {{ member.joined_at.strftime('%b %d, %Y') }}
+                                                        </div>
+                                                        {% if membership and membership.role in ['owner', 'admin'] %}
+                                                        <div class="d-flex gap-1 mt-2">
+                                                            <a href="{{ url_for('profiles.user_profile', username=member.user.username) }}" class="btn btn-outline-primary btn-sm">
+                                                                <i class="fas fa-eye me-1"></i>View
+                                                            </a>
+                                                            {% if member.role != 'owner' %}
+                                                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="editMemberRole({{ member.id }}, '{{ member.role }}')">
+                                                                <i class="fas fa-edit me-1"></i>Edit
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMember({{ member.id }}, '{{ member.user.username }}')">
+                                                                <i class="fas fa-user-times me-1"></i>Remove
+                                                            </button>
+                                                            {% endif %}
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                    <h5>No Members</h5>
+                                    <p class="text-muted">This organization doesn't have any members yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Items Tab -->
+                    <div class="tab-pane fade" id="items" role="tabpanel">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Organization Items</h4>
+                                {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                    <a href="{{ url_for('organizations.create_item_redirect', slug=organization.slug) }}" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>Add New Item
+                                    </a>
+                                {% endif %}
+                            </div>
+                            
+                            {% if content %}
+                                <div class="row">
+                                    {% for item in content %}
+                                        {% if item.content_type == 'item' %}
+                                        <div class="col-lg-6 col-xl-4 mb-3">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ item.item.title }}</h6>
+                                                    <p class="card-text text-muted small">{{ item.item.short_description[:100] }}{% if item.item.short_description|length > 100 %}...{% endif %}</p>
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="badge bg-primary">{{ item.item.category }}</span>
+                                                        <small class="text-muted">{{ item.added_at.strftime('%b %d, %Y') }}</small>
+                                                    </div>
+                                                    {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                                    <div class="d-flex gap-1">
+                                                        <a href="{{ url_for('banks.item_detail', item_id=item.item.id) }}" class="btn btn-outline-primary btn-sm flex-fill">
+                                                            <i class="fas fa-eye me-1"></i>View
+                                                        </a>
+                                                        <a href="{{ url_for('profiles.edit_item', profile_id=item.item.profile_id, item_id=item.item.id) }}" class="btn btn-outline-warning btn-sm flex-fill">
+                                                            <i class="fas fa-edit me-1"></i>Edit
+                                                        </a>
+                                                        <a href="{{ url_for('organizations.remove_item', slug=organization.slug, item_id=item.item.id) }}" class="btn btn-outline-danger btn-sm flex-fill" onclick="return confirm('Are you sure you want to remove this item from the organization?')">
+                                                            <i class="fas fa-trash me-1"></i>Remove
+                                                        </a>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                                    <h5>No Items</h5>
+                                    <p class="text-muted">This organization hasn't added any items yet.</p>
+                                    {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                        <a href="{{ url_for('organizations.create_item_redirect', slug=organization.slug) }}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Add First Item
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Needs Tab -->
+                    <div class="tab-pane fade" id="needs" role="tabpanel">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Organization Needs</h4>
+                                {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                    <a href="{{ url_for('dashboard.add_need', organization_id=organization.id) }}" class="btn btn-warning">
+                                        <i class="fas fa-plus me-2"></i>Add New Need
+                                    </a>
+                                {% endif %}
+                            </div>
+                            
+                            {% if content %}
+                                {% set needs = content|selectattr('content_type', 'equalto', 'need')|list %}
+                                {% if needs %}
+                                    <div class="row">
+                                        {% for need in needs %}
+                                        <div class="col-lg-6 col-xl-4 mb-3">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ need.need.title }}</h6>
+                                                    <p class="card-text text-muted small">{{ need.need.description[:100] }}{% if need.need.description|length > 100 %}...{% endif %}</p>
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="badge bg-warning">Need</span>
+                                                        <small class="text-muted">{{ need.added_at.strftime('%b %d, %Y') }}</small>
+                                                    </div>
+                                                    {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                                    <div class="d-flex gap-1">
+                                                        <a href="{{ url_for('banks.item_detail', item_id=need.need.id) }}" class="btn btn-outline-primary btn-sm flex-fill">
+                                                            <i class="fas fa-eye me-1"></i>View
+                                                        </a>
+                                                        <a href="{{ url_for('profiles.edit_item', profile_id=need.need.profile_id, item_id=need.need.id) }}" class="btn btn-outline-warning btn-sm flex-fill">
+                                                            <i class="fas fa-edit me-1"></i>Edit
+                                                        </a>
+                                                        <a href="{{ url_for('organizations.remove_need', slug=organization.slug, need_id=need.need.id) }}" class="btn btn-outline-danger btn-sm flex-fill" onclick="return confirm('Are you sure you want to remove this need from the organization?')">
+                                                            <i class="fas fa-trash me-1"></i>Remove
+                                                        </a>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                                        <h5>No Needs</h5>
+                                        <p class="text-muted">This organization hasn't posted any needs yet.</p>
+                                        {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                            <a href="{{ url_for('dashboard.add_need', organization_id=organization.id) }}" class="btn btn-warning">
+                                                <i class="fas fa-plus me-2"></i>Add First Need
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                                    <h5>No Needs</h5>
+                                    <p class="text-muted">This organization hasn't posted any needs yet.</p>
+                                    {% if membership and membership.role in ['owner', 'admin', 'member'] %}
+                                        <a href="{{ url_for('dashboard.add_need', organization_id=organization.id) }}" class="btn btn-warning">
+                                            <i class="fas fa-plus me-2"></i>Add First Need
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Activity Tab -->
+                    {% if can_view_activity %}
+                    <div class="tab-pane fade" id="activity" role="tabpanel">
+                        <div class="card-body">
+                            <h4 class="mb-4">Organization Timeline</h4>
+                            
+                            {% if history %}
+                                <div class="timeline">
+                                    {% for event in history %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker">
+                                            {% if event.event_type == 'created' %}
+                                                <i class="fas fa-plus-circle text-success"></i>
+                                            {% elif event.event_type == 'member_joined' %}
+                                                <i class="fas fa-user-plus text-info"></i>
+                                            {% elif event.event_type == 'member_left' %}
+                                                <i class="fas fa-user-minus text-warning"></i>
+                                            {% elif event.event_type == 'content_added' %}
+                                                <i class="fas fa-plus text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-circle text-muted"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">{{ event.event_description }}</h6>
+                                            <small class="text-muted">{{ event.occurred_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                    <h5>No Activity</h5>
+                                    <p class="text-muted">No activity recorded for this organization yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- About Tab -->
+                    {% if can_view_about %}
+                    <div class="tab-pane fade" id="about" role="tabpanel">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <h4 class="mb-4">Organization Information</h4>
+                                    
+                                    <div class="mb-4">
+                                        <h6>Description</h6>
+                                        {% if organization.description %}
+                                            <p>{{ organization.description }}</p>
+                                        {% else %}
+                                            <p class="text-muted">No description available.</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <h6>Organization Type</h6>
+                                        <span class="badge bg-{{ organization.organization_type.color_class }} fs-6">
+                                            <i class="{{ organization.organization_type.icon_class }} me-1"></i>
+                                            {{ organization.organization_type.display_name }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <h6>Status</h6>
+                                        {% if organization.status == 'active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif organization.status == 'pending_verification' %}
+                                            <span class="badge bg-warning">Pending Verification</span>
+                                        {% elif organization.status == 'closed' %}
+                                            <span class="badge bg-secondary">Closed</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if organization.website or organization.phone or organization.location or organization.linkedin_url or organization.youtube_url or organization.facebook_url or organization.instagram_url or organization.tiktok_url or organization.x_url %}
+                                    <div class="mb-4">
+                                        <h6>Contact Information</h6>
+                                        <table class="table table-sm table-borderless">
+                                            {% if organization.location %}
+                                            <tr>
+                                                <td class="text-muted" style="width: 30%;"><i class="fas fa-map-marker-alt me-2"></i>Location:</td>
+                                                <td>{{ organization.location }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.phone %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fas fa-phone me-2"></i>Phone:</td>
+                                                <td>{{ organization.phone }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.website %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fas fa-globe me-2"></i>Website:</td>
+                                                <td><a href="{{ organization.website }}" target="_blank">{{ organization.website }}</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.linkedin_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-linkedin me-2"></i>LinkedIn:</td>
+                                                <td><a href="{{ organization.linkedin_url }}" target="_blank">LinkedIn Profile</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.youtube_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-youtube me-2"></i>YouTube:</td>
+                                                <td><a href="{{ organization.youtube_url }}" target="_blank">YouTube Channel</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.facebook_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-facebook me-2"></i>Facebook:</td>
+                                                <td><a href="{{ organization.facebook_url }}" target="_blank">Facebook Page</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.instagram_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-instagram me-2"></i>Instagram:</td>
+                                                <td><a href="{{ organization.instagram_url }}" target="_blank">Instagram Profile</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.tiktok_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-tiktok me-2"></i>TikTok:</td>
+                                                <td><a href="{{ organization.tiktok_url }}" target="_blank">TikTok Profile</a></td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if organization.x_url %}
+                                            <tr>
+                                                <td class="text-muted"><i class="fab fa-x-twitter me-2"></i>X (Twitter):</td>
+                                                <td><a href="{{ organization.x_url }}" target="_blank">X Profile</a></td>
+                                            </tr>
+                                            {% endif %}
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-lg-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Organization Stats</h6>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Privacy:</span>
+                                                    <span class="badge bg-{{ 'success' if organization.is_public else 'warning' }}">
+                                                        <i class="fas fa-{{ 'globe' if organization.is_public else 'lock' }} me-1"></i>
+                                                        {{ 'Public' if organization.is_public else 'Private' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Members:</span>
+                                                    <strong>{{ organization.member_count }}</strong>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Content Items:</span>
+                                                    <strong>{{ organization.content_count }}</strong>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Created:</span>
+                                                    <small class="text-muted">{{ organization.created_at.strftime('%B %d, %Y') }}</small>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if organization.is_verified %}
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Verification:</span>
+                                                    <span class="badge bg-primary">
+                                                        <i class="fas fa-shield-alt me-1"></i>Verified
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.organization-logo {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+    background-color: transparent;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 30px;
+    height: 30px;
+    background: white;
+    border: 3px solid #dee2e6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+
+<script>
+function reopenOrganization() {
+    if (confirm('Are you sure you want to reopen this organization?')) {
+        fetch('/organizations/{{ organization.slug }}/reopen', {
+        method: 'POST',
+        headers: {
+            
+                'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Organization reopened successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while reopening the organization.');
+        });
+    }
+}
+
+// Member management functions
+function editMemberRole(memberId, currentRole) {
+    const newRole = prompt(`Change role for this member (current: ${currentRole})\nEnter new role (owner, admin, member):`, currentRole);
+    
+    if (newRole && newRole !== currentRole && ['owner', 'admin', 'member'].includes(newRole.toLowerCase())) {
+        fetch('{{ url_for("organizations.members", slug=organization.slug) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'update_role',
+                member_id: memberId,
+                role: newRole.toLowerCase()
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Member role updated successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the member role.');
+        });
+    }
+}
+
+function removeMember(memberId, memberName) {
+    if (confirm(`Are you sure you want to remove ${memberName} from this organization?`)) {
+        fetch('{{ url_for("organizations.members", slug=organization.slug) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'remove',
+                member_id: memberId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Member removed successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while removing the member.');
+        });
+    }
+}
+</script>
+{% endblock %}

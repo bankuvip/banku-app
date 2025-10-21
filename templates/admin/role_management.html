@@ -1,0 +1,1231 @@
+{% extends "base.html" %}
+
+{% block title %}Role & Permission Management - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Role & Permission Management
+                </h1>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="showCreateRoleModal()">
+                        <i class="fas fa-plus me-1"></i>Create Role
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="showPermissionManager()">
+                        <i class="fas fa-cog me-1"></i>Manage Permissions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Role Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tag me-2"></i>Roles
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Users</th>
+                                    <th>Permissions</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rolesTableBody">
+                                {% for role in roles %}
+                                <tr data-role-id="{{ role.id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-{{ 'primary' if role.is_internal else 'secondary' }} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-{{ 'cog' if role.is_internal else 'user' }} text-{{ 'primary' if role.is_internal else 'secondary' }}"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ role.name }}</h6>
+                                                <small class="text-muted">ID: {{ role.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ role.description or 'No description' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if role.is_internal else 'secondary' }}">
+                                            {{ 'Internal' if role.is_internal else 'External' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info" id="user-count-{{ role.id }}">Loading...</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary" id="perm-count-{{ role.id }}">Loading...</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if role.is_active else 'danger' }}">
+                                            {{ 'Active' if role.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editRole({{ role.id }})">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" onclick="manageRolePermissions({{ role.id }})">
+                                                <i class="fas fa-key me-1"></i>Permissions
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="toggleRoleStatus({{ role.id }})">
+                                                <i class="fas fa-{{ 'pause' if role.is_active else 'play' }} me-1"></i>
+                                                {{ 'Deactivate' if role.is_active else 'Activate' }}
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRole({{ role.id }})">
+                                                <i class="fas fa-trash me-1"></i>Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-user-tag text-muted fs-1 mb-3"></i>
+                                        <h5 class="text-muted">No roles found</h5>
+                                        <p class="text-muted">Create your first role to get started.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Management Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>User Role Assignments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="userSearch" placeholder="Search users...">
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select" id="roleFilter">
+                                <option value="">All Roles</option>
+                                {% for role in roles %}
+                                <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="usersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Current Roles</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for role in user.roles %}
+                                            <span class="badge bg-primary">{{ role.name }}</span>
+                                            {% else %}
+                                            <span class="text-muted">No roles assigned</span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="manageUserRoles({{ user.id }})">
+                                            <i class="fas fa-user-cog me-1"></i>Manage Roles
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Management Section -->
+<div class="row mb-4" id="permissionManagementSection" style="display: none;">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>Permission Management
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="hidePermissionManager()">
+                        <i class="fas fa-times me-1"></i>Close
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Available Permissions <span id="permissionCount" class="badge bg-info ms-2">Loading...</span></h6>
+                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            {% for permission in permissions %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ permission.name }}</h6>
+                                    <p class="mb-1 text-muted">{{ permission.resource }}:{{ permission.action }}</p>
+                                    <small class="text-muted">
+                                        <span class="badge bg-info">{{ permission.resource }}</span>
+                                        <span class="badge bg-warning">{{ permission.action }}</span>
+                                    </small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editPermission('{{ permission.name }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Permission Categories</h6>
+                        <div class="row">
+                            {% for category in permission_categories %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title">{{ category }}</h6>
+                                        <p class="card-text text-muted small">
+                                            {{ permissions|selectattr('resource', 'equalto', category)|list|length }} permissions
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Quick Actions</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="createPermission()">
+                                    <i class="fas fa-plus me-1"></i>Create New Permission
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="exportPermissions()">
+                                    <i class="fas fa-download me-1"></i>Export Permissions
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="importPermissions()">
+                                    <i class="fas fa-upload me-1"></i>Import Permissions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roleModalTitle">Create Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <input type="hidden" id="roleId" name="role_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="roleName" class="form-label">Role Name *</label>
+                                <input type="text" class="form-control" id="roleName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="roleType" class="form-label">Role Type</label>
+                                <select class="form-select" id="roleType" name="is_internal">
+                                    <option value="false">External (Regular Users)</option>
+                                    <option value="true">Internal (Staff)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="roleDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="roleDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="roleActive" name="is_active" checked>
+                            <label class="form-check-label" for="roleActive">
+                                Active Role
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRole()">Save Role</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Permission Management Modal -->
+<div class="modal fade" id="permissionModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="permissionModalTitle">Manage Permissions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Permission Groups <span id="groupTotals" class="badge bg-secondary ms-2">Loading...</span></h6>
+                        <div class="accordion" id="permissionGroups">
+                            <!-- Permission groups will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6 id="categoryTitle">Select a group to manage permissions</h6>
+                        <div id="permissionsList">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-hand-point-left fa-2x mb-3"></i>
+                                <p>Select a permission group from the left to view and manage permissions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex align-items-center">
+                    <small class="text-muted me-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Save permissions for current tab only
+                    </small>
+                    <button type="button" class="btn btn-primary" onclick="savePermissions()">Save Changes</button>
+                    <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Role Management Modal -->
+<div class="modal fade" id="userRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage User Roles</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Available Roles</label>
+                    <div id="availableRoles">
+                        <!-- Roles will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveUserRoles()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentRoleId = null;
+let currentUserId = null;
+
+// Load role counts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRoleCounts();
+});
+
+function loadRoleCounts() {
+    // Load user counts for each role
+    {% for role in roles %}
+    fetch(`/admin/roles/{{ role.id }}/user-count`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('user-count-{{ role.id }}').textContent = `${data.count} users`;
+        })
+        .catch(error => {
+            document.getElementById('user-count-{{ role.id }}').textContent = '0 users';
+        });
+    
+    fetch(`/admin/roles/{{ role.id }}/permission-count`)
+        .then(response => response.json())
+        .then(data => {
+            const permElement = document.getElementById('perm-count-{{ role.id }}');
+            permElement.textContent = `${data.granted}/${data.total}`;
+            
+            // Set badge color based on granted/total ratio
+            if (data.granted === data.total && data.total > 0) {
+                permElement.className = 'badge bg-success'; // All permissions granted
+            } else if (data.granted > 0) {
+                permElement.className = 'badge bg-warning'; // Some permissions granted
+            } else {
+                permElement.className = 'badge bg-secondary'; // No permissions granted
+            }
+        })
+        .catch(error => {
+            const permElement = document.getElementById('perm-count-{{ role.id }}');
+            permElement.textContent = '0/233';
+            permElement.className = 'badge bg-secondary';
+        });
+    {% endfor %}
+}
+
+// Role Management Functions
+function showCreateRoleModal() {
+    currentRoleId = null;
+    document.getElementById('roleModalTitle').textContent = 'Create Role';
+    document.getElementById('roleForm').reset();
+    document.getElementById('roleActive').checked = true;
+    new bootstrap.Modal(document.getElementById('roleModal')).show();
+}
+
+function editRole(roleId) {
+    currentRoleId = roleId;
+    document.getElementById('roleModalTitle').textContent = 'Edit Role';
+    
+    // Fetch role data and populate form
+    fetch(`/admin/roles/${roleId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('roleId').value = data.id;
+            document.getElementById('roleName').value = data.name;
+            document.getElementById('roleDescription').value = data.description || '';
+            document.getElementById('roleType').value = data.is_internal ? 'true' : 'false';
+            document.getElementById('roleActive').checked = data.is_active;
+            new bootstrap.Modal(document.getElementById('roleModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading role data');
+        });
+}
+
+function saveRole() {
+    const formData = new FormData(document.getElementById('roleForm'));
+    const data = Object.fromEntries(formData.entries());
+    data.is_internal = data.is_internal === 'true';
+    data.is_active = document.getElementById('roleActive').checked;
+    
+    const url = currentRoleId ? `/admin/roles/${currentRoleId}` : '/admin/roles';
+    const method = currentRoleId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving role');
+    });
+}
+
+function manageRolePermissions(roleId) {
+    currentRoleId = roleId;
+    document.getElementById('permissionModalTitle').textContent = 'Manage Role Permissions';
+    loadPermissionCategories();
+    new bootstrap.Modal(document.getElementById('permissionModal')).show();
+}
+
+function loadPermissionCategories() {
+    // Load permission categories dynamically from the database
+    fetch('/admin/permissions/categories')
+        .then(response => response.json())
+        .then(data => {
+            const categories = data.categories || [];
+            const groupsDiv = document.getElementById('permissionGroups');
+            groupsDiv.innerHTML = '';
+
+            // Create accordion items for each category
+            categories.forEach((category, index) => {
+                const groupId = `group-${index}`;
+                
+                // Map category names to icons
+                const categoryIcons = {
+                    'admin_dashboard': 'fas fa-tachometer-alt',
+                    'user_management': 'fas fa-users',
+                    'organization_management': 'fas fa-building',
+                    'business_operations': 'fas fa-handshake',
+                    'ai_matching': 'fas fa-brain',
+                    'scoring_system': 'fas fa-star',
+                    'analytics_reporting': 'fas fa-chart-bar',
+                    'system_administration': 'fas fa-cogs',
+                    'cms': 'fas fa-edit',
+                    'chatbot_system': 'fas fa-robot',
+                    'data_management': 'fas fa-database',
+                    'wallet_financial': 'fas fa-wallet',
+                    'bank_content': 'fas fa-university',
+                    'dynamic_config': 'fas fa-sliders-h'
+                };
+                
+                const icon = categoryIcons[category] || 'fas fa-cog';
+                
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                accordionItem.innerHTML = `
+                    <h2 class="accordion-header" id="heading-${groupId}">
+                        <button class="accordion-button collapsed" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse-${groupId}" 
+                                aria-expanded="false" aria-controls="collapse-${groupId}"
+                                onclick="loadPermissionsForGroup('${category}', ['${category}'])">
+                            <i class="${icon} me-2"></i>
+                            <span class="flex-grow-1">${category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            <span class="badge bg-secondary ms-2" id="count-${groupId}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="collapse-${groupId}" class="accordion-collapse collapse" 
+                         aria-labelledby="heading-${groupId}" data-bs-parent="#permissionGroups">
+                        <div class="accordion-body">
+                            <div class="text-muted small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Click the group header to view and manage permissions for this category.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                groupsDiv.appendChild(accordionItem);
+            });
+
+            // Calculate permission counts for all categories
+            calculateAllCategoryCounts(categories);
+            
+            // Update group totals in modal
+            updateGroupTotals();
+        })
+        .catch(error => {
+            console.error('Error loading permission categories:', error);
+            const groupsDiv = document.getElementById('permissionGroups');
+            groupsDiv.innerHTML = `
+                <div class="text-center text-danger py-4">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <p>Error loading permission categories. Please try again.</p>
+                </div>
+            `;
+        });
+}
+
+function loadPermissionCategoriesOld() {
+    // Define permission groups with their associated resources
+    const permissionGroups = {
+        'Admin Dashboard': {
+            icon: 'fas fa-tachometer-alt',
+            resources: ['admin_dashboard', 'admin_management']
+        },
+        'User Management': {
+            icon: 'fas fa-users',
+            resources: ['users', 'profiles', 'roles', 'verifications', 'messaging', 'profile']
+        },
+        'Organization Management': {
+            icon: 'fas fa-building',
+            resources: ['organizations', 'organization_types']
+        },
+        'Bank & Content Management': {
+            icon: 'fas fa-university',
+            resources: ['banks', 'items', 'item_types', 'needs', 'categories', 'subcategories']
+        },
+        'Business Operations': {
+            icon: 'fas fa-handshake',
+            resources: ['deals', 'deal_requests', 'reviews', 'notifications', 'feedback']
+        },
+        'AI & Matching System': {
+            icon: 'fas fa-brain',
+            resources: ['ai_matching', 'ai_recommendations']
+        },
+        'Scoring System': {
+            icon: 'fas fa-star',
+            resources: ['scoring', 'scoring_management']
+        },
+        'Analytics & Reporting': {
+            icon: 'fas fa-chart-bar',
+            resources: ['analytics', 'reports', 'performance_metrics', 'ab_tests']
+        },
+        'System Administration': {
+            icon: 'fas fa-cogs',
+            resources: ['system_settings', 'monitoring', 'security', 'api', 'system_health', 'error_logs', 'system_logs', 'admin', 'dashboard', 'settings', 'logs']
+        },
+        'Content Management System': {
+            icon: 'fas fa-edit',
+            resources: ['cms', 'pages', 'content_blocks', 'navigation', 'email_templates']
+        },
+        'Chatbot Management': {
+            icon: 'fas fa-robot',
+            resources: ['chatbots', 'chatbot_flows', 'chatbot_questions', 'chatbot_responses', 'step_blocks', 'chatbot']
+        },
+        'Data & Integration': {
+            icon: 'fas fa-database',
+            resources: ['data_collectors', 'data_collection', 'data_mappings', 'integrations', 'collectors']
+        },
+        'UI & Customization': {
+            icon: 'fas fa-paint-brush',
+            resources: ['dynamic_buttons']
+        },
+        'Wallet & Financial Management': {
+            icon: 'fas fa-wallet',
+            resources: ['wallet', 'wallet_admin', 'earnings', 'withdrawals', 'transactions']
+        }
+    };
+
+    const groupsDiv = document.getElementById('permissionGroups');
+    groupsDiv.innerHTML = '';
+
+    Object.keys(permissionGroups).forEach((groupName, index) => {
+        const group = permissionGroups[groupName];
+        const groupId = `group-${index}`;
+        
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'accordion-item';
+        accordionItem.innerHTML = `
+            <h2 class="accordion-header" id="heading-${groupId}">
+                <button class="accordion-button collapsed" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#collapse-${groupId}" 
+                        aria-expanded="false" aria-controls="collapse-${groupId}"
+                        onclick="loadPermissionsForGroup('${groupName}', ${JSON.stringify(group.resources).replace(/"/g, '&quot;')})">
+                    <i class="${group.icon} me-2"></i>
+                    <span class="flex-grow-1">${groupName}</span>
+                    <span class="badge bg-secondary ms-2" id="count-${groupId}">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                </button>
+            </h2>
+            <div id="collapse-${groupId}" class="accordion-collapse collapse" 
+                 aria-labelledby="heading-${groupId}" data-bs-parent="#permissionGroups">
+                <div class="accordion-body">
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Click the group header to view and manage permissions for this category.
+                    </div>
+                </div>
+            </div>
+        `;
+        groupsDiv.appendChild(accordionItem);
+    });
+
+    // Calculate permission counts for all groups upfront
+    calculateAllGroupCounts(permissionGroups);
+    
+    // Update main page permission count
+    updateMainPagePermissionCount();
+    
+    // Update group totals in modal
+    updateGroupTotals();
+}
+
+function calculateAllCategoryCounts(categories) {
+    categories.forEach((category, index) => {
+        const groupId = `group-${index}`;
+        
+        // Load permissions for this category
+        fetch(`/admin/permissions/category/${category}?role_id=${currentRoleId}`)
+            .then(response => response.json())
+            .then(data => {
+                const permissions = data.permissions || [];
+                const grantedCount = permissions.filter(p => p.granted).length;
+                updateGroupCount(category, `${grantedCount}/${permissions.length}`);
+            })
+            .catch(error => {
+                console.error(`Error loading permissions for ${category}:`, error);
+                updateGroupCount(category, "0/0");
+            });
+    });
+}
+
+function calculateAllGroupCounts(permissionGroups) {
+    const groupNames = Object.keys(permissionGroups);
+    
+    groupNames.forEach((groupName, index) => {
+        const group = permissionGroups[groupName];
+        const groupId = `group-${index}`;
+        
+        // Calculate total and granted permissions for this group using Promise.all for proper async handling
+        const resourcePromises = group.resources.map(resource => 
+            fetch(`/admin/permissions/category/${resource}?role_id=${currentRoleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const permissions = data.permissions || [];
+                    return {
+                        total: permissions.length,
+                        granted: permissions.filter(p => p.granted).length
+                    };
+                })
+                .catch(error => {
+                    console.error(`Error loading permissions for ${resource}:`, error);
+                    return { total: 0, granted: 0 };
+                })
+        );
+        
+        Promise.all(resourcePromises)
+            .then(permissionData => {
+                const totalPermissions = permissionData.reduce((sum, data) => sum + data.total, 0);
+                const grantedPermissions = permissionData.reduce((sum, data) => sum + data.granted, 0);
+                updateGroupCount(groupName, `${grantedPermissions}/${totalPermissions}`);
+            })
+            .catch(error => {
+                console.error(`Error calculating permissions for group ${groupName}:`, error);
+                updateGroupCount(groupName, "0/0");
+            });
+    });
+}
+
+function loadPermissionsForGroup(groupName, resources) {
+    document.getElementById('categoryTitle').textContent = `${groupName} Permissions`;
+    
+    // Show loading state
+    const permissionsDiv = document.getElementById('permissionsList');
+    permissionsDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading permissions...</p>
+        </div>
+    `;
+    
+    // Load permissions for each resource in the group using Promise.all
+    const resourcePromises = resources.map(resource => 
+        fetch(`/admin/permissions/category/${resource}?role_id=${currentRoleId}`)
+            .then(response => response.json())
+            .then(data => data.permissions || [])
+            .catch(error => {
+                console.error(`Error loading permissions for ${resource}:`, error);
+                return [];
+            })
+    );
+    
+    Promise.all(resourcePromises)
+        .then(permissionArrays => {
+            const allPermissions = permissionArrays.flat();
+            displayGroupPermissions(allPermissions, groupName);
+            // Update the count badge for this group with granted/total format
+            const grantedCount = allPermissions.filter(p => p.granted).length;
+            updateGroupCount(groupName, `${grantedCount}/${allPermissions.length}`);
+        })
+        .catch(error => {
+            console.error(`Error loading permissions for group ${groupName}:`, error);
+            permissionsDiv.innerHTML = `
+                <div class="text-center text-danger py-4">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <p>Error loading permissions. Please try again.</p>
+                </div>
+            `;
+        });
+}
+
+function updateGroupCount(categoryName, count) {
+    // Find the group button and update its count badge
+    const groupButtons = document.querySelectorAll('#permissionGroups .accordion-button');
+    groupButtons.forEach(button => {
+        // Check if the button's onclick contains the category name
+        const onclickAttr = button.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(categoryName)) {
+            const badge = button.querySelector('.badge');
+            if (badge) {
+                badge.innerHTML = count; // Remove spinner, show count
+                // Parse the count to determine badge color
+                const [granted, total] = count.toString().split('/').map(n => parseInt(n) || 0);
+                if (granted === total && total > 0) {
+                    badge.className = 'badge bg-success ms-2'; // All permissions granted
+                } else if (granted > 0) {
+                    badge.className = 'badge bg-warning ms-2'; // Some permissions granted
+                } else {
+                    badge.className = 'badge bg-secondary ms-2'; // No permissions granted
+                }
+            }
+        }
+    });
+}
+
+function updateMainPagePermissionCount() {
+    // Calculate total permissions from all available permissions
+    fetch('/admin/permissions/categories')
+        .then(response => response.json())
+        .then(data => {
+            const categories = data.categories || [];
+            let totalPermissions = 0;
+            let loadedCount = 0;
+            
+            // Count permissions from all categories
+            const categoryPromises = categories.map(category => 
+                fetch(`/admin/permissions/category/${category}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const count = data.permissions ? data.permissions.length : 0;
+                        totalPermissions += count;
+                        loadedCount++;
+                        
+                        // Update the badge when all categories are loaded
+                        if (loadedCount === categories.length) {
+                            const permissionCountElement = document.getElementById('permissionCount');
+                            if (permissionCountElement) {
+                                permissionCountElement.textContent = `${totalPermissions}`;
+                                permissionCountElement.className = 'badge bg-success ms-2';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error loading permissions for ${category}:`, error);
+                        loadedCount++;
+                    })
+            );
+            
+            Promise.all(categoryPromises).catch(error => {
+                console.error('Error loading permission counts:', error);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading permission categories:', error);
+            const permissionCountElement = document.getElementById('permissionCount');
+            if (permissionCountElement) {
+                permissionCountElement.textContent = 'Error loading';
+                permissionCountElement.className = 'badge bg-danger ms-2';
+            }
+        });
+}
+
+function updateGroupTotals() {
+    // Calculate total permissions from all categories
+    fetch('/admin/permissions/categories')
+        .then(response => response.json())
+        .then(data => {
+            const categories = data.categories || [];
+            let totalPermissions = 0;
+            let loadedCount = 0;
+            
+            // Count permissions from all categories
+            const categoryPromises = categories.map(category => 
+                fetch(`/admin/permissions/category/${category}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const count = data.permissions ? data.permissions.length : 0;
+                        totalPermissions += count;
+                        loadedCount++;
+                        
+                        // Update the badge when all categories are loaded
+                        if (loadedCount === categories.length) {
+                            const groupTotalsElement = document.getElementById('groupTotals');
+                            if (groupTotalsElement) {
+                                groupTotalsElement.textContent = `${totalPermissions}`;
+                                groupTotalsElement.className = 'badge bg-info ms-2';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error loading permissions for ${category}:`, error);
+                        loadedCount++;
+                    })
+            );
+            
+            Promise.all(categoryPromises).catch(error => {
+                console.error('Error loading permission counts:', error);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading permission categories:', error);
+        });
+}
+
+function displayGroupPermissions(permissions, groupName) {
+    const permissionsDiv = document.getElementById('permissionsList');
+    
+    // Update the category title with permission count
+    const categoryTitle = document.getElementById('categoryTitle');
+    if (categoryTitle) {
+        const grantedCount = permissions.filter(p => p.granted).length;
+        categoryTitle.textContent = `${groupName} (${grantedCount}/${permissions.length})`;
+    }
+    
+    if (permissions.length === 0) {
+        permissionsDiv.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <p>No permissions found for this group</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Group permissions by resource
+    const groupedPermissions = {};
+    permissions.forEach(permission => {
+        const resource = permission.resource || permission.name.split(':')[0];
+        if (!groupedPermissions[resource]) {
+            groupedPermissions[resource] = [];
+        }
+        groupedPermissions[resource].push(permission);
+    });
+    
+    let html = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6>${groupName} Permissions (${permissions.length} total)</h6>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-success" onclick="selectAllInCurrentGroup()">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="deselectAllInCurrentGroup()">
+                        <i class="fas fa-square me-1"></i>Deselect All
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    Object.keys(groupedPermissions).forEach(resource => {
+        const resourcePermissions = groupedPermissions[resource];
+        html += `
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tag me-2"></i>${resource.charAt(0).toUpperCase() + resource.slice(1)}
+                        <span class="badge bg-primary ms-2">${resourcePermissions.length}</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+        `;
+        
+        resourcePermissions.forEach(permission => {
+            const permissionId = permission.id || permission.name.replace(/[^a-zA-Z0-9]/g, '_');
+            html += `
+                <div class="form-check mb-2">
+                    <input class="form-check-input permission-checkbox" type="checkbox" 
+                           id="perm_${permissionId}" 
+                           value="${permission.name || permissionId}"
+                           data-resource="${resource}"
+                           data-permission-id="${permission.id}"
+                           ${permission.granted ? 'checked' : ''}>
+                    <label class="form-check-label" for="perm_${permissionId}">
+                        <strong>${permission.name || permissionId}</strong>
+                        <br><small class="text-muted">${permission.description || `${resource}:${permission.action || 'action'}`}</small>
+                    </label>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    permissionsDiv.innerHTML = html;
+}
+
+function selectAllInCurrentGroup() {
+    document.querySelectorAll('#permissionsList .permission-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+function deselectAllInCurrentGroup() {
+    document.querySelectorAll('#permissionsList .permission-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+// Removed unused group-level selection functions
+
+// Keep the old function for backward compatibility
+function loadPermissionsForCategory(category) {
+    loadPermissionsForGroup(category, [category]);
+}
+
+function savePermissions() {
+    const checkboxes = document.querySelectorAll('#permissionsList .permission-checkbox');
+    const permissions = [];
+    
+    checkboxes.forEach(checkbox => {
+        permissions.push({
+            id: checkbox.dataset.permissionId,
+            granted: checkbox.checked
+        });
+    });
+    
+    // Show loading state
+    const saveButton = document.querySelector('#permissionModal .btn-primary');
+    const originalText = saveButton.innerHTML;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+    saveButton.disabled = true;
+    
+    fetch(`/admin/roles/${currentRoleId}/permissions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ permissions: permissions })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>Permissions updated successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('#permissionModal .modal-body').insertBefore(alertDiv, document.querySelector('#permissionModal .modal-body').firstChild);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+            
+            // Update the group count badge after saving
+            const grantedCount = permissions.filter(p => p.granted).length;
+            const totalCount = permissions.length;
+            const groupName = document.getElementById('categoryTitle').textContent.split(' (')[0];
+            updateGroupCount(groupName, `${grantedCount}/${totalCount}`);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving permissions');
+    })
+    .finally(() => {
+        // Restore button state
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
+    });
+}
+
+function manageUserRoles(userId) {
+    currentUserId = userId;
+    loadUserRoles();
+    new bootstrap.Modal(document.getElementById('userRoleModal')).show();
+}
+
+function loadUserRoles() {
+    fetch(`/admin/users/${currentUserId}/roles`)
+        .then(response => response.json())
+        .then(data => {
+            const rolesDiv = document.getElementById('availableRoles');
+            rolesDiv.innerHTML = '';
+            
+            data.roles.forEach(role => {
+                const div = document.createElement('div');
+                div.className = 'form-check mb-2';
+                div.innerHTML = `
+                    <input class="form-check-input" type="checkbox" 
+                           id="role_${role.id}" 
+                           value="${role.id}"
+                           ${role.assigned ? 'checked' : ''}>
+                    <label class="form-check-label" for="role_${role.id}">
+                        <strong>${role.name}</strong>
+                        <br><small class="text-muted">${role.description}</small>
+                    </label>
+                `;
+                rolesDiv.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+function saveUserRoles() {
+    const checkboxes = document.querySelectorAll('#availableRoles input[type="checkbox"]');
+    const roles = [];
+    
+    checkboxes.forEach(checkbox => {
+        roles.push({
+            role_id: parseInt(checkbox.value),
+            assigned: checkbox.checked
+        });
+    });
+    
+    fetch(`/admin/users/${currentUserId}/roles`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ roles: roles })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User roles updated successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('userRoleModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving user roles');
+    });
+}
+
+function toggleRoleStatus(roleId) {
+    if (confirm('Are you sure you want to toggle this role status?')) {
+        fetch(`/admin/roles/${roleId}/toggle-status`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error toggling role status');
+        });
+    }
+}
+
+function deleteRole(roleId) {
+    if (confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
+        fetch(`/admin/roles/${roleId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting role');
+        });
+    }
+}
+
+function showPermissionManager() {
+    // Show the permission management section
+    const permissionSection = document.getElementById('permissionManagementSection');
+    if (permissionSection) {
+        permissionSection.style.display = 'block';
+        permissionSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        // If the section doesn't exist, create a simple alert for now
+        alert('Permission management feature is coming soon! This will allow you to:\n\n• View all available permissions\n• Create custom permissions\n• Manage permission categories\n• Assign permissions to roles\n\nFor now, you can manage role permissions by editing individual roles.');
+    }
+}
+
+function hidePermissionManager() {
+    const permissionSection = document.getElementById('permissionManagementSection');
+    if (permissionSection) {
+        permissionSection.style.display = 'none';
+    }
+}
+
+function editPermission(permissionId) {
+    alert('Edit permission functionality coming soon! Permission ID: ' + permissionId);
+}
+
+function createPermission() {
+    alert('Create permission functionality coming soon!');
+}
+
+function exportPermissions() {
+    alert('Export permissions functionality coming soon!');
+}
+
+function importPermissions() {
+    alert('Import permissions functionality coming soon!');
+}
+
+// Search and filter functions
+document.getElementById('userSearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+document.getElementById('roleFilter').addEventListener('change', function() {
+    const selectedRole = this.value;
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        if (!selectedRole) {
+            row.style.display = '';
+        } else {
+            const userRoles = row.querySelectorAll('.badge');
+            let hasRole = false;
+            userRoles.forEach(badge => {
+                if (badge.textContent.includes(selectedRole)) {
+                    hasRole = true;
+                }
+            });
+            row.style.display = hasRole ? '' : 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Create Advanced Data Collector{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-robot me-2"></i>Create Advanced Data Collector</h2>
+                <a href="{{ url_for('admin.data_collectors') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Collectors
+                </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Collector Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="collectorForm">
+                                <!-- Basic Information -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Basic Information</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="name" class="form-label">Collector Name *</label>
+                                                <input type="text" class="form-control" id="name" name="name" required>
+                                                <div class="form-text">e.g., "Dubai Companies Scraper"</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="data_type" class="form-label">Data Type *</label>
+                                                <select class="form-select" id="data_type" name="data_type" required onchange="updateSubcategories()">
+                                                    <option value="">Select data type...</option>
+                                                    <option value="organizations">Organizations</option>
+                                                    <option value="users">Users</option>
+                                                    <option value="items">Items</option>
+                                                    <option value="needs">Needs</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="subcategory" class="form-label">Subcategory</label>
+                                                <select class="form-select" id="subcategory" name="subcategory">
+                                                    <option value="">Select subcategory...</option>
+                                                    <!-- Options will be populated by JavaScript -->
+                                                </select>
+                                                <div class="form-text">Choose a specific subcategory for more targeted collection</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="personality_filter" class="form-label">User Activity Filter (Users only)</label>
+                                                <select class="form-select" id="personality_filter" name="personality_filter" disabled>
+                                                    <option value="">All users</option>
+                                                    <option value="active_producers">Active Producers (create many items)</option>
+                                                    <option value="active_consumers">Active Consumers (create many needs)</option>
+                                                    <option value="balanced_users">Balanced Users (both items and needs)</option>
+                                                    <option value="inactive_users">Inactive Users (few activities)</option>
+                                                    <option value="high_earners">High Earners (successful deals)</option>
+                                                </select>
+                                                <div class="form-text">Filter users by their activity and data contribution</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="description" name="description" rows="2" 
+                                                  placeholder="Describe what this collector does..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Website Configuration -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Website Configuration</h6>
+                                    <div class="mb-3">
+                                        <label for="url" class="form-label">Website URL *</label>
+                                        <input type="url" class="form-control" id="url" name="url" 
+                                               placeholder="https://example.com" required>
+                                        <div class="form-text">Any website you want to scrape</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="use_selenium" name="use_selenium">
+                                            <label class="form-check-label" for="use_selenium">
+                                                Use Selenium (for JavaScript-heavy sites)
+                                            </label>
+                                            <div class="form-text">Enable for sites that require JavaScript to load content</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Data Selectors -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Data Selectors</h6>
+                                    <p class="text-muted small">Define CSS selectors or XPath to extract specific data from the website.</p>
+                                    
+                                    <div id="selectors-container">
+                                        <div class="row mb-2">
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control" placeholder="Field Name" name="selector_name[]">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" placeholder="CSS Selector or XPath" name="selector_value[]">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSelector(this)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addSelector()">
+                                        <i class="fas fa-plus me-1"></i>Add Selector
+                                    </button>
+                                    
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <strong>Examples:</strong><br>
+                                            • CSS: <code>.company-name</code>, <code>h1.title</code><br>
+                                            • XPath: <code>//div[@class='company']//h2</code>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Chatbot Integration -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Chatbot Integration</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="chatbot_id" class="form-label">Target Chatbot</label>
+                                                <select class="form-select" id="chatbot_id" name="chatbot_id">
+                                                    <option value="">Select chatbot...</option>
+                                                    {% for chatbot in chatbots %}
+                                                    <option value="{{ chatbot.id }}">{{ chatbot.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <div class="form-text">Choose which chatbot form to auto-fill</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="field_mapping" class="form-label">Field Mapping</label>
+                                                <textarea class="form-control" id="field_mapping" name="field_mapping" rows="3" 
+                                                          placeholder='{"chatbot_field": "scraped_field"}'></textarea>
+                                                <div class="form-text">Map scraped fields to chatbot fields (JSON)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Scheduling -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Scheduling</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="schedule_type" class="form-label">Schedule Type</label>
+                                                <select class="form-select" id="schedule_type" name="schedule_type">
+                                                    <option value="manual">Manual Only</option>
+                                                    <option value="seconds">Every X Seconds</option>
+                                                    <option value="minutes">Every X Minutes</option>
+                                                    <option value="hours">Every X Hours</option>
+                                                    <option value="days">Every X Days</option>
+                                                    <option value="cron">Custom Time (HH:MM)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="schedule_value" class="form-label">Schedule Value</label>
+                                                <input type="text" class="form-control" id="schedule_value" name="schedule_value" 
+                                                       placeholder="30" disabled>
+                                                <div class="form-text">Number or time (e.g., 30, 09:00)</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="auto_approve" class="form-label">Auto Approve</label>
+                                                <select class="form-select" id="auto_approve" name="auto_approve">
+                                                    <option value="false">Manual Review</option>
+                                                    <option value="true">Auto Approve</option>
+                                                </select>
+                                                <div class="form-text">Automatically approve collected items</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Test Section -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary">Test Collector</h6>
+                                    <button type="button" class="btn btn-outline-info" onclick="testCollector()">
+                                        <i class="fas fa-play me-1"></i>Test Collector
+                                    </button>
+                                    <div id="test-results" class="mt-3" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <h6>Test Results:</h6>
+                                            <div id="test-output"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Create Advanced Collector
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Examples & Help</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Website Examples:</h6>
+                            <ul class="small">
+                                <li><strong>Google Maps:</strong> Search for "restaurants in Dubai"</li>
+                                <li><strong>Wikipedia:</strong> Scrape company information</li>
+                                <li><strong>Company Websites:</strong> Extract contact details</li>
+                                <li><strong>E-commerce:</strong> Product listings and prices</li>
+                            </ul>
+                            
+                            <h6>Common Selectors:</h6>
+                            <ul class="small">
+                                <li><code>.company-name</code> - Company names</li>
+                                <li><code>.phone</code> - Phone numbers</li>
+                                <li><code>.address</code> - Addresses</li>
+                                <li><code>.rating</code> - Ratings</li>
+                                <li><code>h1, h2, h3</code> - Headings</li>
+                            </ul>
+                            
+                            <h6>Scheduling:</h6>
+                            <ul class="small">
+                                <li><strong>Manual:</strong> Run only when you click "Run Now"</li>
+                                <li><strong>Every 30 minutes:</strong> Type "30" in value field</li>
+                                <li><strong>Daily at 9 AM:</strong> Select "Custom Time" and type "09:00"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add selector row
+function addSelector() {
+    const container = document.getElementById('selectors-container');
+    const row = document.createElement('div');
+    row.className = 'row mb-2';
+    row.innerHTML = `
+        <div class="col-md-4">
+            <input type="text" class="form-control" placeholder="Field Name" name="selector_name[]">
+        </div>
+        <div class="col-md-6">
+            <input type="text" class="form-control" placeholder="CSS Selector or XPath" name="selector_value[]">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSelector(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+}
+
+// Remove selector row
+function removeSelector(button) {
+    button.closest('.row').remove();
+}
+
+// Enable/disable schedule value based on type
+document.getElementById('schedule_type').addEventListener('change', function() {
+    const valueField = document.getElementById('schedule_value');
+    if (this.value === 'manual') {
+        valueField.disabled = true;
+        valueField.placeholder = 'Not needed';
+    } else {
+        valueField.disabled = false;
+        valueField.placeholder = this.value === 'cron' ? '09:00' : '30';
+    }
+});
+
+// Test collector
+function testCollector() {
+    const formData = new FormData(document.getElementById('collectorForm'));
+    const data = {
+        url: formData.get('url'),
+        selectors: {},
+        use_selenium: formData.get('use_selenium') === 'on'
+    };
+    
+    // Collect selectors
+    const names = formData.getAll('selector_name[]');
+    const values = formData.getAll('selector_value[]');
+    for (let i = 0; i < names.length; i++) {
+        if (names[i] && values[i]) {
+            data.selectors[names[i]] = values[i];
+        }
+    }
+    
+    if (!data.url || Object.keys(data.selectors).length === 0) {
+        alert('Please provide URL and at least one selector');
+        return;
+    }
+    
+    fetch('{{ url_for("admin.test_collector") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        const testResults = document.getElementById('test-results');
+        const testOutput = document.getElementById('test-output');
+        
+        if (result.success) {
+            testOutput.innerHTML = `
+                <p><strong>Success!</strong> ${result.message}</p>
+                <p>Found ${result.data_count} items</p>
+                <pre class="small">${JSON.stringify(result.sample_data, null, 2)}</pre>
+            `;
+        } else {
+            testOutput.innerHTML = `<p class="text-danger"><strong>Error:</strong> ${result.error}</p>`;
+        }
+        
+        testResults.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error testing collector');
+    });
+}
+
+// Subcategory options for each data type (based on actual app data)
+const subcategoryOptions = {
+    organizations: [
+        { value: 'company', text: 'Company' },
+        { value: 'team', text: 'Team' },
+        { value: 'project', text: 'Project' },
+        { value: 'community', text: 'Community' }
+    ],
+    users: [
+        { value: 'skiller', text: 'Skiller (Service Provider)' },
+        { value: 'producer', text: 'Producer (Product Creator)' },
+        { value: 'consultant', text: 'Consultant (Knowledge Provider)' },
+        { value: 'thinker', text: 'Thinker (Idea Generator)' },
+        { value: 'investor', text: 'Investor (Funding Provider)' },
+        { value: 'distributor', text: 'Distributor (Logistics)' },
+        { value: 'consumer', text: 'Consumer (Buyer)' },
+        { value: 'admin', text: 'Admin' },
+        { value: 'connector', text: 'Connector' },
+        { value: 'collector', text: 'Collector' },
+        { value: 'verifier', text: 'Verifier' }
+    ],
+    items: [
+        // Item Types
+        { value: 'product', text: 'Product' },
+        { value: 'service', text: 'Service' },
+        { value: 'need', text: 'Need' },
+        { value: 'idea', text: 'Idea' },
+        { value: 'project', text: 'Project' },
+        { value: 'fund', text: 'Fund' },
+        { value: 'event', text: 'Event' },
+        { value: 'auction', text: 'Auction' },
+        { value: 'experience', text: 'Experience' },
+        { value: 'opportunity', text: 'Opportunity' },
+        { value: 'information', text: 'Information' },
+        { value: 'observation', text: 'Observation' },
+        { value: 'hidden_gem', text: 'Hidden Gem' },
+        { value: 'valuable_person', text: 'Valuable Person' },
+        { value: 'olo', text: 'OLO' }
+    ],
+    needs: [
+        // Based on actual need types users create
+        { value: 'product_need', text: 'Product Need' },
+        { value: 'service_need', text: 'Service Need' },
+        { value: 'project_need', text: 'Project Need' },
+        { value: 'funding_need', text: 'Funding Need' },
+        { value: 'partnership_need', text: 'Partnership Need' },
+        { value: 'expertise_need', text: 'Expertise Need' },
+        { value: 'resource_need', text: 'Resource Need' },
+        { value: 'information_need', text: 'Information Need' },
+        { value: 'connection_need', text: 'Connection Need' },
+        { value: 'collaboration_need', text: 'Collaboration Need' }
+    ]
+};
+
+// Update subcategory options based on selected data type
+function updateSubcategories() {
+    const dataType = document.getElementById('data_type').value;
+    const subcategorySelect = document.getElementById('subcategory');
+    const personalityFilter = document.getElementById('personality_filter');
+    
+    // Clear existing options
+    subcategorySelect.innerHTML = '<option value="">Select subcategory...</option>';
+    
+    if (dataType && subcategoryOptions[dataType]) {
+        // Add options for selected data type
+        subcategoryOptions[dataType].forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.textContent = option.text;
+            subcategorySelect.appendChild(optionElement);
+        });
+    }
+    
+    // Enable/disable personality filter based on data type
+    if (dataType === 'users') {
+        personalityFilter.disabled = false;
+        personalityFilter.parentElement.style.display = 'block';
+    } else {
+        personalityFilter.disabled = true;
+        personalityFilter.parentElement.style.display = 'none';
+    }
+}
+
+// Form submission
+document.getElementById('collectorForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        data_type: formData.get('data_type'),
+        subcategory: formData.get('subcategory') || null,
+        personality_filter: formData.get('personality_filter') || null,
+        url: formData.get('url'),
+        use_selenium: formData.get('use_selenium') === 'on',
+        selectors: {},
+        chatbot_id: formData.get('chatbot_id') || null,
+        field_mapping: formData.get('field_mapping') ? JSON.parse(formData.get('field_mapping')) : {},
+        schedule_type: formData.get('schedule_type'),
+        schedule_value: formData.get('schedule_value'),
+        auto_approve: formData.get('auto_approve') === 'true'
+    };
+    
+    // Collect selectors
+    const names = formData.getAll('selector_name[]');
+    const values = formData.getAll('selector_value[]');
+    for (let i = 0; i < names.length; i++) {
+        if (names[i] && values[i]) {
+            data.selectors[names[i]] = values[i];
+        }
+    }
+    
+    fetch('{{ url_for("admin.create_data_collector") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Advanced collector created successfully!');
+            window.location.href = '{{ url_for("admin.data_collectors") }}';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the collector.');
+    });
+});
+</script>
+{% endblock %}

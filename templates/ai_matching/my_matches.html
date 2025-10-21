@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}My Matches - AI Matching{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-handshake me-2"></i>My Matches
+                    </h1>
+                    <p class="text-muted">{{ matches|length }} total matches</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('ai_matching.create_need') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Need
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Matches List
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="scoreFilter" id="allScores" checked>
+                            <label class="btn btn-outline-secondary" for="allScores">All Scores</label>
+                            
+                            <input type="radio" class="btn-check" name="scoreFilter" id="highScores">
+                            <label class="btn btn-outline-secondary" for="highScores">High Quality</label>
+                            
+                            <input type="radio" class="btn-check" name="scoreFilter" id="mediumScores">
+                            <label class="btn btn-outline-secondary" for="mediumScores">Medium Quality</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if matches %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Need</th>
+                                        <th>Matching Item</th>
+                                        <th>Score</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Price</th>
+                                        <th>Feedback</th>
+                                        <th>Matched</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for match in matches %}
+                                    <tr data-score="{{ match.score }}">
+                                        <td>
+                                            <div>
+                                                <div class="fw-semibold">{{ match.need.title }}</div>
+                                                <div class="text-muted small">{{ match.need.category }}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-semibold">
+                                                    <a href="{{ url_for('profiles.item_detail', item_id=match.item.id) }}" class="text-decoration-none">
+                                                        {{ match.item.title }}
+                                                    </a>
+                                                </div>
+                                                <div class="text-muted small">{{ match.item.description[:80] }}{% if match.item.description|length > 80 %}...{% endif %}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if match.score >= 0.8 else 'warning' if match.score >= 0.6 else 'secondary' }}">
+                                                {{ "%.1f"|format(match.score * 100) }}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'primary' if match.item.category == 'product' else 'success' if match.item.category == 'service' else 'info' }}">
+                                                {{ match.item.category.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {% if match.item.location %}
+                                                    <i class="fas fa-map-marker-alt me-1"></i>{{ match.item.location }}
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {% if match.item.price %}
+                                                    <i class="fas fa-dollar-sign me-1"></i>${{ "%.2f"|format(match.item.price) }}
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if match.feedback %}
+                                                <span class="badge bg-{{ 'success' if match.feedback.feedback_type == 'positive' else 'danger' }}">
+                                                    <i class="fas fa-thumbs-{{ 'up' if match.feedback.feedback_type == 'positive' else 'down' }}"></i>
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">No feedback</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                {{ match.created_at.strftime('%b %d, %Y') }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('profiles.item_detail', item_id=match.item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('ai_matching.view_need', need_id=match.need.id) }}" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-lightbulb"></i>
+                                                </a>
+                                                {% if not match.feedback %}
+                                                <button type="button" class="btn btn-sm btn-outline-success" onclick="recordFeedback({{ match.id }}, 'positive')">
+                                                    <i class="fas fa-thumbs-up"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="recordFeedback({{ match.id }}, 'negative')">
+                                                    <i class="fas fa-thumbs-down"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-handshake text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">No matches yet</h5>
+                            <p class="text-muted">Create a need to start finding matching items.</p>
+                            <a href="{{ url_for('ai_matching.create_need') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Need
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter matches by score
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('input[name="scoreFilter"]');
+    const rows = document.querySelectorAll('tbody tr');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const filter = this.id;
+            rows.forEach(row => {
+                const score = parseFloat(row.getAttribute('data-score'));
+                if (filter === 'allScores') {
+                    row.style.display = '';
+                } else if (filter === 'highScores' && score >= 0.8) {
+                    row.style.display = '';
+                } else if (filter === 'mediumScores' && score >= 0.6 && score < 0.8) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+function recordFeedback(matchId, feedback) {
+    fetch('{{ url_for("ai_matching.feedback") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            match_id: matchId,
+            feedback_type: feedback,
+            feedback_details: ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while recording feedback.');
+    });
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

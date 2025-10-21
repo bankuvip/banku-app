@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}Question-Based Product Form Simulation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-question-circle me-2"></i>Question-Based Product Form Simulation</h4>
+                    <p class="mb-0 mt-2">Step-by-step product creation with guided questions</p>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Progress</span>
+                            <span class="text-muted" id="progress-text">Step 1 of 8</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" id="progress-bar" style="width: 12.5%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Interface -->
+                    <div class="chat-container" style="height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; background-color: #f8f9fa;">
+                        <div class="chat-messages" id="chat-messages">
+                            <!-- Messages will be added here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="mt-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="user-input" placeholder="Type your answer here..." disabled>
+                            <button class="btn btn-primary" id="send-btn" disabled>
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-outline-secondary btn-sm" id="restart-btn">
+                                <i class="fas fa-redo"></i> Restart Simulation
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" id="skip-btn" style="display: none;">
+                                <i class="fas fa-forward"></i> Skip This Question
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Section (Hidden initially) -->
+                    <div class="mt-4" id="summary-section" style="display: none;">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Form Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="form-summary"></div>
+                                <div class="mt-3">
+                                    <button class="btn btn-success" id="export-btn">
+                                        <i class="fas fa-download"></i> Export as JSON
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="new-form-btn">
+                                        <i class="fas fa-plus"></i> Start New Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    margin-bottom: 15px;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.message-bot {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.message-user {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+}
+
+.message-bubble {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.bot-bubble {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    margin-left: 10px;
+}
+
+.user-bubble {
+    background: #e9ecef;
+    color: #333;
+    margin-right: 10px;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.bot-avatar {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.user-avatar {
+    background: #6c757d;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #667eea;
+    margin: 0 2px;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+
+.question-options {
+    margin-top: 10px;
+}
+
+.option-btn {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.option-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateX(5px);
+}
+</style>
+
+<script>
+class QuestionBasedForm {
+    constructor() {
+        this.currentStep = 0;
+        this.formData = {};
+        this.questions = [
+            {
+                question: "What type of product are you creating?",
+                field: "main_category",
+                type: "select",
+                options: [
+                    { value: "physical", text: "Physical Product (tangible items)" },
+                    { value: "digital", text: "Digital Product (software, files)" },
+                    { value: "knowledge", text: "Knowledge Product (courses, guides)" },
+                    { value: "plans_strategies", text: "Plans & Strategies" },
+                    { value: "imagination_creativity", text: "Creative Works" }
+                ],
+                required: true
+            },
+            {
+                question: "What's the specific sub-category?",
+                field: "sub_category",
+                type: "text",
+                placeholder: "e.g., Electronics, Software, Business Plan, etc.",
+                required: true
+            },
+            {
+                question: "What's the product title or name?",
+                field: "title",
+                type: "text",
+                placeholder: "Enter the product name",
+                required: true
+            },
+            {
+                question: "Who is the creator or manufacturer?",
+                field: "creator",
+                type: "text",
+                placeholder: "Brand name, creator, or manufacturer",
+                required: true
+            },
+            {
+                question: "Give a brief description of your product (max 200 characters):",
+                field: "short_description",
+                type: "textarea",
+                placeholder: "Brief description of what this product is and does",
+                maxLength: 200,
+                required: true
+            },
+            {
+                question: "What's the condition of your product?",
+                field: "condition",
+                type: "select",
+                options: [
+                    { value: "new", text: "New" },
+                    { value: "like_new", text: "Like New" },
+                    { value: "used_a", text: "Used - Excellent" },
+                    { value: "used_b", text: "Used - Good" },
+                    { value: "used_c", text: "Used - Fair" },
+                    { value: "refurbished", text: "Refurbished" },
+                    { value: "prototype", text: "Prototype" }
+                ],
+                required: true
+            },
+            {
+                question: "What's your pricing model?",
+                field: "pricing_type",
+                type: "select",
+                options: [
+                    { value: "free", text: "Free" },
+                    { value: "paid", text: "Paid" },
+                    { value: "hybrid", text: "Hybrid (Free + Paid features)" },
+                    { value: "negotiable", text: "Negotiable / On Request" }
+                ],
+                required: true
+            },
+            {
+                question: "Where is this product available?",
+                field: "location",
+                type: "text",
+                placeholder: "City, Country or 'Online'",
+                required: false
+            }
+        ];
+        
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.startForm();
+    }
+
+    bindEvents() {
+        document.getElementById('send-btn').addEventListener('click', () => this.handleSubmit());
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleSubmit();
+        });
+        document.getElementById('restart-btn').addEventListener('click', () => this.restart());
+        document.getElementById('new-form-btn').addEventListener('click', () => this.restart());
+    }
+
+    startForm() {
+        this.addBotMessage("Hello! I'll help you create a product step by step. Let's start with the first question:");
+        this.askQuestion();
+    }
+
+    askQuestion() {
+        if (this.currentStep >= this.questions.length) {
+            this.showSummary();
+            return;
+        }
+
+        const question = this.questions[this.currentStep];
+        this.updateProgress();
+        
+        setTimeout(() => {
+            this.addBotMessage(question.question, question);
+        }, 500);
+    }
+
+    addBotMessage(text, question = null) {
+        const messagesContainer = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-bot';
+        
+        messageDiv.innerHTML = `
+            <div class="message-avatar bot-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-bubble bot-bubble">
+                ${text}
+                ${question && question.type === 'select' ? this.createOptions(question.options) : ''}
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+        
+        // Enable input
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
+        
+        if (question) {
+            userInput.placeholder = question.placeholder || "Type your answer here...";
+        }
+    }
+
+    createOptions(options) {
+        let html = '<div class="question-options">';
+        options.forEach(option => {
+            html += `<button class="option-btn" data-value="${option.value}">${option.text}</button>`;
+        });
+        html += '</div>';
+        
+        // Add click handlers for options
+        setTimeout(() => {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const value = e.target.getAttribute('data-value');
+                    document.getElementById('user-input').value = e.target.textContent;
+                    this.handleSubmit();
+                });
+            });
+        }, 100);
+        
+        return html;
+    }
+
+    addUserMessage(text) {
+        const messagesContainer = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-user';
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble user-bubble">
+                ${text}
+            </div>
+            <div class="message-avatar user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+
+    handleSubmit() {
+        const userInput = document.getElementById('user-input');
+        const value = userInput.value.trim();
+        
+        if (!value) return;
+        
+        this.addUserMessage(value);
+        
+        // Store the answer
+        const currentQuestion = this.questions[this.currentStep];
+        this.formData[currentQuestion.field] = value;
+        
+        // Clear input
+        userInput.value = '';
+        userInput.disabled = true;
+        document.getElementById('send-btn').disabled = true;
+        
+        // Move to next question
+        this.currentStep++;
+        
+        // Show typing indicator
+        this.showTypingIndicator();
+        
+        setTimeout(() => {
+            this.hideTypingIndicator();
+            this.askQuestion();
+        }, 1000);
+    }
+
+    showTypingIndicator() {
+        const messagesContainer = document.getElementById('chat-messages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message-bot';
+        typingDiv.id = 'typing-indicator';
+        
+        typingDiv.innerHTML = `
+            <div class="message-avatar bot-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(typingDiv);
+        this.scrollToBottom();
+    }
+
+    hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+
+    updateProgress() {
+        const progress = ((this.currentStep + 1) / this.questions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+        document.getElementById('progress-text').textContent = `Step ${this.currentStep + 1} of ${this.questions.length}`;
+    }
+
+    showSummary() {
+        const summarySection = document.getElementById('summary-section');
+        const summaryDiv = document.getElementById('form-summary');
+        
+        let summaryHtml = '<h6>Your Product Information:</h6><ul class="list-group list-group-flush">';
+        
+        Object.keys(this.formData).forEach(key => {
+            const question = this.questions.find(q => q.field === key);
+            const label = question ? question.question : key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            summaryHtml += `<li class="list-group-item"><strong>${label}:</strong> ${this.formData[key]}</li>`;
+        });
+        
+        summaryHtml += '</ul>';
+        summaryDiv.innerHTML = summaryHtml;
+        summarySection.style.display = 'block';
+        
+        this.addBotMessage("Great! I've collected all the information. Check the summary below and you can export it as JSON.");
+    }
+
+    restart() {
+        this.currentStep = 0;
+        this.formData = {};
+        document.getElementById('chat-messages').innerHTML = '';
+        document.getElementById('summary-section').style.display = 'none';
+        this.startForm();
+    }
+
+    scrollToBottom() {
+        const chatContainer = document.querySelector('.chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+
+// Initialize the form when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    new QuestionBasedForm();
+});
+</script>
+{% endblock %}
+
+
+
+
+

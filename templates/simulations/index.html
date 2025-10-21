@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Form Simulations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h2 class="display-4 mb-3">Form Simulation Experiments</h2>
+                <p class="lead text-muted">Testing new interactive form approaches for product creation</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> These are experimental simulations and may be removed after testing.
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Question-Based Form -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0"><i class="fas fa-question-circle me-2"></i>Question-Based Form</h4>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <h5>Step-by-Step Guided Questions</h5>
+                                <p class="text-muted">Traditional form approach with specific questions extracted from the product form. Users answer predefined questions one by one with a progress indicator.</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6>Features:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>8 predefined questions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Progress bar with steps</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Multiple choice options</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Chat-like interface</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Form validation</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>JSON export</li>
+                                </ul>
+                            </div>
+
+                            <div class="mt-auto">
+                                <a href="{{ url_for('simulations.question_based') }}" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-play me-2"></i>Try Question-Based Form
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI-Driven Chat -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg">
+                        <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                            <h4 class="mb-0"><i class="fas fa-brain me-2"></i>AI-Driven Chat</h4>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <h5>Intelligent Conversation</h5>
+                                <p class="text-muted">AI-powered chat that adapts questions based on user responses. The AI analyzes answers and asks intelligent follow-up questions to gather comprehensive product information.</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6>Features:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Natural language processing</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Adaptive questioning</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>AI suggestions</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Real-time analysis</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Smart data extraction</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Conversation insights</li>
+                                </ul>
+                            </div>
+
+                            <div class="mt-auto">
+                                <a href="{{ url_for('simulations.ai_driven') }}" class="btn btn-primary btn-lg w-100" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none;">
+                                    <i class="fas fa-robot me-2"></i>Try AI-Driven Chat
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Simulation Comparison</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th class="text-center">Question-Based</th>
+                                            <th class="text-center">AI-Driven</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>User Experience</strong></td>
+                                            <td class="text-center">Structured, predictable</td>
+                                            <td class="text-center">Natural, conversational</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Data Collection</strong></td>
+                                            <td class="text-center">Fixed questions</td>
+                                            <td class="text-center">Adaptive questions</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Learning Curve</strong></td>
+                                            <td class="text-center">Low - familiar form pattern</td>
+                                            <td class="text-center">Medium - chat interface</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Flexibility</strong></td>
+                                            <td class="text-center">Limited to predefined questions</td>
+                                            <td class="text-center">High - adapts to responses</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Completion Time</strong></td>
+                                            <td class="text-center">Fast - 8 questions</td>
+                                            <td class="text-center">Variable - depends on conversation</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Data Quality</strong></td>
+                                            <td class="text-center">Consistent, structured</td>
+                                            <td class="text-center">Rich, contextual</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Technical Complexity</strong></td>
+                                            <td class="text-center">Low</td>
+                                            <td class="text-center">High</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back to Dashboard -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+

@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block title %}All Collected Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-database me-2"></i>All Collected Data</h2>
+                <div>
+                    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addAllToBankModal">
+                        <i class="fas fa-plus me-2"></i>Add All to Bank
+                    </button>
+                    <a href="{{ url_for('admin.data_collectors') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Collectors
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Summary Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ collectors|length }}</h4>
+                                    <p class="mb-0">Total Collectors</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-robot fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ collected_items|length }}</h4>
+                                    <p class="mb-0">Items Collected</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-box fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ collected_organizations|length }}</h4>
+                                    <p class="mb-0">Organizations Collected</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-building fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="mb-0">{{ chatbot_responses|length }}</h4>
+                                    <p class="mb-0">Chatbot Responses</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-comments fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collectors Overview -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-robot me-2"></i>Collectors Overview
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Success Count</th>
+                                            <th>Error Count</th>
+                                            <th>Last Run</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for collector in collectors %}
+                                        <tr>
+                                            <td>{{ collector.id }}</td>
+                                            <td>{{ collector.name }}</td>
+                                            <td><span class="badge bg-secondary">{{ collector.data_type.title() }}</span></td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if collector.is_active else 'secondary' }}">
+                                                    {{ 'Active' if collector.is_active else 'Inactive' }}
+                                                </span>
+                                            </td>
+                                            <td><span class="badge bg-success">{{ collector.success_count }}</span></td>
+                                            <td><span class="badge bg-danger">{{ collector.error_count }}</span></td>
+                                            <td>{{ collector.last_run.strftime('%Y-%m-%d %H:%M') if collector.last_run else 'Never' }}</td>
+                                            <td>
+                                                <a href="{{ url_for('admin.collector_data', collector_id=collector.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>View Data
+                                                </a>
+                                                <a href="{{ url_for('admin.edit_data_collector', collector_id=collector.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit me-1"></i>Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-box me-2"></i>Recent Items
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if collected_items %}
+                                <div class="list-group list-group-flush">
+                                    {% for item in collected_items[:5] %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.title }}</h6>
+                                            <small class="text-muted">{{ item.category }} • {{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else 'Unknown' }}</small>
+                                        </div>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('banks.item_detail', item_id=item.id) }}" class="btn btn-sm btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-success" title="Add to Bank" onclick="addItemToBank({{ item.id }}, '{{ item.title }}', 'item')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% if collected_items|length > 5 %}
+                                    <div class="text-center mt-3">
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View All {{ collected_items|length }} Items</a>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Items Collected Yet</h5>
+                                    <p class="text-muted">Start running your collectors to see items here.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-building me-2"></i>Recent Organizations
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if collected_organizations %}
+                                <div class="list-group list-group-flush">
+                                    {% for org in collected_organizations[:5] %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ org.name }}</h6>
+                                            <small class="text-muted">{{ org.organization_type.name if org.organization_type else 'Unknown' }} • {{ org.created_at.strftime('%Y-%m-%d %H:%M') if org.created_at else 'Unknown' }}</small>
+                                        </div>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('organizations.view', slug=org.slug) }}" class="btn btn-sm btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-success" title="Add to Bank" onclick="addItemToBank({{ org.id }}, '{{ org.name }}', 'organization')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% if collected_organizations|length > 5 %}
+                                    <div class="text-center mt-3">
+                                        <a href="#" class="btn btn-outline-primary btn-sm">View All {{ collected_organizations|length }} Organizations</a>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Organizations Collected Yet</h5>
+                                    <p class="text-muted">Start running your collectors to see organizations here.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Individual Item to Bank Modal -->
+<div class="modal fade" id="addItemToBankModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add Item to Bank
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Add <strong id="itemName"></strong> to a bank.
+                </div>
+                
+                <form id="addItemToBankForm">
+                    <input type="hidden" id="itemId" name="item_id">
+                    <input type="hidden" id="itemType" name="item_type">
+                    
+                    <div class="mb-3">
+                        <label for="bankSelectItem" class="form-label">Select Bank</label>
+                        <select class="form-select" id="bankSelectItem" name="bank_id" required>
+                            <option value="">Choose a bank...</option>
+                            <!-- Banks will be populated by JavaScript -->
+                        </select>
+                        <div class="form-text">Choose which bank to add this item to</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmAddItem" required>
+                            <label class="form-check-label" for="confirmAddItem">
+                                I confirm that I want to add this item to the selected bank
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="addItemToBankBtn" disabled>
+                    <i class="fas fa-plus me-2"></i>Add to Bank
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add All to Bank Modal -->
+<div class="modal fade" id="addAllToBankModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add All Collected Data to Bank
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This will add all collected data from all collectors to the selected bank.
+                </div>
+                
+                <form id="addAllToBankForm">
+                    <div class="mb-3">
+                        <label for="bankSelectAll" class="form-label">Select Bank</label>
+                        <select class="form-select" id="bankSelectAll" name="bank_id" required>
+                            <option value="">Choose a bank...</option>
+                            <!-- Banks will be populated by JavaScript -->
+                        </select>
+                        <div class="form-text">Choose which bank to add all collected data to</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Data Summary</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">{{ collected_items|length }}</h5>
+                                        <p class="card-text">Items</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">{{ collected_organizations|length }}</h5>
+                                        <p class="card-text">Organizations</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">{{ collectors|length }}</h5>
+                                        <p class="card-text">Collectors</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmAddAll" required>
+                            <label class="form-check-label" for="confirmAddAll">
+                                I confirm that I want to add all this data to the selected bank
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="addAllToBankBtn" disabled>
+                    <i class="fas fa-plus me-2"></i>Add All to Bank
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add Individual Item to Bank functionality
+function addItemToBank(itemId, itemName, itemType) {
+    document.getElementById('itemId').value = itemId;
+    document.getElementById('itemType').value = itemType;
+    document.getElementById('itemName').textContent = itemName;
+    
+    // Reset form
+    document.getElementById('bankSelectItem').value = '';
+    document.getElementById('confirmAddItem').checked = false;
+    document.getElementById('addItemToBankBtn').disabled = true;
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('addItemToBankModal')).show();
+}
+
+// Add All to Bank functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const bankSelect = document.getElementById('bankSelectAll');
+    const confirmCheckbox = document.getElementById('confirmAddAll');
+    const addAllToBankBtn = document.getElementById('addAllToBankBtn');
+    
+    // Individual item bank selection
+    const bankSelectItem = document.getElementById('bankSelectItem');
+    const confirmAddItem = document.getElementById('confirmAddItem');
+    const addItemToBankBtn = document.getElementById('addItemToBankBtn');
+    
+    // Load banks for both dropdowns
+    fetch('/admin/banks/api/list')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                data.banks.forEach(bank => {
+                    // Add to main dropdown
+                    const option = document.createElement('option');
+                    option.value = bank.id;
+                    option.textContent = `${bank.name} (${bank.bank_type})`;
+                    bankSelect.appendChild(option);
+                    
+                    // Add to individual item dropdown
+                    const optionItem = document.createElement('option');
+                    optionItem.value = bank.id;
+                    optionItem.textContent = `${bank.name} (${bank.bank_type})`;
+                    bankSelectItem.appendChild(optionItem);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading banks:', error);
+            bankSelect.innerHTML = '<option value="">Error loading banks</option>';
+            bankSelectItem.innerHTML = '<option value="">Error loading banks</option>';
+        });
+    
+    // Enable/disable add button based on form completion
+    function updateAddButton() {
+        const bankSelected = bankSelect.value !== '';
+        const confirmed = confirmCheckbox.checked;
+        addAllToBankBtn.disabled = !(bankSelected && confirmed);
+    }
+    
+    bankSelect.addEventListener('change', updateAddButton);
+    confirmCheckbox.addEventListener('change', updateAddButton);
+    
+    // Individual item functionality
+    function updateAddItemButton() {
+        const bankSelected = bankSelectItem.value !== '';
+        const confirmed = confirmAddItem.checked;
+        addItemToBankBtn.disabled = !(bankSelected && confirmed);
+    }
+    
+    bankSelectItem.addEventListener('change', updateAddItemButton);
+    confirmAddItem.addEventListener('change', updateAddItemButton);
+    
+    // Handle add all to bank
+    addAllToBankBtn.addEventListener('click', function() {
+        if (!addAllToBankBtn.disabled) {
+            const formData = new FormData();
+            formData.append('bank_id', bankSelect.value);
+            
+            fetch('/admin/data-collectors/add-all-to-bank', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('All data successfully added to bank!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding data to bank');
+            });
+        }
+    });
+    
+    // Handle add individual item to bank
+    addItemToBankBtn.addEventListener('click', function() {
+        if (!addItemToBankBtn.disabled) {
+            const formData = new FormData();
+            formData.append('bank_id', bankSelectItem.value);
+            formData.append('item_id', document.getElementById('itemId').value);
+            formData.append('item_type', document.getElementById('itemType').value);
+            
+            fetch('/admin/data-collectors/add-item-to-bank', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Item successfully added to bank!');
+                    bootstrap.Modal.getInstance(document.getElementById('addItemToBankModal')).hide();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding item to bank');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Create Role - BankU{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-user-tag me-2"></i>Create New Role
+                    </h4>
+                    <p class="text-muted mb-0">Define a new role with specific permissions</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Role Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">Please provide a role name.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="is_internal" class="form-label">Role Type</label>
+                                <select class="form-select" id="is_internal" name="is_internal">
+                                    <option value="false">External (User Role)</option>
+                                    <option value="true">Internal (Staff Role)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Permissions</label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">User Management</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="users_create" id="users_create">
+                                        <label class="form-check-label" for="users_create">Create Users</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="users_read" id="users_read">
+                                        <label class="form-check-label" for="users_read">Read Users</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="users_update" id="users_update">
+                                        <label class="form-check-label" for="users_update">Update Users</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="users_delete" id="users_delete">
+                                        <label class="form-check-label" for="users_delete">Delete Users</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Deal Management</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="deals_create" id="deals_create">
+                                        <label class="form-check-label" for="deals_create">Create Deals</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="deals_read" id="deals_read">
+                                        <label class="form-check-label" for="deals_read">Read Deals</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="deals_update" id="deals_update">
+                                        <label class="form-check-label" for="deals_update">Update Deals</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="deals_delete" id="deals_delete">
+                                        <label class="form-check-label" for="deals_delete">Delete Deals</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Item Management</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="items_create" id="items_create">
+                                        <label class="form-check-label" for="items_create">Create Items</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="items_read" id="items_read">
+                                        <label class="form-check-label" for="items_read">Read Items</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="items_update" id="items_update">
+                                        <label class="form-check-label" for="items_update">Update Items</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="items_verify" id="items_verify">
+                                        <label class="form-check-label" for="items_verify">Verify Items</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">System Administration</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="roles_create" id="roles_create">
+                                        <label class="form-check-label" for="roles_create">Create Roles</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="roles_read" id="roles_read">
+                                        <label class="form-check-label" for="roles_read">Read Roles</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions" value="analytics_read" id="analytics_read">
+                                        <label class="form-check-label" for="analytics_read">View Analytics</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.roles') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Roles
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Create Role
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

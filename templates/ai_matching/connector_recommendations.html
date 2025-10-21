@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}AI Generated Recommendations - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-robot me-2"></i>AI Engine - All Recommendations
+                </h1>
+                <div>
+                    <button id="auto-generate-btn" class="btn btn-primary me-2">
+                        <i class="fas fa-magic me-1"></i>Auto Generate
+                    </button>
+                    <a href="{{ url_for('ai_matching.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted">AI Engine generates and stores all recommendations. Users see personalized views in their dashboard.</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recommendations|length }}</h4>
+                            <p class="card-text">Pending Recommendations</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recommendations|selectattr('confidence', 'equalto', 'high')|list|length }}</h4>
+                            <p class="card-text">High Confidence</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-star fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recommendations|selectattr('confidence', 'equalto', 'medium')|list|length }}</h4>
+                            <p class="card-text">Medium Confidence</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recommendations|selectattr('confidence', 'equalto', 'low')|list|length }}</h4>
+                            <p class="card-text">Low Confidence</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>AI-Generated Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recommendations %}
+                        <div class="row">
+                            {% for rec in recommendations %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100 border-0 shadow-sm recommendation-card" data-recommendation-id="{{ rec.id }}">
+                                    <div class="card-header bg-{{ 'success' if rec.confidence == 'high' else 'warning' if rec.confidence == 'medium' else 'info' }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-white text-{{ 'success' if rec.confidence == 'high' else 'warning' if rec.confidence == 'medium' else 'info' }}">
+                                                {{ rec.confidence.title() }} Confidence
+                                            </span>
+                                            <span class="badge bg-light text-dark">
+                                                {{ "%.1f"|format(rec.match_score * 100) }}% Match
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Need Information -->
+                                        <div class="mb-3">
+                                            <h6 class="text-primary mb-1">
+                                                <i class="fas fa-bullhorn me-1"></i>Need
+                                            </h6>
+                                            <p class="mb-1 fw-bold">{{ rec.need.title }}</p>
+                                            <p class="text-muted small mb-1">{{ rec.need.description[:100] }}{% if rec.need.description|length > 100 %}...{% endif %}</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-user me-1"></i>{{ rec.need_user.first_name }} {{ rec.need_user.last_name }}
+                                            </small>
+                                        </div>
+
+                                        <!-- Item Information -->
+                                        <div class="mb-3">
+                                            <h6 class="text-success mb-1">
+                                                <i class="fas fa-box me-1"></i>Matching Item
+                                            </h6>
+                                            <p class="mb-1 fw-bold">{{ rec.item.title }}</p>
+                                            <p class="text-muted small mb-1">{{ rec.item.short_description[:100] }}{% if rec.item.short_description|length > 100 %}...{% endif %}</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-user me-1"></i>{{ rec.item_creator.first_name if rec.item_creator else 'Unknown' }} {{ rec.item_creator.last_name if rec.item_creator else '' }}
+                                            </small>
+                                        </div>
+
+                                        <!-- Match Reason -->
+                                        <div class="mb-3">
+                                            <h6 class="text-info mb-1">
+                                                <i class="fas fa-lightbulb me-1"></i>Why This Match?
+                                            </h6>
+                                            <p class="text-muted small">{{ rec.reason }}</p>
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-success btn-sm create-deal-btn" data-recommendation-id="{{ rec.id }}">
+                                                <i class="fas fa-handshake me-1"></i>Create Deal
+                                            </button>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-outline-success btn-sm accept-btn" data-recommendation-id="{{ rec.id }}">
+                                                    <i class="fas fa-check me-1"></i>Accept
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm reject-btn" data-recommendation-id="{{ rec.id }}">
+                                                    <i class="fas fa-times me-1"></i>Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer text-muted small">
+                                        <i class="fas fa-clock me-1"></i>{{ rec.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Recommendations Available</h4>
+                            <p class="text-muted">Try generating new recommendations or check back later.</p>
+                            <button id="auto-generate-btn-empty" class="btn btn-primary">
+                                <i class="fas fa-magic me-1"></i>Generate Recommendations
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto generate button
+    document.getElementById('auto-generate-btn')?.addEventListener('click', function() {
+        generateRecommendations();
+    });
+    
+    document.getElementById('auto-generate-btn-empty')?.addEventListener('click', function() {
+        generateRecommendations();
+    });
+
+    // Action buttons
+    document.querySelectorAll('.create-deal-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.dataset.recommendationId;
+            handleRecommendationAction(recommendationId, 'create_deal');
+        });
+    });
+
+    document.querySelectorAll('.accept-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.dataset.recommendationId;
+            handleRecommendationAction(recommendationId, 'accept');
+        });
+    });
+
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recommendationId = this.dataset.recommendationId;
+            handleRecommendationAction(recommendationId, 'reject');
+        });
+    });
+
+    function generateRecommendations() {
+        fetch('{{ url_for("ai_matching.auto_generate_recommendations") }}', {
+        method: 'POST',
+        headers: {
+            
+                'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'Error generating recommendations');
+        });
+    }
+
+    function handleRecommendationAction(recommendationId, action) {
+        fetch(`{{ url_for('ai_matching.handle_recommendation_action', recommendation_id=0) }}`.replace('0', recommendationId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: action })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    showAlert('success', data.message);
+                    // Remove the card from the UI
+                    const card = document.querySelector(`[data-recommendation-id="${recommendationId}"]`);
+                    if (card) {
+                        card.style.opacity = '0.5';
+                        card.style.pointerEvents = 'none';
+                    }
+                }
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'Error processing action');
+        });
+    }
+
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.top = '20px';
+        alert.style.right = '20px';
+        alert.style.zIndex = '9999';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+.recommendation-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.card-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+}
+</style>
+{% endblock %}
+

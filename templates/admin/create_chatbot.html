@@ -1,0 +1,2852 @@
+{% extends "base.html" %}
+
+{% block title %}Create Chatbot - BankU{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>Create New Chatbot
+                </h1>
+                <a href="{{ url_for('admin.chatbots') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Chatbots
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">Chatbot Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="chatbotForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="flowName" class="form-label">Chatbot Name *</label>
+                                <input type="text" class="form-control" id="flowName" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="flowDescription" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="flowDescription" name="description">
+                            </div>
+                        </div>
+
+                        <!-- Step Blocks Management -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Step Blocks & Questions</h5>
+                                <button type="button" class="btn btn-primary btn-sm" id="addStepBlock">
+                                    <i class="fas fa-plus me-2"></i>Add Step Block
+                                </button>
+                            </div>
+                            
+                            <div id="stepBlocksContainer">
+                                <!-- Step blocks will be added here dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.chatbots') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="button" class="btn btn-primary" onclick="submitForm()">
+                                <i class="fas fa-save me-2"></i>{% if is_edit is defined and is_edit %}Update{% else %}Create{% endif %} Chatbot
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-block-item {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.step-block-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.step-block-item .card-header {
+    border-radius: 6px 6px 0 0;
+}
+
+.question-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s;
+}
+
+.question-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+.question-item.editing {
+    background: white;
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.questions-list {
+    min-height: 50px;
+    border: 2px dashed #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    background: #f8f9fa;
+}
+
+.questions-list:empty::before {
+    content: "No questions yet. Click 'Add Question' to get started.";
+    color: #6c757d;
+    font-style: italic;
+    display: block;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Step Collapse/Expand Styles */
+.step-block-item .card-body {
+    transition: all 0.3s ease;
+}
+
+.step-block-item.collapsed .card-body {
+    display: none;
+}
+
+.toggle-step-collapse {
+    transition: all 0.3s ease;
+}
+
+.toggle-step-collapse:hover {
+    transform: scale(1.05);
+}
+
+.save-step-final {
+    transition: all 0.3s ease;
+}
+
+.save-step-final:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Question Collapse/Expand Styles */
+.question-item .question-details {
+    transition: all 0.3s ease;
+}
+
+.question-item.collapsed .question-details {
+    display: none;
+}
+
+.question-item.collapsed {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.toggle-question-collapse {
+    transition: all 0.3s ease;
+}
+
+.toggle-question-collapse:hover {
+    transform: scale(1.05);
+}
+
+.step-edit-form {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+}
+
+.question-details {
+    background: white;
+    border-radius: 4px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    margin-top: 10px;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+</style>
+
+<!-- Step Block Template -->
+<template id="stepBlockTemplate">
+    <div class="step-block-item card mb-3" data-step-index="">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-layer-group me-2"></i>
+                <h6 class="mb-0">Step <span class="step-number">1</span>: <span class="step-name">Step Name</span></h6>
+            </div>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-light toggle-step-collapse" title="Collapse/Expand">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-light move-step-up" title="Move Up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-light move-step-down" title="Move Down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button type="button" class="btn btn-outline-light edit-step" title="Edit Step">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger remove-step" title="Remove Step">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Step Block Info (Hidden by default, shown when editing) -->
+            <div class="step-edit-form" style="display: none;">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Step Name *</label>
+                        <input type="text" class="form-control step-name-input" name="step_name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Step Description</label>
+                        <input type="text" class="form-control step-description-input" name="step_description">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input step-required-input" type="checkbox" name="step_required" checked>
+                            <label class="form-check-label">Required Step</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Completion Message</label>
+                        <input type="text" class="form-control step-completion-input" name="step_completion" placeholder="Great! Moving to next step...">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm cancel-edit-step">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm save-step">Save Step</button>
+                </div>
+            </div>
+            
+            <!-- Step Display (shown by default) -->
+            <div class="step-display">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-1 step-display-name">Step Name</h6>
+                        <p class="text-muted mb-0 step-display-description">Step description</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-danger step-required-badge">Required</span>
+                        <span class="badge bg-info step-questions-count">0 Questions</span>
+                    </div>
+                </div>
+                
+                <!-- Questions Container -->
+                <div class="questions-container">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Questions</h6>
+                        <button type="button" class="btn btn-success btn-sm add-question">
+                            <i class="fas fa-plus me-1"></i>Add Question
+                        </button>
+                    </div>
+                    <div class="questions-list">
+                        <!-- Questions will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Save Step Button -->
+                <div class="d-flex justify-content-end mt-3 pt-3 border-top">
+                    <button type="button" class="btn btn-primary save-step-final">
+                        <i class="fas fa-save me-1"></i>Save Step
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Question Template -->
+<template id="questionTemplate">
+    <div class="question-item border rounded p-3 mb-2" data-question-index="">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-secondary me-2 question-number">1</span>
+                    <span class="question-text-display">Question text will appear here</span>
+                    <span class="badge bg-primary ms-2 question-type-badge">text</span>
+                </div>
+                <div class="question-details" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="form-label">Question Text *</label>
+                            <input type="text" class="form-control question-text-input" name="question_text">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Question Type *</label>
+                            <select class="form-select question-type-select" name="question_type">
+                                <option value="text">Text Input</option>
+                                <option value="email">Email</option>
+                                <option value="phone">Phone</option>
+                                <option value="number">Number</option>
+                                <option value="number_unit">Number + Unit</option>
+                                <option value="images">Images Upload</option>
+                                <option value="videos">Videos Upload</option>
+                                <option value="audio">Audio Upload</option>
+                                <option value="files_documents">Files & Documents Upload</option>
+                                <option value="date">Date</option>
+                                <option value="url">URL/Website</option>
+                                <option value="select">Multiple Choice</option>
+                                <option value="dropdown">Dropdown</option>
+                                <option value="cascading_dropdown">Cascading Dropdown</option>
+                                <option value="radio">Radio Buttons</option>
+                                <option value="checkbox">Checkboxes</option>
+                                <option value="textarea">Long Text</option>
+                                <option value="tags">Tags (Comma Separated)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Placeholder</label>
+                            <input type="text" class="form-control question-placeholder-input" name="placeholder">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input question-required-input" type="checkbox" name="is_required" checked>
+                                <label class="form-check-label">Required</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Default View</label>
+                            <select class="form-select question-default-view-input" name="default_view">
+                                <option value="show">Show by Default</option>
+                                <option value="hide">Hide by Default</option>
+                            </select>
+                            <small class="form-text text-muted">Whether this question is visible by default. Branching rules can override this setting.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Empty column for layout balance -->
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <label class="form-label">Help Text</label>
+                        <textarea class="form-control question-help-input" name="help_text" rows="2"></textarea>
+                    </div>
+                    
+                    <!-- Options for select/radio/checkbox -->
+                    <div class="question-options-section mt-2" style="display: none;">
+                        <label class="form-label">Options (one per line)</label>
+                        <textarea class="form-control question-options-input" name="options" rows="3" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+                    </div>
+                    
+                    <!-- Cascading Dropdown Configuration -->
+                    <div class="cascading-dropdown-section mt-2" style="display: none;">
+                        <label class="form-label">Cascading Dropdown Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Cascading Dropdown:</strong> First dropdown shows categories, second shows subcategories based on selection.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Primary Dropdown Label</label>
+                                <input type="text" class="form-control cascading-primary-label" name="cascading_primary_label" placeholder="Select Category">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Secondary Dropdown Label</label>
+                                <input type="text" class="form-control cascading-secondary-label" name="cascading_secondary_label" placeholder="Select Subcategory">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label">Categories & Subcategories</label>
+                            <div id="cascading-categories">
+                                <!-- Categories will be loaded here -->
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-category-btn">
+                                <i class="fas fa-plus me-1"></i>Add Category
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Number + Unit Configuration -->
+                    <div class="number-unit-section mt-2" style="display: none;">
+                        <label class="form-label">Number + Unit Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Number + Unit:</strong> User enters a number and selects a unit from dropdown (e.g., "3 USD", "5 CAD").
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Number Label</label>
+                                <input type="text" class="form-control number-label-input" name="number_label" placeholder="Amount" value="Amount">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Unit Label</label>
+                                <input type="text" class="form-control unit-label-input" name="unit_label" placeholder="Currency" value="Currency">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label">Unit Options (one per line)</label>
+                            <textarea class="form-control unit-options-input" name="unit_options" rows="4" placeholder="USD&#10;EUR&#10;GBP&#10;CAD&#10;AUD"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Images Upload Configuration -->
+                    <div class="images-upload-section mt-2" style="display: none;">
+                        <label class="form-label">Images Upload Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-image me-2"></i>
+                            <strong>Images Upload:</strong> Users can upload image files or provide image URLs.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Upload Label</label>
+                                <input type="text" class="form-control images-upload-label-input" name="images_upload_label" placeholder="Upload Images" value="Upload Images">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">URL Label</label>
+                                <input type="text" class="form-control images-url-label-input" name="images_url_label" placeholder="Or provide image URLs" value="Or provide image URLs">
+                            </div>
+                        </div>
+                        
+                        <!-- Toggle Options -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input images-enable-upload" type="checkbox" id="images_enable_upload" checked>
+                                    <label class="form-check-label" for="images_enable_upload">
+                                        <i class="fas fa-upload me-1"></i>Enable File Upload
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input images-enable-url" type="checkbox" id="images_enable_url" checked>
+                                    <label class="form-check-label" for="images_enable_url">
+                                        <i class="fas fa-university me-1"></i>Enable URL Input
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Max Images</label>
+                                <input type="number" class="form-control images-max-files-input" name="images_max_files" placeholder="5" value="5" min="1" max="20">
+                                <small class="text-muted">Maximum number of images allowed</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control images-max-size-input" name="images_max_size" placeholder="10" value="10" min="1" max="1000">
+                                <small class="text-muted">Maximum file size in megabytes</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>File Size Limit:</strong> <span id="images-size-display">10MB</span> per image. Supported formats: JPG, PNG, GIF, WebP, SVG, etc.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Videos Upload Configuration -->
+                    <div class="videos-upload-section mt-2" style="display: none;">
+                        <label class="form-label">Videos Upload Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-video me-2"></i>
+                            <strong>Videos Upload:</strong> Users can upload video files or provide video URLs.
+                        </div>
+                            <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Upload Label</label>
+                                <input type="text" class="form-control videos-upload-label-input" name="videos_upload_label" placeholder="Upload Videos" value="Upload Videos">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">URL Label</label>
+                                <input type="text" class="form-control videos-url-label-input" name="videos_url_label" placeholder="Or provide video URLs" value="Or provide video URLs">
+                            </div>
+                        </div>
+                        
+                        <!-- Toggle Options -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                    <div class="form-check">
+                                    <input class="form-check-input videos-enable-upload" type="checkbox" id="videos_enable_upload" checked>
+                                    <label class="form-check-label" for="videos_enable_upload">
+                                        <i class="fas fa-upload me-1"></i>Enable File Upload
+                                        </label>
+                                    </div>
+                                </div>
+                            <div class="col-md-6">
+                                    <div class="form-check">
+                                    <input class="form-check-input videos-enable-url" type="checkbox" id="videos_enable_url" checked>
+                                    <label class="form-check-label" for="videos_enable_url">
+                                        <i class="fas fa-university me-1"></i>Enable URL Input
+                                        </label>
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Max Videos</label>
+                                <input type="number" class="form-control videos-max-files-input" name="videos_max_files" placeholder="3" value="3" min="1" max="10">
+                                <small class="text-muted">Maximum number of videos allowed</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control videos-max-size-input" name="videos_max_size" placeholder="100" value="100" min="1" max="5000">
+                                <small class="text-muted">Maximum file size in megabytes</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>File Size Limit:</strong> <span id="videos-size-display">100MB</span> per video. Supported formats: MP4, AVI, MOV, WebM, etc.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audio Upload Configuration -->
+                    <div class="audio-upload-section mt-2" style="display: none;">
+                        <label class="form-label">Audio Upload Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-music me-2"></i>
+                            <strong>Audio Upload:</strong> Users can upload audio files or provide audio URLs.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Upload Label</label>
+                                <input type="text" class="form-control audio-upload-label-input" name="audio_upload_label" placeholder="Upload Audio" value="Upload Audio">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">URL Label</label>
+                                <input type="text" class="form-control audio-url-label-input" name="audio_url_label" placeholder="Or provide audio URLs" value="Or provide audio URLs">
+                            </div>
+                        </div>
+                        
+                        <!-- Toggle Options -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                    <div class="form-check">
+                                    <input class="form-check-input audio-enable-upload" type="checkbox" id="audio_enable_upload" checked>
+                                    <label class="form-check-label" for="audio_enable_upload">
+                                        <i class="fas fa-upload me-1"></i>Enable File Upload
+                                        </label>
+                                    </div>
+                                </div>
+                            <div class="col-md-6">
+                                    <div class="form-check">
+                                    <input class="form-check-input audio-enable-url" type="checkbox" id="audio_enable_url" checked>
+                                    <label class="form-check-label" for="audio_enable_url">
+                                        <i class="fas fa-university me-1"></i>Enable URL Input
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Max Audio Files</label>
+                                <input type="number" class="form-control audio-max-files-input" name="audio_max_files" placeholder="5" value="5" min="1" max="20">
+                                <small class="text-muted">Maximum number of audio files allowed</small>
+                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control audio-max-size-input" name="audio_max_size" placeholder="50" value="50" min="1" max="1000">
+                                <small class="text-muted">Maximum file size in megabytes</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>File Size Limit:</strong> <span id="audio-size-display">50MB</span> per audio file. Supported formats: MP3, WAV, FLAC, AAC, etc.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Files & Documents Upload Configuration -->
+                    <div class="files-documents-upload-section mt-2" style="display: none;">
+                        <label class="form-label">Files & Documents Upload Configuration</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-file-alt me-2"></i>
+                            <strong>Files & Documents Upload:</strong> Users can upload documents, PDFs, and other files or provide URLs.
+                        </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                <label class="form-label">Upload Label</label>
+                                <input type="text" class="form-control files-documents-upload-label-input" name="files_documents_upload_label" placeholder="Upload Files" value="Upload Files">
+                                </div>
+                                <div class="col-md-6">
+                                <label class="form-label">URL Label</label>
+                                <input type="text" class="form-control files-documents-url-label-input" name="files_documents_url_label" placeholder="Or provide file URLs" value="Or provide file URLs">
+                                </div>
+                            </div>
+                        
+                        <!-- Toggle Options -->
+                        <div class="row mt-3">
+                                <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input files-documents-enable-upload" type="checkbox" id="files_documents_enable_upload" checked>
+                                    <label class="form-check-label" for="files_documents_enable_upload">
+                                        <i class="fas fa-upload me-1"></i>Enable File Upload
+                                    </label>
+                                </div>
+                                </div>
+                                <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input files-documents-enable-url" type="checkbox" id="files_documents_enable_url" checked>
+                                    <label class="form-check-label" for="files_documents_enable_url">
+                                        <i class="fas fa-university me-1"></i>Enable URL Input
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Max Files</label>
+                                <input type="number" class="form-control files-documents-max-files-input" name="files_documents_max_files" placeholder="5" value="5" min="1" max="20">
+                                <small class="text-muted">Maximum number of files allowed</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control files-documents-max-size-input" name="files_documents_max_size" placeholder="25" value="25" min="1" max="1000">
+                                <small class="text-muted">Maximum file size in megabytes</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>File Size Limit:</strong> <span id="files-documents-size-display">25MB</span> per file. Supported formats: PDF, DOC, XLS, PPT, TXT, etc.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Conditional Logic Configuration -->
+                    <div class="conditional-logic-section mt-2" style="display: none;">
+                        <label class="form-label">Conditional Logic (If-Then Branching)</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Conditional Logic:</strong> Set up if-then rules to control which step comes next based on the answer.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Enable Branching</label>
+                                <div class="form-check">
+                                    <input class="form-check-input enable-branching" type="checkbox">
+                                    <label class="form-check-label">Enable conditional branching for this question</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="branching-rules mt-3" style="display: none;">
+                            <label class="form-label">Branching Rules</label>
+                            <div id="branching-rules-container">
+                                <!-- Branching rules will be added here -->
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-branching-rule-btn">
+                                <i class="fas fa-plus me-1"></i>Add Rule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group btn-group-sm ms-2">
+                <button type="button" class="btn btn-outline-info toggle-question-collapse" title="Collapse/Expand">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary move-question-up" title="Move Up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary move-question-down" title="Move Down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary edit-question" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger remove-question" title="Remove">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Category Item Template -->
+<template id="categoryTemplate">
+    <div class="category-item border rounded p-3 mb-2" data-category-index="">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Category Name</label>
+                        <input type="text" class="form-control category-name" placeholder="e.g., Technology">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Subcategories (one per line)</label>
+                        <div class="alert alert-info mb-2">
+                            <small><strong>Multi-line format:</strong><br>
+                            {Group Name}<br>
+                            Item1<br>
+                            Item2<br>
+                            {Another Group}<br>
+                            Item3<br>
+                            Item4<br><br>
+                            <strong>Single-line format:</strong> {Group Name} Item1, Item2 {Another Group} Item3, Item4<br>
+                            <strong>Simple list:</strong> Item1, Item2, Item3</small>
+                        </div>
+                        <textarea class="form-control subcategories" rows="6" placeholder="{Personal Banking}&#10;Checking Account&#10;Savings Account&#10;{Business}&#10;Business Account&#10;Commercial Loan"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group btn-group-sm ms-2">
+                <button type="button" class="btn btn-outline-danger remove-category" title="Remove Category">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Branching Rule Template -->
+<template id="branchingRuleTemplate">
+    <div class="branching-rule-item border rounded p-3 mb-2" data-rule-index="">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">If Answer Is</label>
+                        <input type="text" class="form-control rule-condition" name="rule_condition" placeholder="e.g., Yes, No, Option 1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Then</label>
+                        <select class="form-select rule-action" name="rule_action">
+                            <option value="go_to">Go To Step</option>
+                            <option value="show_question">Show Question</option>
+                            <option value="hide_question">Hide Question</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 rule-target-container">
+                        <label class="form-label">Target</label>
+                        <select class="form-select rule-target-step" name="rule_target">
+                            <option value="">Select Target...</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Message (Optional)</label>
+                        <input type="text" class="form-control rule-message" name="rule_message" placeholder="e.g., Great! Let's continue...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Action</label>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-rule" title="Remove Rule">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Specific Question Selection (hidden by default) -->
+                <div class="row mt-2 specific-question-section" style="display: none;">
+                    <div class="col-md-6">
+                        <label class="form-label">Step</label>
+                        <select class="form-select rule-question-step" name="rule_question_step">
+                            <option value="">Choose step...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Select Question</label>
+                        <select class="form-select rule-specific-question" name="rule_specific_question">
+                            <option value="">Choose a question...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Pass template variables to JavaScript via data attributes -->
+<div id="template-data" 
+    data-is-edit="{{ 'true' if is_edit is defined and is_edit else 'false' }}"
+     style="display: none;"></div>
+
+<!-- Template variables -->
+<script>
+window.flowData = {% if flow_data %}{{ flow_data | tojson | safe }}{% else %}{}{% endif %};
+window.isEditMode = {% if is_edit is defined and is_edit %}true{% else %}false{% endif %};
+console.log('Template variables set successfully');
+</script>
+
+<script>
+
+// Test function to verify script is loading
+function testFunction() {
+    console.log('Script is loading correctly!');
+    return 'working';
+}
+
+console.log('=== Script checkpoint 1 ===');
+
+// Get template data (available globally)
+let isEditMode = false;
+let flowData = {};
+
+// Initialize template data when DOM is ready
+function initializeTemplateData() {
+    console.log('=== initializeTemplateData called ===');
+    console.log('window.isEditMode:', window.isEditMode);
+    console.log('window.flowData:', window.flowData);
+    
+    // Use global variables set by template
+    isEditMode = window.isEditMode === 'true' || window.isEditMode === true || window.isEditMode === 'True';
+    flowData = window.flowData || {};
+    
+    // Debug logging
+    console.log('Template data initialized:');
+    console.log('isEditMode:', isEditMode);
+    console.log('flowData:', flowData);
+    console.log('flowData keys:', Object.keys(flowData));
+    console.log('flowData type:', typeof flowData);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DOM Content Loaded ===');
+    
+    // Initialize template data first
+    initializeTemplateData();
+    
+    let stepIndex = 0;
+    let questionIndex = 0;
+    const stepBlocksContainer = document.getElementById('stepBlocksContainer');
+    const stepBlockTemplate = document.getElementById('stepBlockTemplate');
+    const questionTemplate = document.getElementById('questionTemplate');
+    
+    console.log('DOM elements found:');
+    console.log('- stepBlocksContainer:', !!stepBlocksContainer);
+    console.log('- stepBlockTemplate:', !!stepBlockTemplate);
+    console.log('- questionTemplate:', !!questionTemplate);
+    
+    // Check if we're in edit mode and populate the form
+    console.log('Checking edit mode...');
+    console.log('isEditMode:', isEditMode);
+    console.log('flowData exists:', !!flowData);
+    console.log('flowData keys length:', Object.keys(flowData).length);
+    
+    if (isEditMode && flowData && Object.keys(flowData).length > 0) {
+        console.log('Entering edit mode - calling populateEditForm()');
+        populateEditForm();
+    } else {
+        console.log('Entering create mode - adding first step block');
+        // Add first step block for new chatbot
+        addStepBlock();
+    }
+    
+    // Debug: Check if there are any extra step blocks being created
+    setTimeout(() => {
+        const allSteps = document.querySelectorAll('.step-block-item');
+        console.log('Final step count after initialization:', allSteps.length);
+        allSteps.forEach((step, index) => {
+            const stepName = step.querySelector('.step-display-name')?.textContent || 'Unknown';
+            console.log(`Step ${index + 1}: "${stepName}"`);
+        });
+    }, 1000);
+    
+    // Event listeners
+    document.getElementById('addStepBlock').addEventListener('click', function() {
+        // Allow adding steps when user explicitly clicks the button
+        console.log('Add Step Block button clicked by user');
+        addStepBlock(true);
+    });
+    
+    function makeStepIdsUnique(stepDiv, uniqueId) {
+        // Find all elements with IDs and make them unique
+        const elementsWithIds = stepDiv.querySelectorAll('[id]');
+        elementsWithIds.forEach(element => {
+            const originalId = element.id;
+            const newId = `${originalId}_${uniqueId}`;
+            element.id = newId;
+            
+            // Update any labels that reference this ID
+            const labels = stepDiv.querySelectorAll(`label[for="${originalId}"]`);
+            labels.forEach(label => {
+                label.setAttribute('for', newId);
+            });
+        });
+    }
+
+    function addStepBlock(forceAdd = false) {
+        console.log('addStepBlock called - creating new step');
+        console.trace('addStepBlock call stack');
+        
+        // Prevent adding steps in edit mode unless explicitly requested
+        if (isEditMode && flowData && Object.keys(flowData).length > 0 && !forceAdd) {
+            console.log('Preventing automatic step creation in edit mode');
+            return;
+        }
+        
+        stepIndex++;
+        const stepElement = stepBlockTemplate.content.cloneNode(true);
+        const stepDiv = stepElement.querySelector('.step-block-item');
+        stepDiv.dataset.stepIndex = stepIndex;
+        stepDiv.querySelector('.step-number').textContent = stepIndex;
+        
+        // Make all IDs unique by adding step index
+        const uniqueId = `s${stepIndex}`;
+        makeStepIdsUnique(stepDiv, uniqueId);
+        
+        // Add event listeners for step block
+        addStepBlockEventListeners(stepDiv);
+        
+        // Set default step name
+        const stepNameElement = stepDiv.querySelector('.step-display-name');
+        if (stepNameElement) {
+            stepNameElement.textContent = `Step ${stepIndex}`;
+        }
+        
+        // Add a default question to the new step
+        addQuestion(stepDiv);
+        
+        // Start with step collapsed by default
+        const cardBody = stepDiv.querySelector('.card-body');
+        const toggleBtn = stepDiv.querySelector('.toggle-step-collapse');
+        const icon = toggleBtn.querySelector('i');
+        
+        if (cardBody && toggleBtn && icon) {
+            cardBody.style.display = 'none';
+            icon.className = 'fas fa-chevron-down';
+            toggleBtn.title = 'Expand';
+            stepDiv.classList.add('collapsed');
+        }
+        
+        stepBlocksContainer.appendChild(stepElement);
+        updateStepNumbers();
+        
+        // Refresh all existing branching rules to include the new step
+        refreshAllBranchingRules();
+        
+        console.log('New step added, current step count:', document.querySelectorAll('.step-block-item').length);
+    }
+    
+    function addStepBlockEventListeners(stepDiv) {
+        // Edit step
+        stepDiv.querySelector('.edit-step').addEventListener('click', function() {
+            toggleStepEdit(stepDiv, true);
+        });
+        
+        // Cancel edit
+        stepDiv.querySelector('.cancel-edit-step').addEventListener('click', function() {
+            toggleStepEdit(stepDiv, false);
+        });
+        
+        // Save step
+        stepDiv.querySelector('.save-step').addEventListener('click', function() {
+            saveStep(stepDiv);
+        });
+        
+        // Remove step
+        stepDiv.querySelector('.remove-step').addEventListener('click', function() {
+            stepDiv.remove();
+            updateStepNumbers();
+        });
+        
+        // Move step up
+        stepDiv.querySelector('.move-step-up').addEventListener('click', function() {
+            const prev = stepDiv.previousElementSibling;
+            if (prev) {
+                stepDiv.parentNode.insertBefore(stepDiv, prev);
+                updateStepNumbers();
+            }
+        });
+        
+        // Move step down
+        stepDiv.querySelector('.move-step-down').addEventListener('click', function() {
+            const next = stepDiv.nextElementSibling;
+            if (next) {
+                stepDiv.parentNode.insertBefore(next, stepDiv);
+                updateStepNumbers();
+            }
+        });
+        
+        // Add question
+        stepDiv.querySelector('.add-question').addEventListener('click', function() {
+            addQuestion(stepDiv);
+        });
+        
+        // Toggle collapse/expand
+        stepDiv.querySelector('.toggle-step-collapse').addEventListener('click', function() {
+            toggleStepCollapse(stepDiv);
+        });
+        
+        // Save step final
+        stepDiv.querySelector('.save-step-final').addEventListener('click', function() {
+            saveStepFinal(stepDiv);
+        });
+    }
+    
+    function toggleStepEdit(stepDiv, show) {
+        const editForm = stepDiv.querySelector('.step-edit-form');
+        const display = stepDiv.querySelector('.step-display');
+        
+        if (show) {
+            editForm.style.display = 'block';
+            display.style.display = 'none';
+            
+            // Populate form with current values
+            const name = stepDiv.querySelector('.step-display-name').textContent;
+            const description = stepDiv.querySelector('.step-display-description').textContent;
+            const required = stepDiv.querySelector('.step-required-badge').textContent === 'Required';
+            
+            stepDiv.querySelector('.step-name-input').value = name;
+            stepDiv.querySelector('.step-description-input').value = description;
+            stepDiv.querySelector('.step-required-input').checked = required;
+        } else {
+            editForm.style.display = 'none';
+            display.style.display = 'block';
+        }
+    }
+    
+    function saveStep(stepDiv) {
+        const name = stepDiv.querySelector('.step-name-input').value;
+        const description = stepDiv.querySelector('.step-description-input').value;
+        const required = stepDiv.querySelector('.step-required-input').checked;
+        
+        if (!name.trim()) {
+            alert('Step name is required');
+            return;
+        }
+        
+        // Update display
+        stepDiv.querySelector('.step-name').textContent = name;
+        stepDiv.querySelector('.step-display-name').textContent = name;
+        stepDiv.querySelector('.step-display-description').textContent = description || 'No description';
+        stepDiv.querySelector('.step-required-badge').textContent = required ? 'Required' : 'Optional';
+        stepDiv.querySelector('.step-required-badge').className = `badge ${required ? 'bg-danger' : 'bg-secondary'} step-required-badge`;
+        
+        toggleStepEdit(stepDiv, false);
+    }
+    
+    function makeQuestionIdsUnique(questionDiv, uniqueId) {
+        // Find all elements with IDs and make them unique
+        const elementsWithIds = questionDiv.querySelectorAll('[id]');
+        elementsWithIds.forEach(element => {
+            const originalId = element.id;
+            const newId = `${originalId}_${uniqueId}`;
+            element.id = newId;
+            
+            // Update any labels that reference this ID
+            const labels = questionDiv.querySelectorAll(`label[for="${originalId}"]`);
+            labels.forEach(label => {
+                label.setAttribute('for', newId);
+            });
+        });
+    }
+    
+    function addQuestion(stepDiv) {
+        questionIndex++;
+        const questionElement = questionTemplate.content.cloneNode(true);
+        const questionDiv = questionElement.querySelector('.question-item');
+        questionDiv.dataset.questionIndex = questionIndex;
+        
+        // Make all IDs unique by adding question index
+        const uniqueId = `q${questionIndex}_${stepIndex}`;
+        makeQuestionIdsUnique(questionDiv, uniqueId);
+        
+        // Add event listeners for question
+        addQuestionEventListeners(questionDiv, stepDiv);
+        
+        // Set default values for the new question
+        const questionTextInput = questionDiv.querySelector('.question-text-input');
+        const questionTypeSelect = questionDiv.querySelector('.question-type-select');
+        
+        if (questionTextInput) {
+            questionTextInput.value = 'Enter your question here';
+        }
+        if (questionTypeSelect) {
+            questionTypeSelect.value = 'text';
+            console.log('Set question type to text for new question');
+            // Don't trigger change event for text type as it doesn't need special sections
+            
+            // Add a change event listener to set default options if user changes to select/dropdown/radio/checkbox
+            questionTypeSelect.addEventListener('change', function() {
+                if (['select', 'dropdown', 'radio', 'checkbox'].includes(this.value)) {
+                    const optionsInput = questionDiv.querySelector('.question-options-input');
+                    if (optionsInput && !optionsInput.value.trim()) {
+                        optionsInput.value = 'Option 1\nOption 2\nOption 3';
+                        console.log('Set default options for new question');
+                    }
+                }
+            });
+        }
+        
+        const questionsList = stepDiv.querySelector('.questions-list');
+        questionsList.appendChild(questionElement);
+        
+        updateQuestionNumbers(stepDiv);
+        updateStepQuestionsCount(stepDiv);
+        
+        // Refresh all existing branching rules to include the new question
+        refreshAllBranchingRules();
+    }
+    
+    function addQuestionEventListeners(questionDiv, stepDiv) {
+        // Edit question
+        questionDiv.querySelector('.edit-question').addEventListener('click', function() {
+            toggleQuestionEdit(questionDiv, true);
+        });
+        
+        // Hide all file upload sections initially
+        hideAllFileUploadSections(questionDiv);
+        
+        // Question type change
+        questionDiv.querySelector('.question-type-select').addEventListener('change', function() {
+            const optionsSection = questionDiv.querySelector('.question-options-section');
+            const cascadingSection = questionDiv.querySelector('.cascading-dropdown-section');
+            const conditionalSection = questionDiv.querySelector('.conditional-logic-section');
+            const type = this.value;
+            
+            // Hide all sections first
+            optionsSection.style.display = 'none';
+            cascadingSection.style.display = 'none';
+            conditionalSection.style.display = 'none';
+            
+            if (['select', 'dropdown', 'radio', 'checkbox'].includes(type)) {
+                optionsSection.style.display = 'block';
+                conditionalSection.style.display = 'block';
+            } else if (type === 'cascading_dropdown') {
+                console.log('Setting cascading dropdown section to visible');
+                console.log('Cascading section found:', !!cascadingSection);
+                if (cascadingSection) {
+                cascadingSection.style.display = 'block';
+                    console.log('Cascading section displayed');
+                } else {
+                    console.error('Cascading section not found!');
+                }
+            } else if (type === 'number_unit') {
+                // Show unit options section for number + unit
+                const unitSection = questionDiv.querySelector('.number-unit-section');
+                if (unitSection) {
+                    unitSection.style.display = 'block';
+                }
+                conditionalSection.style.display = 'block';
+            } else if (type === 'images') {
+                // Hide all other file upload sections first
+                hideAllFileUploadSections(questionDiv);
+                // Show images upload section
+                const imagesSection = questionDiv.querySelector('.images-upload-section');
+                if (imagesSection) {
+                    imagesSection.style.display = 'block';
+                }
+                conditionalSection.style.display = 'block';
+            } else if (type === 'videos') {
+                // Hide all other file upload sections first
+                hideAllFileUploadSections(questionDiv);
+                // Show videos upload section
+                const videosSection = questionDiv.querySelector('.videos-upload-section');
+                if (videosSection) {
+                    videosSection.style.display = 'block';
+                }
+                conditionalSection.style.display = 'block';
+            } else if (type === 'audio') {
+                // Hide all other file upload sections first
+                hideAllFileUploadSections(questionDiv);
+                // Show audio upload section
+                const audioSection = questionDiv.querySelector('.audio-upload-section');
+                if (audioSection) {
+                    audioSection.style.display = 'block';
+                }
+                conditionalSection.style.display = 'block';
+            } else if (type === 'files_documents') {
+                // Hide all other file upload sections first
+                hideAllFileUploadSections(questionDiv);
+                // Show files & documents upload section
+                const filesDocumentsSection = questionDiv.querySelector('.files-documents-upload-section');
+                if (filesDocumentsSection) {
+                    filesDocumentsSection.style.display = 'block';
+                }
+                conditionalSection.style.display = 'block';
+            } else if (['text', 'email', 'phone', 'number', 'date', 'url', 'tags', 'textarea'].includes(type)) {
+                // Hide all file upload sections for non-file types
+                hideAllFileUploadSections(questionDiv);
+                conditionalSection.style.display = 'block';
+            } else {
+                // Hide all file upload sections for any other type
+                hideAllFileUploadSections(questionDiv);
+            }
+        });
+        
+        // Remove question
+        questionDiv.querySelector('.remove-question').addEventListener('click', function() {
+            questionDiv.remove();
+            updateQuestionNumbers(stepDiv);
+            updateStepQuestionsCount(stepDiv);
+        });
+        
+        // Move question up
+        questionDiv.querySelector('.move-question-up').addEventListener('click', function() {
+            const prev = questionDiv.previousElementSibling;
+            if (prev) {
+                questionDiv.parentNode.insertBefore(questionDiv, prev);
+                updateQuestionNumbers(stepDiv);
+            }
+        });
+        
+        // Move question down
+        questionDiv.querySelector('.move-question-down').addEventListener('click', function() {
+            const next = questionDiv.nextElementSibling;
+            if (next) {
+                questionDiv.parentNode.insertBefore(next, questionDiv);
+                updateQuestionNumbers(stepDiv);
+            }
+        });
+        
+        // Auto-save on input change
+        const inputs = questionDiv.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                updateQuestionDisplay(questionDiv);
+            });
+        });
+        
+        // Add category functionality for cascading dropdowns
+        const addCategoryBtn = questionDiv.querySelector('.add-category-btn');
+        if (addCategoryBtn) {
+            addCategoryBtn.addEventListener('click', function() {
+                console.log('Add Category button clicked');
+                addCategory(questionDiv);
+            });
+        }
+        
+        // Enable branching checkbox
+        const enableBranching = questionDiv.querySelector('.enable-branching');
+        if (enableBranching) {
+            enableBranching.addEventListener('change', function() {
+                const branchingRules = questionDiv.querySelector('.branching-rules');
+                console.log('Branching checkbox changed:', this.checked);
+                console.log('Branching rules section found:', !!branchingRules);
+                if (this.checked) {
+                    branchingRules.style.display = 'block';
+                    console.log('Branching rules section shown');
+                } else {
+                    branchingRules.style.display = 'none';
+                    console.log('Branching rules section hidden');
+                }
+            });
+        }
+        
+        // Add branching rule button
+        const addBranchingRuleBtn = questionDiv.querySelector('.add-branching-rule-btn');
+        console.log('Add branching rule button found:', !!addBranchingRuleBtn);
+        if (addBranchingRuleBtn) {
+            addBranchingRuleBtn.addEventListener('click', function() {
+                console.log('Add branching rule button clicked');
+                addBranchingRule(questionDiv);
+            });
+        }
+        
+        // Toggle question collapse/expand
+        questionDiv.querySelector('.toggle-question-collapse').addEventListener('click', function() {
+            toggleQuestionCollapse(questionDiv);
+        });
+    }
+    
+    function toggleQuestionEdit(questionDiv, show) {
+        const details = questionDiv.querySelector('.question-details');
+        
+        if (show) {
+            details.style.display = 'block';
+            
+            // Get stored question data
+            const questionDataStr = questionDiv.dataset.questionData;
+            let questionData = {};
+            
+            if (questionDataStr) {
+                try {
+                    questionData = JSON.parse(questionDataStr);
+                } catch (e) {
+                    console.error('Error parsing question data:', e);
+                }
+            }
+            
+            // Populate basic form fields
+            questionDiv.querySelector('.question-text-input').value = questionData.question_text || '';
+            questionDiv.querySelector('.question-type-select').value = questionData.question_type || 'text';
+            questionDiv.querySelector('.question-required-input').checked = questionData.is_required !== false;
+            questionDiv.querySelector('.question-placeholder-input').value = questionData.placeholder || '';
+            questionDiv.querySelector('.question-help-input').value = questionData.help_text || '';
+            
+            // Trigger question type change to show appropriate configuration sections
+            const typeSelect = questionDiv.querySelector('.question-type-select');
+            typeSelect.dispatchEvent(new Event('change'));
+            
+            // Populate type-specific configurations
+            populateQuestionTypeConfig(questionDiv, questionData);
+            
+        } else {
+            details.style.display = 'none';
+            updateQuestionDisplay(questionDiv);
+        }
+    }
+    
+    function populateQuestionTypeConfig(questionDiv, questionData) {
+        console.log('populateQuestionTypeConfig called for:', questionData.question_type);
+        console.log('questionData:', questionData);
+        console.log('questionDiv:', questionDiv);
+        
+        const questionType = questionData.question_type;
+        
+        // First, populate basic question fields
+        const questionTextInput = questionDiv.querySelector('.question-text-input');
+        const questionTypeSelect = questionDiv.querySelector('.question-type-select');
+        const questionRequiredInput = questionDiv.querySelector('.question-required-input');
+        const questionPlaceholderInput = questionDiv.querySelector('.question-placeholder-input');
+        const questionHelpInput = questionDiv.querySelector('.question-help-input');
+        const questionDefaultViewInput = questionDiv.querySelector('.question-default-view-input');
+        
+        console.log('Basic question fields found:');
+        console.log('- questionTextInput:', !!questionTextInput);
+        console.log('- questionTypeSelect:', !!questionTypeSelect);
+        console.log('- questionRequiredInput:', !!questionRequiredInput);
+        console.log('- questionPlaceholderInput:', !!questionPlaceholderInput);
+        console.log('- questionHelpInput:', !!questionHelpInput);
+        
+        if (questionTextInput) questionTextInput.value = questionData.question_text || '';
+        if (questionTypeSelect) questionTypeSelect.value = questionData.question_type || '';
+        if (questionRequiredInput) questionRequiredInput.checked = questionData.is_required !== false;
+        if (questionPlaceholderInput) questionPlaceholderInput.value = questionData.placeholder || '';
+        if (questionHelpInput) questionHelpInput.value = questionData.help_text || '';
+        if (questionDefaultViewInput) questionDefaultViewInput.value = questionData.default_view || 'show';
+        
+        // Populate options for select, dropdown, radio, checkbox
+        if (['select', 'dropdown', 'radio', 'checkbox'].includes(questionType)) {
+            console.log('Populating options for:', questionType);
+            const optionsInput = questionDiv.querySelector('.question-options-input');
+            if (optionsInput && questionData.options) {
+                optionsInput.value = questionData.options.join('\n');
+            }
+        }
+        
+        // Populate cascading dropdown config
+        if (questionType === 'cascading_dropdown') {
+            const cascadingConfig = questionData.cascading_config || {};
+            const primaryLabelInput = questionDiv.querySelector('.cascading-primary-label');
+            const secondaryLabelInput = questionDiv.querySelector('.cascading-secondary-label');
+            
+            // Try to find the categories container with any ID that starts with 'cascading-categories'
+            let categoriesContainer = questionDiv.querySelector('#cascading-categories');
+            if (!categoriesContainer) {
+                // If not found with exact ID, try to find any element with ID starting with 'cascading-categories'
+                const allElements = questionDiv.querySelectorAll('[id^="cascading-categories"]');
+                if (allElements.length > 0) {
+                    categoriesContainer = allElements[0];
+                }
+            }
+            
+            console.log('Cascading dropdown elements found:');
+            console.log('- primaryLabelInput:', !!primaryLabelInput);
+            console.log('- secondaryLabelInput:', !!secondaryLabelInput);
+            console.log('- categoriesContainer:', !!categoriesContainer);
+            
+            if (primaryLabelInput) primaryLabelInput.value = cascadingConfig.primary_label || '';
+            if (secondaryLabelInput) secondaryLabelInput.value = cascadingConfig.secondary_label || '';
+            
+            // Clear existing categories
+            if (categoriesContainer) {
+                categoriesContainer.innerHTML = '';
+                
+                // Add categories
+                const categories = cascadingConfig.categories || [];
+                console.log('Adding categories:', categories.length);
+                categories.forEach((categoryData, index) => {
+                    console.log(`Adding category ${index + 1}:`, categoryData.name);
+                    addCategory(questionDiv);
+                    const lastCategory = categoriesContainer.lastElementChild;
+                    if (lastCategory) {
+                        const categoryNameInput = lastCategory.querySelector('.category-name');
+                        const subcategoriesInput = lastCategory.querySelector('.subcategories');
+                        
+                        console.log('Category elements found:');
+                        console.log('- categoryNameInput:', !!categoryNameInput);
+                        console.log('- subcategoriesInput:', !!subcategoriesInput);
+                        
+                        if (categoryNameInput) categoryNameInput.value = categoryData.name || '';
+                        if (subcategoriesInput) {
+                            // Format subcategories for display in textarea
+                            let subcategoriesText = '';
+                            (categoryData.subcategories || []).forEach(subcat => {
+                                if (typeof subcat === 'object' && subcat.group && subcat.items) {
+                                    // Grouped format - use multi-line format for better readability
+                                    subcategoriesText += `{${subcat.group}}\n`;
+                                    subcat.items.forEach(item => {
+                                        subcategoriesText += `${item}\n`;
+                                    });
+                                } else if (typeof subcat === 'string') {
+                                    // Simple format (backward compatibility)
+                                    subcategoriesText += `${subcat}\n`;
+                                }
+                            });
+                            subcategoriesInput.value = subcategoriesText.trim();
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Populate number + unit config
+        if (questionType === 'number_unit') {
+            const numberUnitConfig = questionData.number_unit_config || {};
+            const numberLabelInput = questionDiv.querySelector('.number-label-input');
+            const unitLabelInput = questionDiv.querySelector('.unit-label-input');
+            const unitOptionsInput = questionDiv.querySelector('.unit-options-input');
+            
+            if (numberLabelInput) numberLabelInput.value = numberUnitConfig.number_label || '';
+            if (unitLabelInput) unitLabelInput.value = numberUnitConfig.unit_label || '';
+            if (unitOptionsInput) unitOptionsInput.value = (numberUnitConfig.unit_options || []).join('\n');
+        }
+        
+        // Populate media upload configs
+        if (['images', 'videos', 'audio', 'files_documents'].includes(questionType)) {
+            console.log('Populating media upload config for:', questionType);
+            const mediaConfig = questionData.media_upload_config || {};
+            console.log('Media config:', mediaConfig);
+            
+            // Set upload and URL labels
+            const uploadLabelInput = questionDiv.querySelector(`.${questionType}-upload-label-input`);
+            const urlLabelInput = questionDiv.querySelector(`.${questionType}-url-label-input`);
+            console.log('Upload label input found:', !!uploadLabelInput);
+            console.log('URL label input found:', !!urlLabelInput);
+            console.log('Question div:', questionDiv);
+            console.log('All inputs in question div:', questionDiv.querySelectorAll('input, textarea, select'));
+            if (uploadLabelInput) uploadLabelInput.value = mediaConfig.upload_label || '';
+            if (urlLabelInput) urlLabelInput.value = mediaConfig.url_label || '';
+            
+            // Set max files
+            const maxFilesInput = questionDiv.querySelector(`.${questionType}-max-files-input`);
+            if (maxFilesInput) maxFilesInput.value = mediaConfig.max_files || '';
+            
+            // Set max size
+            const maxSizeInput = questionDiv.querySelector(`.${questionType}-max-size-input`);
+            if (maxSizeInput) maxSizeInput.value = (mediaConfig.max_size || 0) / (1024 * 1024); // Convert bytes to MB
+            
+            // Set toggles
+            const enableUploadCheckbox = questionDiv.querySelector(`.${questionType}-enable-upload`);
+            const enableUrlCheckbox = questionDiv.querySelector(`.${questionType}-enable-url`);
+            if (enableUploadCheckbox) enableUploadCheckbox.checked = mediaConfig.enable_upload !== false;
+            if (enableUrlCheckbox) enableUrlCheckbox.checked = mediaConfig.enable_url !== false;
+        }
+        
+        // Populate validation rules
+        if (questionData.validation_rules) {
+            const validationRules = questionData.validation_rules;
+            const minLengthInput = questionDiv.querySelector('.validation-min-length-input');
+            const maxLengthInput = questionDiv.querySelector('.validation-max-length-input');
+            
+            if (minLengthInput) minLengthInput.value = validationRules.min_length || '';
+            if (maxLengthInput) maxLengthInput.value = validationRules.max_length || '';
+        }
+        
+        // Populate branching logic
+        if (questionData.branching_logic && questionData.branching_logic.rules) {
+            console.log('Populating branching logic for question:', questionData.question_text);
+            console.log('Branching rules:', questionData.branching_logic.rules);
+            
+            // Enable branching checkbox and show section
+            const enableBranchingCheckbox = questionDiv.querySelector('.enable-branching');
+            const branchingSection = questionDiv.querySelector('.branching-rules');
+            
+            if (enableBranchingCheckbox) {
+                enableBranchingCheckbox.checked = true;
+                console.log('Branching checkbox enabled');
+            }
+            
+            if (branchingSection) {
+                branchingSection.style.display = 'block';
+                console.log('Branching section shown');
+            }
+            
+            const rulesContainer = questionDiv.querySelector('[id*="branching-rules-container"]');
+            if (rulesContainer) {
+                console.log('Rules container found, populating rules');
+                rulesContainer.innerHTML = '';
+                
+                questionData.branching_logic.rules.forEach((rule, index) => {
+                    console.log(`Adding rule ${index + 1}:`, rule);
+                    addBranchingRule(questionDiv);
+                    const lastRule = rulesContainer.lastElementChild;
+                    if (lastRule) {
+                        lastRule.querySelector('.rule-condition').value = rule.condition || '';
+                        lastRule.querySelector('.rule-action').value = rule.action || 'go_to';
+                        
+                        // Handle target population based on action type
+                        const action = rule.action || 'go_to';
+                        const targetSelect = lastRule.querySelector('.rule-target-step');
+                        
+                        if (action === 'show_question' || action === 'hide_question') {
+                            // For show/hide actions, we'll populate when user interacts with dropdown
+                            // Don't populate immediately during edit mode loading
+                            targetSelect.innerHTML = '<option value="">Select Question...</option>';
+                            
+                            // Set the target value if it exists (for display purposes)
+                            const targetValue = rule.target || rule.target_question_id || '';
+                            if (targetValue) {
+                                // Add the saved option temporarily
+                                const savedOption = document.createElement('option');
+                                savedOption.value = targetValue;
+                                savedOption.textContent = `Question ${targetValue}`;
+                                savedOption.selected = true;
+                                targetSelect.appendChild(savedOption);
+                            }
+                        } else {
+                            // For go_to actions, populate with step options
+                            targetSelect.innerHTML = '<option value="">Select Step...</option>';
+                            populateStepOptions(lastRule, questionDiv);
+                            
+                            // Set the target value if it exists
+                            const targetValue = rule.target || '';
+                            if (targetValue) {
+                                targetSelect.value = targetValue;
+                            }
+                        }
+                        
+                        lastRule.querySelector('.rule-message').value = rule.message || '';
+                        console.log(`Rule ${index + 1} populated successfully`);
+                    }
+                });
+            } else {
+                console.log('Rules container not found for question:', questionData.question_text);
+            }
+        }
+    }
+    
+    function updateQuestionDisplay(questionDiv) {
+        const text = questionDiv.querySelector('.question-text-input').value;
+        const type = questionDiv.querySelector('.question-type-select').value;
+        const required = questionDiv.querySelector('.question-required-input').checked;
+        
+        questionDiv.querySelector('.question-text-display').textContent = text || 'Question text will appear here';
+        questionDiv.querySelector('.question-type-badge').textContent = type;
+        
+        // Update question number
+        const questions = questionDiv.parentNode.querySelectorAll('.question-item');
+        const index = Array.from(questions).indexOf(questionDiv) + 1;
+        questionDiv.querySelector('.question-number').textContent = index;
+        
+        // Refresh branching rules to update question text in dropdowns
+        refreshAllBranchingRules();
+    }
+    
+    function updateStepNumbers() {
+        const steps = stepBlocksContainer.querySelectorAll('.step-block-item');
+        steps.forEach((step, index) => {
+            step.querySelector('.step-number').textContent = index + 1;
+        });
+    }
+    
+    function updateQuestionNumbers(stepDiv) {
+        const questions = stepDiv.querySelectorAll('.question-item');
+        questions.forEach((question, index) => {
+            question.querySelector('.question-number').textContent = index + 1;
+        });
+    }
+    
+    function updateStepQuestionsCount(stepDiv) {
+        const count = stepDiv.querySelectorAll('.question-item').length;
+        stepDiv.querySelector('.step-questions-count').textContent = `${count} Question${count !== 1 ? 's' : ''}`;
+    }
+    
+    function addCategory(questionDiv) {
+        console.log('addCategory called');
+        console.log('Question div:', questionDiv);
+        
+        const categoryTemplate = document.getElementById('categoryTemplate');
+        console.log('Category template found:', !!categoryTemplate);
+        
+        if (!categoryTemplate) {
+            console.error('Category template not found!');
+            return;
+        }
+        
+        const categoryElement = categoryTemplate.content.cloneNode(true);
+        const categoryDiv = categoryElement.querySelector('.category-item');
+        
+        // Try to find the categories container with any ID that starts with 'cascading-categories'
+        let categoriesContainer = questionDiv.querySelector('#cascading-categories');
+        if (!categoriesContainer) {
+            // If not found with exact ID, try to find any element with ID starting with 'cascading-categories'
+            const allElements = questionDiv.querySelectorAll('[id^="cascading-categories"]');
+            if (allElements.length > 0) {
+                categoriesContainer = allElements[0];
+            }
+        }
+        
+        console.log('Categories container found:', !!categoriesContainer);
+        console.log('Category div found:', !!categoryDiv);
+        console.log('Question div HTML:', questionDiv.innerHTML);
+        
+        if (!categoriesContainer) {
+            console.error('Categories container not found!');
+            console.log('Available elements in question div:', questionDiv.querySelectorAll('*'));
+            return;
+        }
+        
+        // Add event listeners for category
+        addCategoryEventListeners(categoryDiv, questionDiv);
+        
+        categoriesContainer.appendChild(categoryElement);
+        console.log('Category added successfully');
+    }
+    
+    function addCategoryEventListeners(categoryDiv, questionDiv) {
+        // Remove category
+        categoryDiv.querySelector('.remove-category').addEventListener('click', function() {
+            categoryDiv.remove();
+        });
+    }
+    
+    function addBranchingRule(questionDiv) {
+        console.log('addBranchingRule called');
+        const branchingRuleTemplate = document.getElementById('branchingRuleTemplate');
+        console.log('Branching rule template found:', !!branchingRuleTemplate);
+        
+        if (!branchingRuleTemplate) {
+            console.error('Branching rule template not found!');
+            return;
+        }
+        
+        const ruleElement = branchingRuleTemplate.content.cloneNode(true);
+        const ruleDiv = ruleElement.querySelector('.branching-rule-item');
+        const rulesContainer = questionDiv.querySelector('[id*="branching-rules-container"]');
+        
+        console.log('Rules container found:', !!rulesContainer);
+        
+        if (!rulesContainer) {
+            console.error('Rules container not found!');
+            return;
+        }
+        
+        // Add event listeners for rule
+        addBranchingRuleEventListeners(ruleDiv, questionDiv);
+        
+        // Populate step options
+        populateStepOptions(ruleDiv, questionDiv);
+        
+        console.log('About to append rule element to container');
+        rulesContainer.appendChild(ruleElement);
+        console.log('Branching rule added successfully');
+        console.log('Rules container now has', rulesContainer.children.length, 'children');
+    }
+    
+    function addBranchingRuleEventListeners(ruleDiv, questionDiv) {
+        // Remove rule
+        ruleDiv.querySelector('.remove-rule').addEventListener('click', function() {
+            ruleDiv.remove();
+        });
+        
+        // Handle action type change
+        const actionSelect = ruleDiv.querySelector('.rule-action');
+        const targetSelect = ruleDiv.querySelector('.rule-target-step');
+        
+        console.log('Setting up action change listener:', { actionSelect: !!actionSelect, targetSelect: !!targetSelect });
+        
+        if (actionSelect && targetSelect) {
+            actionSelect.addEventListener('change', function() {
+                console.log(`Action changed to: ${this.value}`);
+                if (this.value === 'go_to') {
+                    console.log('Populating step options');
+                    targetSelect.innerHTML = '<option value="">Select Step...</option>';
+                    console.log('About to call populateStepOptions');
+                    try {
+                        populateStepOptions(ruleDiv, questionDiv);
+                        console.log('populateStepOptions completed successfully');
+                    } catch (error) {
+                        console.error('Error in populateStepOptions:', error);
+                    }
+                } else if (this.value === 'show_question' || this.value === 'hide_question') {
+                    console.log('Populating question options');
+                    targetSelect.innerHTML = '<option value="">Select Question...</option>';
+                    
+                    // DIRECT APPROACH: Find and add questions immediately
+                    console.log('Using direct approach to populate questions');
+                    const allQuestions = document.querySelectorAll('.question-item');
+                    console.log(`DIRECT: Found ${allQuestions.length} questions`);
+                    
+                    allQuestions.forEach((q, index) => {
+                        const questionTextInput = q.querySelector('.question-text-input');
+                        const questionText = questionTextInput ? questionTextInput.value || `Question ${index + 1}` : `Question ${index + 1}`;
+                        
+                        const option = document.createElement('option');
+                        option.value = index.toString();
+                        option.textContent = questionText;
+                        console.log(`DIRECT: Adding question option: value="${index}", text="${questionText}"`);
+                        targetSelect.appendChild(option);
+                    });
+                    
+                    console.log(`DIRECT: Final dropdown has ${targetSelect.options.length} options`);
+                    console.log('DIRECT: Dropdown HTML:', targetSelect.innerHTML);
+                }
+            });
+            
+            // Also populate dropdown when user focuses on it (for edit mode)
+            targetSelect.addEventListener('focus', function() {
+                if (actionSelect.value === 'show_question' || actionSelect.value === 'hide_question') {
+                    console.log('Target dropdown focused, populating question options');
+                    const currentValue = this.value; // Save current selection
+                    this.innerHTML = '<option value="">Select Question...</option>';
+                    
+                    // Simple approach: find all questions in the document
+                    const allQuestions = document.querySelectorAll('.question-item');
+                    console.log(`Found ${allQuestions.length} questions for dropdown`);
+                    
+                    allQuestions.forEach((q, index) => {
+                        const questionTextInput = q.querySelector('.question-text-input');
+                        const questionText = questionTextInput ? questionTextInput.value || `Question ${index + 1}` : `Question ${index + 1}`;
+                        
+                        const option = document.createElement('option');
+                        option.value = index.toString();
+                        option.textContent = questionText;
+                        console.log(`Adding question option: value="${index}", text="${questionText}"`);
+                        this.appendChild(option);
+                    });
+                    
+                    if (currentValue) {
+                        this.value = currentValue; // Restore selection
+                    }
+                }
+            });
+        }
+    }
+    
+    console.log('=== Script checkpoint 2: About to define populateQuestionOptions ===');
+    
+    function populateQuestionOptions(ruleDiv, questionDiv) {
+        console.log('=== populateQuestionOptions called ===');
+        console.log('Parameters:', { ruleDiv, questionDiv });
+        const targetSelect = ruleDiv.querySelector('.rule-target-step');
+        console.log('Target select found:', !!targetSelect);
+        if (!targetSelect) {
+            console.log('ERROR: Target select not found!');
+            return;
+        }
+        
+        // Clear existing options
+        targetSelect.innerHTML = '<option value="">Select Question...</option>';
+        
+        // Find all questions in the current step
+        const stepContainer = questionDiv.closest('.step-block-item');
+        if (!stepContainer) {
+            console.log('No step container found, trying alternative approach');
+            // Alternative: find all questions in the entire form
+            const allQuestions = document.querySelectorAll('.question-item');
+            console.log(`Found ${allQuestions.length} total questions using alternative approach`);
+            
+            allQuestions.forEach((q, index) => {
+                const questionText = q.querySelector('.question-text-input')?.value || `Question ${index + 1}`;
+                let questionId = index.toString();
+                
+                const option = document.createElement('option');
+                option.value = questionId;
+                option.textContent = questionText;
+                console.log(`Adding option (alternative): value="${questionId}", text="${questionText}"`);
+                targetSelect.appendChild(option);
+            });
+            
+            console.log(`Final dropdown options count (alternative): ${targetSelect.options.length}`);
+            console.log(`Dropdown HTML (alternative):`, targetSelect.innerHTML);
+            return;
+        }
+        
+        const questions = stepContainer.querySelectorAll('.question-item');
+        console.log(`Found ${questions.length} questions in current step`);
+        
+        questions.forEach((q, index) => {
+            const questionText = q.querySelector('.question-text-input')?.value || `Question ${index + 1}`;
+            
+            // For new chatbots, use the question index as the ID
+            // Since we don't have database IDs yet, we'll use local indices
+            let questionId = index.toString();
+            
+            const option = document.createElement('option');
+            option.value = questionId;
+            option.textContent = questionText;
+            console.log(`Adding option: value="${questionId}", text="${questionText}"`);
+            targetSelect.appendChild(option);
+        });
+        
+        console.log(`Final dropdown options count: ${targetSelect.options.length}`);
+        console.log(`Dropdown HTML:`, targetSelect.innerHTML);
+    }
+    
+    console.log('=== Script checkpoint 3: populateQuestionOptions defined ===');
+    
+    // Make function globally accessible
+    window.populateQuestionOptions = populateQuestionOptions;
+    console.log('populateQuestionOptions attached to window:', typeof window.populateQuestionOptions);
+    
+    function populateStepOptions(ruleDiv, questionDiv) {
+        const stepSelect = ruleDiv.querySelector('.rule-target-step');
+        const questionSelect = ruleDiv.querySelector('.rule-specific-question');
+        
+        // Find the step block item, with fallback
+        const stepBlockItem = questionDiv.closest('.step-block-item');
+        const currentStepIndex = stepBlockItem ? parseInt(stepBlockItem.dataset.stepIndex) : 0;
+        
+        // Clear existing options
+        stepSelect.innerHTML = '<option value="">Select Target...</option>';
+        
+        // Add the three main options
+        const localQuestionOption = document.createElement('option');
+        localQuestionOption.value = 'specific_question_local';
+        localQuestionOption.textContent = 'Specific Question (Local)';
+        stepSelect.appendChild(localQuestionOption);
+        
+        const specificStepOption = document.createElement('option');
+        specificStepOption.value = 'specific_step';
+        specificStepOption.textContent = 'Specific Step';
+        stepSelect.appendChild(specificStepOption);
+        
+        const specificStepQuestionOption = document.createElement('option');
+        specificStepQuestionOption.value = 'specific_step_question';
+        specificStepQuestionOption.textContent = 'Specific Step & Question';
+        stepSelect.appendChild(specificStepQuestionOption);
+        
+        // Remove existing event listeners to prevent duplicates
+        const newStepSelect = stepSelect.cloneNode(true);
+        stepSelect.parentNode.replaceChild(newStepSelect, stepSelect);
+        
+        // Add event listener for target selection
+        newStepSelect.addEventListener('change', function() {
+            const specificSection = ruleDiv.querySelector('.specific-question-section');
+            const questionSelect = ruleDiv.querySelector('.rule-specific-question');
+            const stepSelectForQuestion = ruleDiv.querySelector('.rule-question-step');
+            
+            if (this.value === 'specific_question_local' || this.value === 'specific_step_question') {
+                specificSection.style.display = 'block';
+                // Re-enable question dropdown
+                questionSelect.disabled = false;
+                questionSelect.innerHTML = '<option value="">Choose a question...</option>';
+                populateQuestionOptions(ruleDiv, questionDiv, this.value);
+            } else if (this.value === 'specific_step') {
+                specificSection.style.display = 'block';
+                // Disable question dropdown for step-only selection
+                questionSelect.disabled = true;
+                questionSelect.innerHTML = '<option value="">Not applicable</option>';
+                populateStepOnlyOptions(ruleDiv, questionDiv);
+            } else {
+                specificSection.style.display = 'none';
+                // Reset question dropdown
+                questionSelect.disabled = false;
+                questionSelect.innerHTML = '<option value="">Choose a question...</option>';
+            }
+        });
+    }
+    
+    // Make function globally accessible
+    window.populateStepOptions = populateStepOptions;
+    console.log('populateStepOptions attached to window:', typeof window.populateStepOptions);
+    
+    function populateStepOnlyOptions(ruleDiv, questionDiv) {
+        const stepSelect = ruleDiv.querySelector('.rule-question-step');
+        const questionSelect = ruleDiv.querySelector('.rule-specific-question');
+        
+        // Clear existing options
+        stepSelect.innerHTML = '<option value="">Choose step...</option>';
+        questionSelect.innerHTML = '<option value="">Not applicable</option>';
+        questionSelect.disabled = true;
+        
+        // Remove existing event listeners to prevent duplicates
+        const newStepSelect = stepSelect.cloneNode(true);
+        stepSelect.parentNode.replaceChild(newStepSelect, stepSelect);
+        
+        // Populate step options
+        const allSteps = document.querySelectorAll('.step-block-item');
+        allSteps.forEach((step, index) => {
+            const stepIndex = parseInt(step.dataset.stepIndex);
+            const stepName = step.querySelector('.step-display-name').textContent;
+            const option = document.createElement('option');
+            option.value = stepIndex;
+            option.textContent = `Step ${stepIndex}: ${stepName}`;
+            newStepSelect.appendChild(option);
+        });
+    }
+    
+    function populateQuestionsForStep(questionSelect, stepIndex) {
+        questionSelect.innerHTML = '<option value="">Choose a question...</option>';
+        
+        // Find the step
+        const allSteps = document.querySelectorAll('.step-block-item');
+        let targetStep = null;
+        
+        allSteps.forEach(step => {
+            if (parseInt(step.dataset.stepIndex) === parseInt(stepIndex)) {
+                targetStep = step;
+            }
+        });
+        
+        if (targetStep) {
+            const questions = targetStep.querySelectorAll('.question-item');
+            questions.forEach((question, index) => {
+                // Try to get text from input first, fallback to display
+                const textInput = question.querySelector('.question-text-input');
+                const textDisplay = question.querySelector('.question-text-display');
+                const questionText = textInput ? textInput.value : textDisplay.textContent;
+                const option = document.createElement('option');
+                option.value = question.dataset.questionIndex;
+                option.textContent = `Q${index + 1}: ${questionText.substring(0, 50)}${questionText.length > 50 ? '...' : ''}`;
+                questionSelect.appendChild(option);
+            });
+        }
+    }
+    
+    function refreshAllBranchingRules() {
+        // Find all existing branching rules and refresh their options
+        const allBranchingRules = document.querySelectorAll('.branching-rule-item');
+        allBranchingRules.forEach(ruleDiv => {
+            // Find the question this rule belongs to
+            const questionDiv = ruleDiv.closest('.question-item');
+            if (questionDiv) {
+                // Refresh the step options
+                populateStepOptions(ruleDiv, questionDiv);
+            }
+        });
+    }
+    
+    function toggleStepCollapse(stepDiv) {
+        const cardBody = stepDiv.querySelector('.card-body');
+        const toggleBtn = stepDiv.querySelector('.toggle-step-collapse');
+        const icon = toggleBtn.querySelector('i');
+        
+        if (cardBody.style.display === 'none') {
+            // Expand
+            cardBody.style.display = 'block';
+            icon.className = 'fas fa-chevron-up';
+            toggleBtn.title = 'Collapse';
+        } else {
+            // Collapse
+            cardBody.style.display = 'none';
+            icon.className = 'fas fa-chevron-down';
+            toggleBtn.title = 'Expand';
+        }
+    }
+    
+    function saveStepFinal(stepDiv) {
+        // Get step data
+        const stepName = stepDiv.querySelector('.step-display-name').textContent;
+        const stepDescription = stepDiv.querySelector('.step-display-description').textContent;
+        const isRequired = stepDiv.querySelector('.step-required-badge').textContent === 'Required';
+        
+        // Get all questions in this step
+        const questions = stepDiv.querySelectorAll('.question-item');
+        const questionCount = questions.length;
+        
+        // Debug: Check branching rules before saving
+        console.log(`Checking branching rules for step "${stepName}"`);
+        questions.forEach((question, index) => {
+            const branchingRules = question.querySelectorAll('.branching-rule-item');
+            console.log(`Question ${index + 1} has ${branchingRules.length} branching rules`);
+            branchingRules.forEach((rule, ruleIndex) => {
+                const condition = rule.querySelector('.rule-condition').value;
+                const action = rule.querySelector('.rule-action').value;
+                const target = rule.querySelector('.rule-target-step').value;
+                console.log(`  Rule ${ruleIndex + 1}: condition="${condition}", action="${action}", target="${target}"`);
+            });
+        });
+        
+        // Show success message
+        const saveBtn = stepDiv.querySelector('.save-step-final');
+        const originalText = saveBtn.innerHTML;
+        
+        saveBtn.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+        saveBtn.classList.remove('btn-primary');
+        saveBtn.classList.add('btn-success');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.classList.remove('btn-success');
+            saveBtn.classList.add('btn-primary');
+        }, 2000);
+        
+        // Optional: Auto-collapse after saving
+        // toggleStepCollapse(stepDiv);
+        
+        console.log(`Step "${stepName}" saved with ${questionCount} questions`);
+    }
+    
+    function toggleQuestionCollapse(questionDiv) {
+        const questionDetails = questionDiv.querySelector('.question-details');
+        const toggleBtn = questionDiv.querySelector('.toggle-question-collapse');
+        const icon = toggleBtn.querySelector('i');
+        
+        if (questionDetails.style.display === 'none') {
+            // Expand
+            questionDetails.style.display = 'block';
+            icon.className = 'fas fa-chevron-up';
+            toggleBtn.title = 'Collapse';
+            questionDiv.classList.remove('collapsed');
+        } else {
+            // Collapse
+            questionDetails.style.display = 'none';
+            icon.className = 'fas fa-chevron-down';
+            toggleBtn.title = 'Expand';
+            questionDiv.classList.add('collapsed');
+        }
+    }
+    
+    function populateEditForm() {
+        console.log('=== populateEditForm called ===');
+        console.log('flowData:', flowData);
+        console.log('flowData keys:', Object.keys(flowData));
+        console.log('flowData type:', typeof flowData);
+        console.log('isEditMode:', isEditMode);
+        
+        if (!flowData || Object.keys(flowData).length === 0) {
+            console.log('No flow data available, returning');
+            return;
+        }
+        
+        console.log('Flow data is available, proceeding with population...');
+        
+        // Populate basic form fields
+        document.getElementById('flowName').value = flowData.name || '';
+        document.getElementById('flowDescription').value = flowData.description || '';
+        
+        console.log('Basic form fields populated');
+        
+        // Get step blocks container
+        const stepBlocksContainer = document.getElementById('stepBlocksContainer');
+        if (!stepBlocksContainer) {
+            console.error('Step blocks container not found!');
+            return;
+        }
+        
+        // Clear existing step blocks
+        console.log('Clearing step blocks container');
+        stepBlocksContainer.innerHTML = '';
+        console.log('Step blocks container cleared');
+        
+        // Get templates
+        const stepBlockTemplate = document.getElementById('stepBlockTemplate');
+        const questionTemplate = document.getElementById('questionTemplate');
+        
+        if (!stepBlockTemplate || !questionTemplate) {
+            console.error('Templates not found!');
+            return;
+        }
+        
+        // Add step blocks from flowData
+        const stepBlocks = flowData.step_blocks || [];
+        console.log('=== Adding step blocks ===');
+        console.log('Step blocks count:', stepBlocks.length);
+        console.log('Step blocks data:', stepBlocks);
+        console.log('Step blocks container element:', stepBlocksContainer);
+        console.log('Step blocks container exists:', !!stepBlocksContainer);
+        
+        stepBlocks.forEach((stepData, index) => {
+            console.log(`Adding step ${index + 1}:`, stepData.name);
+            stepIndex = index;
+            const stepElement = stepBlockTemplate.content.cloneNode(true);
+            const stepDiv = stepElement.querySelector('.step-block-item');
+            stepDiv.dataset.stepIndex = stepIndex;
+            stepDiv.querySelector('.step-number').textContent = stepIndex + 1;
+            
+            // Make all IDs unique by adding step index
+            const uniqueId = `s${stepIndex}`;
+            makeStepIdsUnique(stepDiv, uniqueId);
+            
+            // Set step display values
+            stepDiv.querySelector('.step-name').textContent = stepData.name;
+            stepDiv.querySelector('.step-display-name').textContent = stepData.name;
+            stepDiv.querySelector('.step-display-description').textContent = stepData.description || 'No description';
+            stepDiv.querySelector('.step-required-badge').textContent = stepData.is_required ? 'Required' : 'Optional';
+            stepDiv.querySelector('.step-required-badge').className = `badge ${stepData.is_required ? 'bg-danger' : 'bg-secondary'} step-required-badge`;
+            
+            // Add event listeners
+            addStepBlockEventListeners(stepDiv);
+            
+            // Add questions to this step
+            const questionsList = stepDiv.querySelector('.questions-list');
+            console.log(`Adding ${stepData.questions.length} questions to step ${index + 1}`);
+            
+            stepData.questions.forEach((questionData, qIndex) => {
+            console.log(`Adding question ${qIndex + 1}:`, questionData.question_text);
+                questionIndex = qIndex;
+                const questionElement = questionTemplate.content.cloneNode(true);
+                const questionDiv = questionElement.querySelector('.question-item');
+                questionDiv.dataset.questionIndex = questionIndex;
+                questionDiv.dataset.stepIndex = stepIndex;
+            
+            // Make all IDs unique by adding question index
+            const uniqueId = `q${questionIndex}_${stepIndex}`;
+            makeQuestionIdsUnique(questionDiv, uniqueId);
+            
+            // Store the complete question data in the DOM element for later use
+            questionDiv.dataset.questionData = JSON.stringify(questionData);
+                
+                // Set question display values
+                questionDiv.querySelector('.question-number').textContent = qIndex + 1;
+                questionDiv.querySelector('.question-text-display').textContent = questionData.question_text;
+                questionDiv.querySelector('.question-type-badge').textContent = questionData.question_type;
+                
+                // Add event listeners
+                addQuestionEventListeners(questionDiv, stepDiv);
+            
+            // Keep question details collapsed by default
+            // Users can click to expand when needed
+            
+            // Populate question configuration fields
+            populateQuestionTypeConfig(questionDiv, questionData);
+            
+            // Trigger question type change event to show appropriate sections
+            const questionTypeSelect = questionDiv.querySelector('.question-type-select');
+            if (questionTypeSelect) {
+                questionTypeSelect.dispatchEvent(new Event('change'));
+            }
+                
+                questionsList.appendChild(questionElement);
+            });
+            
+            // Update question count
+            stepDiv.querySelector('.step-questions-count').textContent = `${stepData.questions.length} Questions`;
+            
+            // Start with step collapsed by default in edit mode
+            const cardBody = stepDiv.querySelector('.card-body');
+            const toggleBtn = stepDiv.querySelector('.toggle-step-collapse');
+            const icon = toggleBtn.querySelector('i');
+            
+            if (cardBody && toggleBtn && icon) {
+                cardBody.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+                toggleBtn.title = 'Expand';
+                stepDiv.classList.add('collapsed');
+            }
+            
+            stepBlocksContainer.appendChild(stepElement);
+            console.log(`Step ${index + 1} added to container`);
+            console.log(`Step ${index + 1} element:`, stepElement);
+            
+            // Check the actual DOM element that was added
+            const addedStep = stepBlocksContainer.lastElementChild;
+            if (addedStep) {
+                console.log(`Step ${index + 1} DOM element:`, addedStep);
+                console.log(`Step ${index + 1} visible:`, addedStep.style.display !== 'none');
+            }
+        }); // Close the step creation loop
+        
+        console.log('All step blocks added, updating step numbers');
+        console.log('Final step blocks count in container:', stepBlocksContainer.children.length);
+        
+        // Check if all steps are actually visible
+        const allSteps = stepBlocksContainer.querySelectorAll('.step-block-item');
+        console.log('All step elements found:', allSteps.length);
+        allSteps.forEach((step, index) => {
+            console.log(`Step ${index + 1} display style:`, step.style.display);
+            console.log(`Step ${index + 1} computed display:`, window.getComputedStyle(step).display);
+            console.log(`Step ${index + 1} classList:`, step.classList.toString());
+        });
+        
+        updateStepNumbers();
+        console.log('Edit form population completed');
+    }
+    
+});
+
+// Global functions for form submission and validation
+function submitForm() {
+    console.log('submitForm called');
+    
+    // Ensure template data is initialized
+    if (typeof isEditMode === 'undefined' || typeof flowData === 'undefined') {
+        initializeTemplateData();
+    }
+    
+    // Clear previous error messages
+    clearErrorMessages();
+    
+    // Validate basic form fields
+    const name = document.getElementById('flowName').value.trim();
+    const description = document.getElementById('flowDescription').value.trim();
+    
+    if (!name) {
+        showError('Please enter a chatbot name', 'flowName');
+        return;
+    }
+    
+    if (name.length < 3) {
+        showError('Chatbot name must be at least 3 characters long', 'flowName');
+        return;
+    }
+    
+    // Collect step blocks and questions
+    const stepBlocks = [];
+    const stepElements = document.querySelectorAll('.step-block-item');
+    
+    if (stepElements.length === 0) {
+        console.log('No step blocks found');
+        showError('Please add at least one step block', 'stepBlocksContainer');
+        return;
+    }
+    
+    console.log('Found step blocks:', stepElements.length);
+    let hasErrors = false;
+    
+    stepElements.forEach((stepElement, stepIndex) => {
+        const stepName = stepElement.querySelector('.step-display-name').textContent.trim();
+        const stepDescription = stepElement.querySelector('.step-display-description').textContent.trim();
+        const isRequired = stepElement.querySelector('.step-required-badge').textContent === 'Required';
+        
+        if (!stepName) {
+            showError(`Step ${stepIndex + 1}: Please provide a name for this step block`, stepElement);
+            hasErrors = true;
+            return;
+        }
+        
+        if (stepName.length < 2) {
+            showError(`Step ${stepIndex + 1}: Step name must be at least 2 characters long`, stepElement);
+            hasErrors = true;
+            return;
+        }
+        
+        const questions = [];
+        const questionElements = stepElement.querySelectorAll('.question-item');
+        
+        if (questionElements.length === 0) {
+            showError(`Step "${stepName}": Please add at least one question`, stepElement);
+            hasErrors = true;
+            return;
+        }
+        
+        questionElements.forEach((questionElement, questionIndex) => {
+            const questionText = questionElement.querySelector('.question-text-input').value.trim();
+            const questionType = questionElement.querySelector('.question-type-select').value;
+            
+            console.log(`Processing question ${questionIndex + 1}: type=${questionType}, text="${questionText}"`);
+        console.log('Question element:', questionElement);
+            
+            if (!questionText) {
+                showError(`Step "${stepName}", Question ${questionIndex + 1}: Please provide question text`, questionElement);
+                hasErrors = true;
+                return;
+            }
+            
+            if (questionText.length < 5) {
+                showError(`Step "${stepName}", Question ${questionIndex + 1}: Question text must be at least 5 characters long`, questionElement);
+                hasErrors = true;
+                return;
+            }
+            
+            const questionData = {
+                question_text: questionText,
+                question_type: questionType,
+                placeholder: questionElement.querySelector('.question-placeholder-input').value,
+                is_required: questionElement.querySelector('.question-required-input').checked,
+                help_text: questionElement.querySelector('.question-help-input').value,
+                default_view: questionElement.querySelector('.question-default-view-input').value,
+                order_index: questionIndex
+            };
+            
+            // Validate options for select/dropdown/radio/checkbox
+            if (['select', 'dropdown', 'radio', 'checkbox'].includes(questionType)) {
+                const optionsInput = questionElement.querySelector('.question-options-input');
+                console.log(`Validating ${questionType} question - options input found:`, !!optionsInput);
+                
+                if (!optionsInput) {
+                    console.error(`Options input not found for ${questionType} question`);
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Options input field not found for ${questionType} question`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                const optionsText = optionsInput.value;
+                console.log(`Options text for ${questionType}:`, optionsText);
+                
+                if (!optionsText || !optionsText.trim()) {
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Please provide options for ${questionType} question`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                const options = optionsText.split('\n').filter(opt => opt.trim());
+                if (options.length < 2) {
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Please provide at least 2 options for ${questionType} question`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                questionData.options = options;
+            }
+            
+            // Add cascading dropdown data if applicable
+            if (questionType === 'cascading_dropdown') {
+                const primaryLabel = questionElement.querySelector('.cascading-primary-label').value;
+                const secondaryLabel = questionElement.querySelector('.cascading-secondary-label').value;
+                const categories = [];
+                
+                questionElement.querySelectorAll('.category-item').forEach(categoryDiv => {
+                    const categoryName = categoryDiv.querySelector('.category-name').value;
+                    const subcategoriesText = categoryDiv.querySelector('.subcategories').value;
+                    const subcategories = [];
+                    
+                    // Parse subcategories with support for grouped format
+                    const lines = subcategoriesText.split('\n').map(line => line.trim()).filter(line => line);
+                    
+                    // Check if it's multi-line grouped format
+                    if (lines.some(line => line.startsWith('{') && line.endsWith('}'))) {
+                        // Multi-line grouped format
+                        let currentGroup = null;
+                        let currentItems = [];
+                        
+                        for (const line of lines) {
+                            // Check if this line is a group header
+                            if (line.startsWith('{') && line.endsWith('}')) {
+                                // Save previous group if exists
+                                if (currentGroup && currentItems.length > 0) {
+                                    subcategories.push({
+                                        group: currentGroup,
+                                        items: currentItems
+                                    });
+                                }
+                                
+                                // Start new group
+                                currentGroup = line.slice(1, -1).trim();
+                                currentItems = [];
+                            } else if (currentGroup) {
+                                // This is an item for the current group
+                                // Check if it's comma-separated items on one line
+                                if (line.includes(',')) {
+                                    const items = line.split(',').map(item => item.trim()).filter(item => item);
+                                    currentItems.push(...items);
+                                } else {
+                                    // Single item on this line
+                                    currentItems.push(line);
+                                }
+                            }
+                        }
+                        
+                        // Save the last group
+                        if (currentGroup && currentItems.length > 0) {
+                            subcategories.push({
+                                group: currentGroup,
+                                items: currentItems
+                            });
+                        }
+                    } else {
+                        // Single-line format or simple list
+                        lines.forEach(line => {
+                            const trimmedLine = line.trim();
+                            if (trimmedLine.includes('{') && trimmedLine.includes('}')) {
+                                // Single-line grouped format: "{Group Name} Item1, Item2 {Another Group} Item3, Item4"
+                                const groupMatches = trimmedLine.match(/\{([^}]+)\}/g);
+                                const itemMatches = trimmedLine.split(/\{[^}]+\}/);
+                                
+                                if (groupMatches && groupMatches.length > 0) {
+                                    groupMatches.forEach((groupMatch, index) => {
+                                        const groupName = groupMatch.replace(/[{}]/g, '').trim();
+                                        const itemsText = itemMatches[index + 1] || '';
+                                        const items = itemsText.split(',').map(item => item.trim()).filter(item => item);
+                                        
+                                        if (groupName && items.length > 0) {
+                                            subcategories.push({
+                                                group: groupName,
+                                                items: items
+                                            });
+                                        }
+                                    });
+                                }
+                            } else if (trimmedLine) {
+                                // Simple format: just item names (backward compatibility)
+                                subcategories.push(trimmedLine);
+                            }
+                        });
+                    }
+                    
+                    if (categoryName.trim()) {
+                        categories.push({
+                            name: categoryName,
+                            subcategories: subcategories
+                        });
+                    }
+                });
+                
+                if (categories.length === 0) {
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Please add at least one category for cascading dropdown`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                questionData.cascading_config = {
+                    primary_label: primaryLabel,
+                    secondary_label: secondaryLabel,
+                    categories: categories
+                };
+            }
+            
+            // Add number + unit data if applicable
+            if (questionType === 'number_unit') {
+                const numberLabel = questionElement.querySelector('.number-label-input').value;
+                const unitLabel = questionElement.querySelector('.unit-label-input').value;
+                const unitOptionsText = questionElement.querySelector('.unit-options-input').value;
+                
+                if (!unitOptionsText || !unitOptionsText.trim()) {
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Please provide unit options for number + unit question`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                const unitOptions = unitOptionsText.split('\n').filter(opt => opt.trim());
+                if (unitOptions.length < 1) {
+                    showError(`Step "${stepName}", Question ${questionIndex + 1}: Please provide at least 1 unit option for number + unit question`, questionElement);
+                    hasErrors = true;
+                    return;
+                }
+                
+                questionData.number_unit_config = {
+                    number_label: numberLabel || 'Amount',
+                    unit_label: unitLabel || 'Currency',
+                    unit_options: unitOptions
+                };
+            }
+            
+            // Add images upload data if applicable
+            if (questionType === 'images') {
+                const uploadLabel = questionElement.querySelector('.images-upload-label-input').value;
+                const urlLabel = questionElement.querySelector('.images-url-label-input').value;
+                const maxFiles = questionElement.querySelector('.images-max-files-input').value;
+                const maxSizeMB = questionElement.querySelector('.images-max-size-input').value;
+                const enableUpload = questionElement.querySelector('.images-enable-upload').checked;
+                const enableUrl = questionElement.querySelector('.images-enable-url').checked;
+                
+                questionData.media_upload_config = {
+                    upload_label: uploadLabel || 'Upload Images',
+                    url_label: urlLabel || 'Or provide image URLs',
+                    max_files: parseInt(maxFiles) || 5,
+                    file_type: 'images',
+                    extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp', 'svg', 'ico', 'heic', 'heif'],
+                    max_size: parseInt(maxSizeMB) * 1024 * 1024 || 10 * 1024 * 1024,
+                    max_size_formatted: (parseInt(maxSizeMB) || 10) + ' MB',
+                    icon: 'fas fa-image',
+                    enable_upload: enableUpload,
+                    enable_url: enableUrl
+                };
+            }
+            
+            // Add videos upload data if applicable
+            if (questionType === 'videos') {
+                const uploadLabel = questionElement.querySelector('.videos-upload-label-input').value;
+                const urlLabel = questionElement.querySelector('.videos-url-label-input').value;
+                const maxFiles = questionElement.querySelector('.videos-max-files-input').value;
+                const maxSizeMB = questionElement.querySelector('.videos-max-size-input').value;
+                const enableUpload = questionElement.querySelector('.videos-enable-upload').checked;
+                const enableUrl = questionElement.querySelector('.videos-enable-url').checked;
+                
+                questionData.media_upload_config = {
+                    upload_label: uploadLabel || 'Upload Videos',
+                    url_label: urlLabel || 'Or provide video URLs',
+                    max_files: parseInt(maxFiles) || 3,
+                    file_type: 'videos',
+                    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp', 'ogv'],
+                    max_size: parseInt(maxSizeMB) * 1024 * 1024 || 100 * 1024 * 1024,
+                    max_size_formatted: (parseInt(maxSizeMB) || 100) + ' MB',
+                    icon: 'fas fa-video',
+                    enable_upload: enableUpload,
+                    enable_url: enableUrl
+                };
+            }
+            
+            // Add audio upload data if applicable
+            if (questionType === 'audio') {
+                const uploadLabel = questionElement.querySelector('.audio-upload-label-input').value;
+                const urlLabel = questionElement.querySelector('.audio-url-label-input').value;
+                const maxFiles = questionElement.querySelector('.audio-max-files-input').value;
+                const maxSizeMB = questionElement.querySelector('.audio-max-size-input').value;
+                const enableUpload = questionElement.querySelector('.audio-enable-upload').checked;
+                const enableUrl = questionElement.querySelector('.audio-enable-url').checked;
+                
+                questionData.media_upload_config = {
+                    upload_label: uploadLabel || 'Upload Audio',
+                    url_label: urlLabel || 'Or provide audio URLs',
+                    max_files: parseInt(maxFiles) || 5,
+                    file_type: 'audio',
+                    extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a', 'opus', 'aiff', 'au'],
+                    max_size: parseInt(maxSizeMB) * 1024 * 1024 || 50 * 1024 * 1024,
+                    max_size_formatted: (parseInt(maxSizeMB) || 50) + ' MB',
+                    icon: 'fas fa-music',
+                    enable_upload: enableUpload,
+                    enable_url: enableUrl
+                };
+            }
+            
+            // Add files & documents upload data if applicable
+            if (questionType === 'files_documents') {
+                const uploadLabel = questionElement.querySelector('.files-documents-upload-label-input').value;
+                const urlLabel = questionElement.querySelector('.files-documents-url-label-input').value;
+                const maxFiles = questionElement.querySelector('.files-documents-max-files-input').value;
+                const maxSizeMB = questionElement.querySelector('.files-documents-max-size-input').value;
+                const enableUpload = questionElement.querySelector('.files-documents-enable-upload').checked;
+                const enableUrl = questionElement.querySelector('.files-documents-enable-url').checked;
+                
+                questionData.media_upload_config = {
+                    upload_label: uploadLabel || 'Upload Files',
+                    url_label: urlLabel || 'Or provide file URLs',
+                    max_files: parseInt(maxFiles) || 5,
+                    file_type: 'files_documents',
+                    extensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp'],
+                    max_size: parseInt(maxSizeMB) * 1024 * 1024 || 25 * 1024 * 1024,
+                    max_size_formatted: (parseInt(maxSizeMB) || 25) + ' MB',
+                    icon: 'fas fa-file-alt',
+                    enable_upload: enableUpload,
+                    enable_url: enableUrl
+                };
+            }
+            
+            // Add branching logic data if applicable
+            const enableBranching = questionElement.querySelector('.enable-branching');
+            if (enableBranching && enableBranching.checked) {
+                console.log('Branching enabled for question:', questionText);
+                const branchingRules = [];
+                const ruleElements = questionElement.querySelectorAll('.branching-rule-item');
+                console.log('Found branching rule elements:', ruleElements.length);
+                
+                ruleElements.forEach((ruleDiv, ruleIndex) => {
+                    const condition = ruleDiv.querySelector('.rule-condition').value.trim();
+                    const action = ruleDiv.querySelector('.rule-action').value;
+                    const targetElement = ruleDiv.querySelector('.rule-target-step');
+                    const target = targetElement.value;
+                    const message = ruleDiv.querySelector('.rule-message').value.trim();
+                    
+                    console.log(`Rule ${ruleIndex + 1}: condition="${condition}", action="${action}", target="${target}", message="${message}"`);
+                    console.log(`Target element:`, targetElement);
+                    console.log(`Target element options:`, targetElement.options);
+                    console.log(`Target element selected index:`, targetElement.selectedIndex);
+                    console.log(`Target element selected value:`, targetElement.value);
+                    
+                    if (condition && action) {
+                        let rule = {
+                            condition: condition,
+                            action: action,
+                            target: target,
+                            message: message || null
+                        };
+                        
+                        // Handle different target types
+                        if (action === 'show_question' || action === 'hide_question') {
+                            // For show/hide question actions, target should be the question ID
+                            // But we need to get it from the target dropdown which should contain question IDs
+                            rule.target_type = 'question';
+                            rule.target_question_id = target;
+                            rule.target = target; // Set the target to the question ID
+                        } else if (target === 'specific_question_local') {
+                            const specificQuestion = ruleDiv.querySelector('.rule-specific-question').value;
+                            const questionStep = ruleDiv.querySelector('.rule-question-step').value;
+                            
+                            if (specificQuestion && questionStep) {
+                                rule.target_type = 'specific_question_local';
+                                rule.target_question_id = specificQuestion;
+                                rule.target_step_id = questionStep;
+                                rule.target = specificQuestion; // Set the actual question ID as target
+                            } else {
+                                showError(`Step "${stepName}", Question ${questionIndex + 1}: Please select both step and question for branching rule`, questionElement);
+                                hasErrors = true;
+                                return;
+                            }
+                        } else if (target === 'specific_step') {
+                            const questionStep = ruleDiv.querySelector('.rule-question-step').value;
+                            
+                            if (questionStep) {
+                                rule.target_type = 'specific_step';
+                                rule.target_step = parseInt(questionStep);
+                            } else {
+                                showError(`Step "${stepName}", Question ${questionIndex + 1}: Please select a target step for branching rule`, questionElement);
+                                hasErrors = true;
+                                return;
+                            }
+                        } else if (target === 'specific_step_question') {
+                            const specificQuestion = ruleDiv.querySelector('.rule-specific-question').value;
+                            const questionStep = ruleDiv.querySelector('.rule-question-step').value;
+                            
+                            if (specificQuestion && questionStep) {
+                                rule.target_type = 'specific_step_question';
+                                rule.target_question_id = specificQuestion;
+                                rule.target_step = parseInt(questionStep);
+                            } else {
+                                showError(`Step "${stepName}", Question ${questionIndex + 1}: Please select both step and question for branching rule`, questionElement);
+                                hasErrors = true;
+                                return;
+                            }
+                        } else {
+                            rule.target_type = target; // fallback
+                        }
+                        
+                        branchingRules.push(rule);
+                    }
+                });
+                
+                if (branchingRules.length > 0) {
+                    questionData.branching_logic = {
+                        enabled: true,
+                        rules: branchingRules
+                    };
+                    console.log('Branching logic added to question:', questionData.branching_logic);
+                } else {
+                    console.log('No valid branching rules found for question:', questionText);
+                }
+            }
+            
+            questions.push(questionData);
+        });
+        
+        stepBlocks.push({
+            name: stepName,
+            description: stepDescription,
+            is_required: isRequired,
+            step_order: stepIndex,
+            questions: questions
+        });
+    });
+    
+    if (hasErrors) {
+        console.log('Form validation failed - hasErrors is true');
+        return; // Stop submission if there are validation errors
+    }
+    
+    console.log('Form validation passed - proceeding with submission');
+    
+    const data = {
+        name: name,
+        description: description,
+        step_blocks: stepBlocks,
+        flow_config: {}
+    };
+    
+    // Show loading indicator
+    showFormLoading();
+    
+    // Determine the URL based on edit mode
+    const url = isEditMode && flowData && flowData.id ? `/admin/chatbots/${flowData.id}/edit` : '/admin/chatbots/create';
+    
+    // Submit to server
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideFormLoading();
+        if (data.success) {
+            showSuccess(`Chatbot ${isEditMode && flowData ? 'updated' : 'created'} successfully!`);
+            setTimeout(() => {
+                window.location.href = '/admin/chatbots';
+            }, 1500);
+        } else {
+            showError('Server Error: ' + (data.error || 'Unknown error occurred'), 'form');
+        }
+    })
+    .catch(error => {
+        hideFormLoading();
+        console.error('Error:', error);
+        showError('Network Error: Unable to connect to server. Please check your internet connection and try again.', 'form');
+    });
+}
+
+function showError(message, elementId) {
+    // Handle case where elementId might be an HTML element
+    let elementIdString;
+    let targetElement;
+    
+    if (typeof elementId === 'string') {
+        elementIdString = elementId;
+    } else if (elementId && elementId.id) {
+        elementIdString = elementId.id;
+        targetElement = elementId;
+    } else if (elementId && elementId.nodeType) {
+        // It's a DOM element
+        elementIdString = elementId.id || 'element';
+        targetElement = elementId;
+    } else {
+        elementIdString = 'form';
+    }
+    
+    // Remove existing error messages
+    const existingError = document.querySelector(`#${elementIdString}-error`);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.id = `${elementIdString}-error`;
+    errorDiv.className = 'alert alert-danger mt-2';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>${message}`;
+    
+    // Find target element and add error message
+    if (!targetElement) {
+        if (elementIdString === 'form') {
+            targetElement = document.getElementById('chatbotForm');
+        } else if (elementIdString === 'stepBlocksContainer') {
+            targetElement = document.getElementById('stepBlocksContainer');
+        } else if (elementIdString === 'flowName') {
+            targetElement = document.getElementById('flowName').parentElement;
+        } else {
+            targetElement = document.getElementById(elementIdString) || document.querySelector(`[data-step-index="${elementIdString}"]`);
+        }
+    }
+    
+    if (targetElement) {
+        targetElement.appendChild(errorDiv);
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // Add error styling to input if it's a form field
+    if (elementIdString === 'flowName') {
+        const flowNameInput = document.getElementById('flowName');
+        if (flowNameInput) {
+            flowNameInput.classList.add('is-invalid');
+        }
+    }
+}
+
+function clearErrorMessages() {
+    // Remove all error messages
+    document.querySelectorAll('.alert-danger').forEach(error => error.remove());
+    
+    // Remove error styling from inputs
+    document.querySelectorAll('.is-invalid').forEach(input => input.classList.remove('is-invalid'));
+}
+
+function showSuccess(message) {
+    // Remove existing success messages
+    const existingSuccess = document.querySelector('#success-message');
+    if (existingSuccess) {
+        existingSuccess.remove();
+    }
+    
+    // Create success message element
+    const successDiv = document.createElement('div');
+    successDiv.id = 'success-message';
+    successDiv.className = 'alert alert-success mt-2';
+    successDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+    
+    // Add to form
+    const form = document.getElementById('chatbotForm');
+    form.insertBefore(successDiv, form.firstChild);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showFormLoading() {
+    // Ensure template data is initialized
+    if (typeof isEditMode === 'undefined' || typeof flowData === 'undefined') {
+        initializeTemplateData();
+    }
+    
+    // Create loading overlay
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-overlay';
+    loadingDiv.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center';
+    loadingDiv.style.cssText = 'background-color: rgba(0,0,0,0.5); z-index: 9999;';
+    loadingDiv.innerHTML = `
+        <div class="text-center text-white">
+            <div class="spinner-border mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div>${isEditMode && flowData && Object.keys(flowData).length > 0 ? 'Updating' : 'Creating'} chatbot...</div>
+        </div>
+    `;
+    
+    document.body.appendChild(loadingDiv);
+}
+
+function hideFormLoading() {
+    const loadingDiv = document.getElementById('loading-overlay');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
+// Hide all file upload sections
+function hideAllFileUploadSections(questionDiv) {
+    const sections = [
+        '.images-upload-section',
+        '.videos-upload-section', 
+        '.audio-upload-section',
+        '.files-documents-upload-section'
+    ];
+    
+    sections.forEach(selector => {
+        const section = questionDiv.querySelector(selector);
+        if (section) {
+            section.style.display = 'none';
+        }
+    });
+}
+
+// Setup file size display updates
+function setupFileSizeUpdates() {
+    // Images size update
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('images-max-size-input')) {
+            const sizeDisplay = document.getElementById('images-size-display');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = e.target.value + 'MB';
+            }
+        }
+    });
+    
+    // Videos size update
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('videos-max-size-input')) {
+            const sizeDisplay = document.getElementById('videos-size-display');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = e.target.value + 'MB';
+            }
+        }
+    });
+    
+    // Audio size update
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('audio-max-size-input')) {
+            const sizeDisplay = document.getElementById('audio-size-display');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = e.target.value + 'MB';
+            }
+        }
+    });
+    
+    // Files & Documents size update
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('files-documents-max-size-input')) {
+            const sizeDisplay = document.getElementById('files-documents-size-display');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = e.target.value + 'MB';
+            }
+        }
+    });
+}
+
+// Initialize file size updates
+setupFileSizeUpdates();
+</script>
+{% endblock %}
+

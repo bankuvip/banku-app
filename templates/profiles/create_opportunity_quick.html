@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Add Opportunity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>
+                    Quick Add Opportunity
+                </h4>
+                <div>
+                    <span class="badge bg-warning text-dark me-2">QUICK PATH</span>
+                    <a href="{{ url_for('profiles.create_opportunity') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Path Selection
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-bullseye fa-3x text-primary mb-3"></i>
+                                <h4 class="text-primary">Tell us about your opportunity</h4>
+                                <p class="text-muted">Just the essential details to get you started</p>
+                            </div>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What's this opportunity called? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="title" required 
+                                               placeholder="e.g., Partnership Opportunity, Investment Chance, Job Opening">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Brief description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="short_description" rows="3" maxlength="200" required 
+                                                  placeholder="Describe the opportunity in a few sentences (max 200 characters)"></textarea>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="form-text">Keep it concise and engaging</div>
+                                            <small class="text-muted"><span id="char-count">0</span>/200</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">What type of opportunity is this? <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-lg" name="main_category" required>
+                                            <option value="">Choose a category...</option>
+                                            <option value="business">💼 Business - Partnership or collaboration</option>
+                                            <option value="investment">💰 Investment - Financial opportunity</option>
+                                            <option value="career">👔 Career - Job or professional growth</option>
+                                            <option value="education">🎓 Education - Learning opportunity</option>
+                                            <option value="creative">🎨 Creative - Artistic or creative project</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label fs-5">Who's offering this opportunity? <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-lg" name="creator" required 
+                                               placeholder="e.g., Your Name, Your Company, Organization Name">
+                                        <div class="form-text">This could be you, your company, or organization</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">Where is this opportunity available? (Optional)</label>
+                                        <input type="text" class="form-control form-control-lg" name="location" 
+                                               placeholder="e.g., Dubai, UAE or Remote or Global">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Save as Draft
+                            </button>
+                            <button type="submit" name="action" value="publish" class="btn btn-warning btn-lg px-5">
+                                <i class="fas fa-bullseye me-2"></i>Publish Opportunity
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shortDescTextarea = document.querySelector('[name="short_description"]');
+    const charCount = document.getElementById('char-count');
+    
+    if (shortDescTextarea && charCount) {
+        shortDescTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+});
+</script>
+{% endblock %}
+
