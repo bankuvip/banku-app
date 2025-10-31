@@ -36,7 +36,14 @@ def delete_item_files(item) -> dict:
             if isinstance(images, list):
                 for image_filename in images:
                     if image_filename:
-                        file_path = os.path.join(upload_folder, image_filename)
+                        # Handle both old format (just filename) and new format (full path)
+                        if image_filename.startswith('uploads/'):
+                            # New format: full relative path
+                            file_path = os.path.join(current_app.static_folder, image_filename)
+                        else:
+                            # Old format: just filename
+                            file_path = os.path.join(upload_folder, image_filename)
+                        
                         if os.path.exists(file_path):
                             try:
                                 os.remove(file_path)
@@ -58,7 +65,14 @@ def delete_item_files(item) -> dict:
             if isinstance(photos, list):
                 for photo_filename in photos:
                     if photo_filename:
-                        file_path = os.path.join(upload_folder, photo_filename)
+                        # Handle both old format (just filename) and new format (full path)
+                        if photo_filename.startswith('uploads/'):
+                            # New format: full relative path
+                            file_path = os.path.join(current_app.static_folder, photo_filename)
+                        else:
+                            # Old format: just filename
+                            file_path = os.path.join(upload_folder, photo_filename)
+                        
                         if os.path.exists(file_path):
                             try:
                                 os.remove(file_path)
@@ -80,7 +94,14 @@ def delete_item_files(item) -> dict:
             if isinstance(files, list):
                 for file_filename in files:
                     if file_filename:
-                        file_path = os.path.join(upload_folder, file_filename)
+                        # Handle both old format (just filename) and new format (full path)
+                        if file_filename.startswith('uploads/'):
+                            # New format: full relative path
+                            file_path = os.path.join(current_app.static_folder, file_filename)
+                        else:
+                            # Old format: just filename
+                            file_path = os.path.join(upload_folder, file_filename)
+                        
                         if os.path.exists(file_path):
                             try:
                                 os.remove(file_path)
@@ -102,7 +123,14 @@ def delete_item_files(item) -> dict:
             if isinstance(media, list):
                 for media_filename in media:
                     if media_filename:
-                        file_path = os.path.join(upload_folder, media_filename)
+                        # Handle both old format (just filename) and new format (full path)
+                        if media_filename.startswith('uploads/'):
+                            # New format: full relative path
+                            file_path = os.path.join(current_app.static_folder, media_filename)
+                        else:
+                            # Old format: just filename
+                            file_path = os.path.join(upload_folder, media_filename)
+                        
                         if os.path.exists(file_path):
                             try:
                                 os.remove(file_path)
@@ -147,7 +175,14 @@ def delete_profile_files(profile) -> dict:
     try:
         # Delete profile photo
         if hasattr(profile, 'photo') and profile.photo:
-            file_path = os.path.join(upload_folder, profile.photo)
+            # Handle both old format (just filename) and new format (full path)
+            if profile.photo.startswith('uploads/'):
+                # New format: full relative path
+                file_path = os.path.join(current_app.static_folder, profile.photo)
+            else:
+                # Old format: just filename
+                file_path = os.path.join(upload_folder, profile.photo)
+            
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)

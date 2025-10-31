@@ -86,7 +86,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             {% if profile.photo %}
-                                            <img src="{{ url_for('static', filename='uploads/' + profile.photo) }}" 
+                                            <img src="{{ profile.photo | file_url }}" 
                                                  class="rounded-circle me-2" width="32" height="32" alt="Profile">
                                             {% else %}
                                             <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 

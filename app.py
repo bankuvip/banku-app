@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, make_response, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -208,6 +208,7 @@ from routes.organizations import organizations_bp
 from routes.feedback import feedback_bp
 from routes.scoring_admin import scoring_admin_bp
 from routes.wallet import wallet_bp
+from routes.admin_permissions import admin_permissions_bp
 
 # Try to import API blueprint, make it optional
 try:
@@ -237,6 +238,7 @@ app.register_blueprint(organizations_bp, url_prefix='')
 app.register_blueprint(feedback_bp, url_prefix='')
 app.register_blueprint(scoring_admin_bp, url_prefix='/admin')
 app.register_blueprint(wallet_bp, url_prefix='/wallet')
+app.register_blueprint(admin_permissions_bp)
 
 # Register API blueprint if available
 if API_AVAILABLE:
@@ -257,14 +259,30 @@ print("INFO: Background health monitoring disabled to prevent connection leaks")
 # Register template filters
 from utils.template_filters import register_template_filters
 from utils.location_formatter import format_location_simple, format_location_with_link
+from utils.geocoding import parse_location
 
 register_template_filters(app)
+
+# Make datetime available to all templates for automatic year in footer
+from datetime import datetime as dt
+@app.context_processor
+def inject_datetime():
+    """Make datetime available to all templates"""
+    return {'datetime': dt}
 
 # Register simple location formatter
 @app.template_filter('format_location')
 def format_location_filter(location_string):
-    """Simple location formatter without external API calls"""
-    return format_location_simple(location_string)
+    """
+    Display location from database - NO processing, just return as stored.
+    Location processing happens ONLY during item creation/submission.
+    """
+    if not location_string:
+        return "Location not specified"
+    
+    # Simply return the location as stored in database
+    # All processing (URL resolution, geocoding) happens during item creation
+    return location_string.strip()
 
 @app.template_filter('format_location_with_link')
 def format_location_with_link_filter(location_string):
@@ -328,6 +346,25 @@ def track_analytics():
 def favicon():
     """Serve favicon.ico to prevent 404 errors"""
     return '', 204  # Return empty response with 204 No Content status
+
+@app.route('/download/android')
+def download_android():
+    """Download Android APK file"""
+    try:
+        apk_path = os.path.join('static', 'downloads', 'banku-android.apk')
+        if os.path.exists(apk_path):
+            return send_file(apk_path, as_attachment=True, download_name='BankU-Android.apk')
+        else:
+            flash('Android app is not available for download yet.', 'warning')
+            return redirect(url_for('downloads'))
+    except Exception as e:
+        flash('Error downloading Android app. Please try again later.', 'error')
+        return redirect(url_for('downloads'))
+
+@app.route('/downloads')
+def downloads():
+    """Download page for mobile apps"""
+    return render_template('downloads.html')
 
 def cleanup_on_exit():
     """Cleanup function called when the app exits"""

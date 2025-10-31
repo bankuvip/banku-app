@@ -70,11 +70,11 @@
                             {% for image in item.images_media %}
                                 {% if image and image.strip() and not image in ['folo', 'momo', 'iphone'] %}
                                 <div class="col-md-3 mb-2">
-                                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
+                                    <img src="{{ image | file_url }}" 
                                          alt="{{ item.title }}" 
                                          class="img-fluid rounded shadow-sm"
                                          style="height: 150px; object-fit: cover; cursor: pointer;"
-                                         onclick="openImageModal('{{ url_for('static', filename='uploads/' + image) }}', '{{ item.title }}')">
+                                         onclick="openImageModal('{{ image | file_url }}', '{{ item.title }}')">
                                 </div>
                                 {% endif %}
                             {% endfor %}
@@ -86,7 +86,7 @@
        <div class="mb-3">
            <h6 class="text-muted">Location</h6>
            <p><i class="fas fa-map-marker-alt me-1"></i>
-               {{ item.location|format_location_cached }}
+               {{ item.location|format_location }}
            </p>
        </div>
        {% endif %}

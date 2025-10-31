@@ -1,0 +1,80 @@
+warning: in the working copy of 'app.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'forms.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'models.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/admin.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/auth.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/banks.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/chatbot.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/organizations.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'routes/profiles.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'static/css/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'static/js/chatbot-creator.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/chatbots.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/create_chatbot_enhanced.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/create_chatbot_enhanced_backup.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/create_chatbot_enhanced_clean.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/profile_detail.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/profiles_management.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/admin/role_management.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/auth/profile.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/auth/settings.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/banks/item_detail.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/banks/items.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/banks/organizations.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/banks/users.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/base.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/chatbot/complete.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/chatbot/flow.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/profiles/create.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/profiles/detail_new.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/profiles/edit.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/profiles/item_detail.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'utils/file_cleanup.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'utils/geocoding.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'utils/template_filters.py', LF will be replaced by CRLF the next time Git touches it
+M	app.py
+M	forms.py
+M	models.py
+M	routes/admin.py
+M	routes/admin_permissions.py
+M	routes/auth.py
+M	routes/banks.py
+M	routes/chatbot.py
+M	routes/organizations.py
+M	routes/profiles.py
+M	static/css/style.css
+M	static/js/chatbot-creator.js
+M	templates/admin/chatbots.html
+D	templates/admin/create_chatbot.html
+M	templates/admin/create_chatbot_enhanced.html
+M	templates/admin/create_chatbot_enhanced_backup.html
+M	templates/admin/create_chatbot_enhanced_clean.html
+D	templates/admin/create_chatbot_simple.html
+M	templates/admin/index.html
+M	templates/admin/profile_detail.html
+M	templates/admin/profiles_management.html
+M	templates/admin/role_management.html
+M	templates/auth/profile.html
+M	templates/auth/settings.html
+M	templates/banks/item_detail.html
+M	templates/banks/items.html
+M	templates/banks/organizations.html
+M	templates/banks/users.html
+M	templates/base.html
+M	templates/chatbot/complete.html
+M	templates/chatbot/flow.html
+M	templates/index.html
+M	templates/organizations/members.html
+M	templates/organizations/settings.html
+M	templates/organizations/view.html
+M	templates/profiles/create.html
+D	templates/profiles/detail.html
+M	templates/profiles/detail_new.html
+M	templates/profiles/edit.html
+M	templates/profiles/item_detail.html
+M	utils/file_cleanup.py
+M	utils/geocoding.py
+M	utils/permission_catalog.py
+M	utils/template_filters.py

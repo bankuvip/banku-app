@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from models import ChatbotFlow, ChatbotQuestion, ChatbotResponse, ChatbotStepBlock, ItemType, DataStorageMapping, ChatbotCompletion, Item, Profile, Bank, db, Organization
 from utils.data_collection import collection_engine
 from utils.permissions import require_admin_role, require_permission
+from utils.geocoding import parse_location
 from utils.file_utils import (
     get_media_upload_config, 
     validate_uploaded_file, 
@@ -19,6 +20,38 @@ import logging
 from werkzeug.utils import secure_filename
 
 chatbot_bp = Blueprint('chatbot', __name__)
+
+def _is_likely_file_path(value):
+    """
+    Check if a string value looks like a file path, not a tag or other text.
+    Returns True only if it looks like an actual file path.
+    Accepts both forward slashes (uploads/users/...) and backslashes (uploads\\users\\...)
+    """
+    if not value or not isinstance(value, str):
+        return False
+    
+    value = value.strip()
+    
+    # Normalize slashes for checking (accept both \ and /)
+    normalized = value.replace('\\', '/').lower()
+    
+    # Must start with 'uploads/' (after normalization) to be a valid file path
+    if not normalized.startswith('uploads/'):
+        return False
+    
+    # Must have a file extension (common image extensions)
+    import os
+    file_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', 
+                      '.pdf', '.doc', '.docx', '.mp4', '.mov', '.avi', '.mp3', '.wav']
+    ext = os.path.splitext(normalized)[1]
+    if ext in file_extensions:
+        return True
+    
+    # Or must contain '/' or '\' which indicates a path structure
+    if ('/' in value or '\\' in value) and (len(value.split('/')) >= 2 or len(value.split('\\')) >= 2):
+        return True
+    
+    return False
 
 def validate_chatbot_session():
     """Validate and clean up chatbot session data"""
@@ -244,12 +277,14 @@ def submit_response(flow_id):
                     return jsonify({
                         'success': True,
                         'message': 'Response saved and item created successfully',
+                        'storage_status': completion_result.get('storage_status', 'stored'),
                         'completion': completion_result
                     })
                 else:
                     return jsonify({
                         'success': False,
                         'message': 'Response saved but item creation failed',
+                        'storage_status': completion_result.get('storage_status', 'failed'),
                         'error': completion_result.get('error', 'Unknown error')
                     }), 500
             except Exception as e:
@@ -257,6 +292,7 @@ def submit_response(flow_id):
                 return jsonify({
                     'success': False,
                     'message': 'Response saved but item creation failed',
+                    'storage_status': 'failed',
                     'error': str(e)
                 }), 500
         
@@ -478,14 +514,17 @@ def complete_flow(flow_id):
     return render_template('chatbot/complete.html', flow=flow, response=response)
 
 @chatbot_bp.route('/<int:flow_id>/upload', methods=['POST'])
-@login_required
-@require_permission('chatbots', 'view')
+# @login_required  # REMOVED: Allow mobile uploads without authentication
+# @require_permission('chatbots', 'view')  # REMOVED: Allow mobile uploads without permission
 def handle_file_upload(flow_id):
-    """Handle file uploads for media upload questions"""
+    """Handle file uploads for media upload questions with mobile support and organized structure"""
     print(f"DEBUG: File upload endpoint called for flow {flow_id}")
     flow = ChatbotFlow.query.filter_by(id=flow_id, is_active=True).first_or_404()
     
     try:
+        # Import the new file structure utilities
+        from utils.file_structure import save_file_organized, validate_file_for_mobile, get_mobile_file_limits
+        
         # Get the question ID and category from the request
         question_id = request.form.get('question_id')
         category = request.form.get('category', 'documents')  # Default to documents
@@ -529,78 +568,80 @@ def handle_file_upload(flow_id):
                 'error': 'No file selected'
             }), 400
         
-        # Validate file
-        filename = secure_filename(file.filename)
-        file_size = len(file.read())
-        file.seek(0)  # Reset file pointer
-        
-        # Get MIME type
-        mime_type = file.content_type
-        
-        # Validate file using configurable limits
-        max_size = media_config.get('max_size', 10 * 1024 * 1024)  # Default 10MB
+        # Get allowed extensions from config
         allowed_extensions = media_config.get('extensions', [])
         
-        # Check file size
-        if file_size > max_size:
-            max_size_mb = max_size // (1024 * 1024)
+        # Validate file with mobile support
+        validation = validate_file_for_mobile(file, allowed_extensions)
+        if not validation['valid']:
             return jsonify({
                 'success': False,
-                'error': f'File size exceeds limit of {max_size_mb}MB'
+                'error': validation['error']
             }), 400
         
-        # Check file extension
-        file_ext = os.path.splitext(filename)[1][1:].lower()
-        if allowed_extensions and file_ext not in allowed_extensions:
+        # Determine file type for organization
+        file_type_for_storage = 'item'  # Default for chatbot uploads
+        
+        # Save file with organized structure
+        result = save_file_organized(
+            file=file,
+            user_id=current_user.id,
+            item_id=question_id,  # Use question_id as item_id for now
+            file_type=file_type_for_storage,
+            context_name=None
+        )
+        
+        if not result['success']:
             return jsonify({
                 'success': False,
-                'error': f'File type not allowed. Allowed types: {", ".join(allowed_extensions)}'
+                'error': result['error']
             }), 400
         
-        # Create upload directory structure in static/uploads
-        upload_dir = os.path.join(current_app.static_folder, 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
+        # Store file information in session for later use
+        if 'uploaded_files' not in session:
+            session['uploaded_files'] = []
         
-        # Generate unique filename with question_id prefix + timestamp + UUID
-        file_ext = os.path.splitext(filename)[1]
-        file_base = os.path.splitext(filename)[0]
+        file_info = {
+            'question_id': question_id,
+            'original_name': secure_filename(file.filename),
+            'saved_name': result['file_info']['filename'],
+            'relative_path': result['file_info']['relative_path'],
+            'file_type': file_type,
+            'size': result['file_info']['size'],
+            'size_formatted': result['file_info']['size_formatted'],
+            'mime_type': file.content_type,
+            'is_mobile': result['file_info']['is_mobile'],
+            'device_type': result['file_info']['device_type'],
+            'path': result['file_info']['relative_path']
+        }
         
-        # Create unique identifier to prevent collisions
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # Include milliseconds
-        unique_id = str(uuid.uuid4())[:8]  # Short UUID for uniqueness
+        session['uploaded_files'].append(file_info)
+        session.modified = True
         
-        # Generate collision-free filename
-        unique_filename = f"{question_id}_{file_base}_{timestamp}_{unique_id}{file_ext}"
-        file_path = os.path.join(upload_dir, unique_filename)
-        
-        # Save file
-        print(f"DEBUG: Saving file to {file_path}")
-        file.save(file_path)
-        
-        # Verify file was saved
-        if os.path.exists(file_path):
-            print(f"DEBUG: File saved successfully: {file_path}")
-        else:
-            print(f"DEBUG: ERROR - File was not saved: {file_path}")
+        print(f"DEBUG: File stored in session: {file_info}")
         
         # Return success response with file info
         return jsonify({
             'success': True,
             'file_info': {
-                'original_name': filename,
-                'saved_name': unique_filename,
+                'original_name': secure_filename(file.filename),
+                'saved_name': result['file_info']['filename'],
+                'relative_path': result['file_info']['relative_path'],
                 'file_type': file_type,
-                'size': file_size,
-                'size_formatted': format_file_size(file_size),
-                'mime_type': mime_type,
-                'path': unique_filename  # Just the filename, not full path
-                }
+                'size': result['file_info']['size'],
+                'size_formatted': result['file_info']['size_formatted'],
+                'mime_type': file.content_type,
+                'is_mobile': result['file_info']['is_mobile'],
+                'device_type': result['file_info']['device_type'],
+                'path': result['file_info']['relative_path']  # Use relative path for database
+            }
         })
         
     except Exception as e:
+        print(f"DEBUG: Upload error: {str(e)}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': f'Upload failed: {str(e)}'
         }), 500
 
 @chatbot_bp.route('/media-config')
@@ -683,20 +724,30 @@ def complete_flow_with_storage_logic(flow_id, collected_data):
                 processed_data = process_chatbot_data(collected_data, data_mapping, flow.id)
                 
                 # Create item in the specified bank
-                item = create_item_from_chatbot_data(
-                    processed_data, 
-                    item_type, 
-                    bank_id
-                )
-                
-                if item:
-                    completion.processed_data = processed_data
-                    completion.storage_status = 'stored'
-                    completion.storage_location = f"Item ID: {item.id}"
-                    completion.stored_at = datetime.utcnow()
-                else:
+                item = None
+                try:
+                    item = create_item_from_chatbot_data(
+                        processed_data, 
+                        item_type, 
+                        bank_id,
+                        flow.id
+                    )
+                    
+                    if item:
+                        completion.processed_data = processed_data
+                        completion.storage_status = 'stored'
+                        completion.storage_location = f"Item ID: {item.id}"
+                        completion.stored_at = datetime.utcnow()
+                    else:
+                        completion.storage_status = 'failed'
+                        completion.error_message = 'Failed to create item (item creation returned None)'
+                except Exception as item_error:
+                    # Catch specific item creation errors
+                    item = None
+                    error_msg = str(item_error)
                     completion.storage_status = 'failed'
-                    completion.error_message = 'Failed to create item'
+                    completion.error_message = error_msg if 'Item creation failed' in error_msg else f'Item creation failed: {error_msg}'
+                    print(f"DEBUG: Item creation exception caught: {error_msg}")
             else:
                 completion.storage_status = 'failed'
                 completion.error_message = 'No storage bank configured'
@@ -708,11 +759,18 @@ def complete_flow_with_storage_logic(flow_id, collected_data):
         db.session.commit()
         
         # Prepare response based on item type configuration
+        # Return success: False if storage failed
+        success = completion.storage_status == 'stored'
         response_data = {
-            'success': True,
+            'success': success,
             'completion_id': completion.id,
             'storage_status': completion.storage_status
         }
+        
+        # Add error message if storage failed
+        if not success:
+            response_data['error'] = completion.error_message or 'Failed to create item'
+            response_data['message'] = f'Item creation failed: {response_data["error"]}'
         
         if item_type:
             if item_type.completion_action in ['message', 'both']:
@@ -742,6 +800,13 @@ def complete_flow_with_storage(flow_id):
         
         # Get the collected data from the request
         collected_data = request.get_json().get('data', {})
+        
+        # Merge session data with collected data
+        if 'uploaded_files' in session and session['uploaded_files']:
+            print(f"DEBUG: Found {len(session['uploaded_files'])} uploaded files in session")
+            # Add uploaded files to collected data
+            collected_data['uploaded_files'] = session['uploaded_files']
+            print(f"DEBUG: Merged session data with collected data")
         
         # Call the completion logic
         result = complete_flow_with_storage_logic(flow_id, collected_data)
@@ -799,36 +864,36 @@ def process_chatbot_data(collected_data, data_mapping, chatbot_id=None):
             if chatbot_field in collected_data:
                 processed_data[item_field] = collected_data[chatbot_field]
     
-    # Handle file uploads - extract file information from collected data
-    if chatbot_id:
-        # Get all questions for this chatbot to find file upload questions
-        from models import ChatbotQuestion
-        file_questions = ChatbotQuestion.query.filter(
-            ChatbotQuestion.flow_id == chatbot_id,
-            ChatbotQuestion.question_type.in_(['images', 'videos', 'audio', 'files_documents'])
-        ).all()
-        
-        for question in file_questions:
-            question_id_str = str(question.id)
-            if question_id_str in collected_data:
-                value = collected_data[question_id_str]
-                if isinstance(value, dict) and 'files' in value:
-                    files = value.get('files', [])
-                    if files:
-                        # Convert file names to paths that match the uploaded files
-                        file_paths = []
-                        for file_info in files:
-                            if isinstance(file_info, dict) and 'name' in file_info:
-                                # Use saved_name if available (from actual upload), otherwise use original name
-                                filename = file_info.get('saved_name', file_info['name'])
-                                file_paths.append(filename)
-                        
-                        if file_paths:
-                            # Store file paths in processed_data
-                            if question.question_type == 'images':
-                                processed_data['images'] = file_paths
-                            else:
-                                processed_data['files'] = file_paths
+        # Handle file uploads - extract file information from collected data
+        if chatbot_id:
+            # Get all questions for this chatbot to find file upload questions
+            from models import ChatbotQuestion
+            file_questions = ChatbotQuestion.query.filter(
+                ChatbotQuestion.flow_id == chatbot_id,
+                ChatbotQuestion.question_type.in_(['images', 'videos', 'audio', 'files_documents'])
+            ).all()
+            
+            for question in file_questions:
+                question_id_str = str(question.id)
+                if question_id_str in collected_data:
+                    value = collected_data[question_id_str]
+                    if isinstance(value, dict) and 'files' in value:
+                        files = value.get('files', [])
+                        if files:
+                            # Convert file names to paths that match the uploaded files
+                            file_paths = []
+                            for file_info in files:
+                                if isinstance(file_info, dict) and 'relative_path' in file_info:
+                                    file_paths.append(file_info['relative_path'])
+                                elif isinstance(file_info, dict) and 'saved_name' in file_info:
+                                    file_paths.append(file_info['saved_name'])
+                            
+                            if file_paths:
+                                # Store file paths in processed_data
+                                if question.question_type == 'images':
+                                    processed_data['images'] = file_paths
+                                else:
+                                    processed_data['files'] = file_paths
     
     # If no mappings were applied, return original data
     if not processed_data and not data_mapping:
@@ -840,10 +905,10 @@ def get_question_field_mapping(chatbot_id):
     """Map question IDs to field names for each chatbot based on database field_mapping"""
     from models import ChatbotQuestion
     
-    # Get all questions for this chatbot that have field mappings
-    questions = ChatbotQuestion.query.filter_by(
-        flow_id=chatbot_id,
-        question_classification='essential'
+    # Get all questions for this chatbot that have field mappings (both essential and essential_custom)
+    questions = ChatbotQuestion.query.filter(
+        ChatbotQuestion.flow_id == chatbot_id,
+        ChatbotQuestion.question_classification.in_(['essential', 'essential_custom'])
     ).filter(ChatbotQuestion.field_mapping != '').all()
     
     mappings = {}
@@ -853,7 +918,32 @@ def get_question_field_mapping(chatbot_id):
     
     return mappings
 
-def create_item_from_chatbot_data(processed_data, item_type, bank_id):
+def get_custom_field_mapping(chatbot_id):
+    """Map custom field names to database column names for essential_custom questions"""
+    from models import ChatbotQuestion
+    
+    # Get the question field mapping first to convert question IDs to field names
+    question_mapping = get_question_field_mapping(chatbot_id)
+    
+    # Get all essential_custom questions for this chatbot
+    questions = ChatbotQuestion.query.filter_by(
+        flow_id=chatbot_id,
+        question_classification='essential_custom'
+    ).filter(ChatbotQuestion.field_mapping != '').all()
+    
+    mappings = {}
+    for question in questions:
+        if question.field_mapping:
+            # Get the field name from question_mapping (which converts question ID to field name)
+            question_id_str = str(question.id)
+            field_name = question_mapping.get(question_id_str, question.field_mapping)
+            # For custom fields, the field_mapping contains the column name directly
+            # Map field name to column name
+            mappings[field_name] = question.field_mapping
+    
+    return mappings
+
+def create_item_from_chatbot_data(processed_data, item_type, bank_id, chatbot_id=None):
     """Create an item from processed chatbot data using hybrid field mapping"""
     try:
         print(f"DEBUG: Creating item from chatbot data - ItemType: {item_type.name}, Bank: {bank_id}")
@@ -864,6 +954,10 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
             print("DEBUG: Processed data contains Unicode characters that can't be displayed")
         
         # Get user's first profile
+        if not current_user.is_authenticated:
+            print("DEBUG: User not authenticated!")
+            return None
+            
         user_profile = Profile.query.filter_by(user_id=current_user.id).first()
         if not user_profile:
             print("DEBUG: No user profile found!")
@@ -892,19 +986,51 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
             category = category_defaults.get(item_type.name, 'General')
         
         # Normalize location value (support object with lat/lng/link)
-        location_value = processed_data.get('location', '')
-        if isinstance(location_value, dict):
-            lat = location_value.get('lat')
-            lng = location_value.get('lng')
-            link = location_value.get('link')
-            # Prefer a human-friendly string; keep raw in type_data later
-            if lat is not None and lng is not None:
+        location_raw = processed_data.get('location', '')
+        if isinstance(location_raw, dict):
+            lat = location_raw.get('lat')
+            lng = location_raw.get('lng')
+            link = location_raw.get('link')
+            # Prefer link (URL) if available, as it contains coordinates we can extract
+            # If link exists, use it; otherwise use coordinates
+            if link:
+                location_raw = link  # URL will be parsed to extract coordinates
+            elif lat is not None and lng is not None:
                 try:
-                    location_value = f"{float(lat)},{float(lng)}" + (f" | {link}" if link else '')
+                    location_raw = f"{float(lat)},{float(lng)}"
                 except Exception:
-                    location_value = link or ''
+                    location_raw = ''
             else:
-                location_value = link or ''
+                location_raw = ''
+        
+        # Process location: convert raw input (coordinates/URL) to formatted (city, country)
+        location_formatted = ''
+        if location_raw:
+            try:
+                # Use geocoding utility to parse and format location
+                # This handles URLs (Google Maps, Apple Maps, etc.) and coordinates
+                location_data = parse_location(location_raw)
+                location_formatted = location_data.get('formatted', location_raw)
+                
+                # If it's a URL and parsing found coordinates, use the formatted result
+                # If parsing didn't work (no coordinates found), keep original URL as formatted
+                if location_raw.startswith('http'):
+                    # If we got coordinates from URL, use formatted location
+                    if location_data.get('coordinates'):
+                        location_formatted = location_data.get('formatted', location_raw)
+                    else:
+                        # URL parsing failed, keep URL but try to extract a readable name
+                        # For now, keep URL as formatted (user will see the URL)
+                        location_formatted = location_raw
+                elif location_formatted == location_raw:
+                    # If no change, might be coordinates or plain text - keep as is
+                    location_formatted = location_data.get('formatted', location_raw)
+            except Exception as e:
+                # If geocoding fails, use raw value
+                print(f"DEBUG: Location geocoding failed: {e}")
+                location_formatted = location_raw if not location_raw.startswith('http') else location_raw
+        else:
+            location_formatted = ''
 
         # Handle price conversion safely
         price_value = processed_data.get('price')
@@ -916,59 +1042,95 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
             except (ValueError, TypeError):
                 price_value = None
 
-        # Collect uploaded file paths for images_media field
+        # Collect uploaded file paths for images_media field with early deduplication
         images_media = []
+        # Use a set to track added files (normalized paths) to prevent duplicates immediately
+        seen_image_paths = set()
         
-        # Look for uploaded files in the processed data
+        def add_image_safely(image_path):
+            """Add image path only if not already seen (normalized for comparison)"""
+            if not image_path or not image_path.strip():
+                return False
+            
+            # Normalize path for comparison (handle backslashes and forward slashes)
+            normalized = image_path.strip().replace('\\', '/').lower()
+            
+            # Check if already seen (using normalized path)
+            if normalized in seen_image_paths:
+                return False
+            
+            # Check if it's a valid file path (pass original path, function handles normalization)
+            if not _is_likely_file_path(image_path.strip()):
+                return False
+            
+            # Add the original path but normalize slashes to forward slashes for consistency
+            normalized_path = image_path.strip().replace('\\', '/')
+            images_media.append(normalized_path)
+            seen_image_paths.add(normalized)
+            return True
+        
+        # First, check processed data for uploaded files (NEW METHOD)
+        if 'uploaded_files' in processed_data and processed_data['uploaded_files']:
+            for file_info in processed_data['uploaded_files']:
+                if isinstance(file_info, dict) and 'relative_path' in file_info:
+                    add_image_safely(file_info['relative_path'])
+        
+        # 1. First, collect from session (most reliable source)
+        try:
+            from flask import session
+            if 'uploaded_files' in session and session['uploaded_files']:
+                for file_info in session['uploaded_files']:
+                    if isinstance(file_info, dict) and 'relative_path' in file_info:
+                        add_image_safely(file_info['relative_path'])
+        except Exception as e:
+            pass  # Session access may fail in some contexts
+        
+        # 2. Then, collect from processed_data (fallback)
+        # Exclude known non-image fields to prevent tags and other data from being treated as images
+        excluded_keys = ['uploaded_files', 'tags', 'title', 'short_description', 'detailed_description', 
+                        'category', 'subcategory', 'pricing_type', 'price', 'currency', 'location', 
+                        'images']  # Exclude 'images' since we collect from question_26.files directly
+        
         for key, value in processed_data.items():
-            if isinstance(value, list):
-                # Handle list of files (this is the main case for images/photos)
-                for file_info in value:
-                    if isinstance(file_info, dict):
-                        # Check for saved_name (from upload response) or path
-                        filename = file_info.get('saved_name') or file_info.get('path')
-                        if filename and filename.strip():  # Only add non-empty filenames
-                            if filename not in images_media:
-                                images_media.append(filename)
-                    elif isinstance(file_info, str) and file_info.strip():
-                        # Handle direct file paths (with question ID prefix)
-                        if file_info not in images_media:
-                            images_media.append(file_info)
-            elif isinstance(value, dict):
-                # Handle single file
-                filename = value.get('saved_name') or value.get('path')
-                if filename and filename.strip():
-                    if filename not in images_media:
-                        images_media.append(filename)
-            elif isinstance(value, str) and value.strip() and (value.startswith('uploads/') or '_' in value):
-                # Handle direct file path (either uploads/ path or question_id_filename format)
-                if value not in images_media:
-                    images_media.append(value)
+            # Skip excluded keys (tags, text fields, etc.)
+            if key in excluded_keys:
+                continue
+            
+            # Skip question_26 if it's already been processed (it contains the same files as 'images')
+            # We'll collect from question_26.files which has the full file info
+            if key.startswith('question_') and isinstance(value, dict) and 'files' in value:
+                for file_info in value['files']:
+                    if isinstance(file_info, dict) and 'relative_path' in file_info:
+                        add_image_safely(file_info['relative_path'])
+            elif isinstance(value, list):
+                # Handle list of files - but be more strict
+                # Only process if the key suggests it might contain files (not tags!)
+                # BUT skip 'images' since we already got them from question_26
+                if key in ['photos', 'image', 'photo', 'media', 'files'] and key != 'images':
+                    for file_info in value:
+                        if isinstance(file_info, dict):
+                            filename = file_info.get('relative_path') or file_info.get('saved_name') or file_info.get('path')
+                            if filename:
+                                add_image_safely(filename)
+                        elif isinstance(file_info, str):
+                            add_image_safely(file_info)
+            elif isinstance(value, str):
+                # Skip string values unless they clearly look like file paths
+                if value.strip().startswith('uploads'):
+                    add_image_safely(value)
         
-        # Also check for any image-related fields in the data
-        for key in ['images', 'photos', 'image', 'photo', 'media', 'files']:
-            if key in processed_data:
-                value = processed_data[key]
-                if isinstance(value, list):
-                    for item in value:
-                        if isinstance(item, dict):
-                            filename = item.get('saved_name') or item.get('path')
-                            if filename and filename.strip():
-                                if filename not in images_media:
-                                    images_media.append(filename)
-                        elif isinstance(item, str) and item.strip():
-                            # Handle direct file paths (with question ID prefix)
-                            if item not in images_media:
-                                images_media.append(item)
-                elif isinstance(value, dict):
-                    filename = value.get('saved_name') or value.get('path')
-                    if filename and filename.strip():
-                        if filename not in images_media:
-                            images_media.append(filename)
-                elif isinstance(value, str) and value.strip():
-                    # Handle direct file paths (with question ID prefix)
-                    if value not in images_media:
-                        images_media.append(value)
+        # Note: We don't need step 3 anymore since we already processed 'images' key above
+        
+        # Final cleanup: Normalize paths to forward slashes for consistency
+        # (we already deduplicated, just normalize format now)
+        final_images = []
+        for image_path in images_media:
+            if image_path and image_path.strip():
+                # Normalize to forward slashes (but keep original format in DB)
+                normalized = image_path.strip().replace('\\', '/')
+                final_images.append(normalized)
+        
+        images_media = final_images
 
         # Create item with core fields
         item = Item(
@@ -985,7 +1147,8 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
             pricing_type=processed_data.get('pricing_type', 'free'),
             price=price_value,
             currency=processed_data.get('currency', 'USD'),
-            location=location_value,
+            location_raw=location_raw,  # Store raw input (coordinates/URL)
+            location=location_formatted,  # Store formatted location (city, country)
             is_available=True,
             is_verified=False
         )
@@ -1000,18 +1163,55 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
                 if hasattr(item, item_field):
                     setattr(item, item_field, value)
         
-        # Store any unmapped data in flexible JSON storage
-        unmapped_data = {}
-        used_fields = set(['title', 'short_description', 'detailed_description', 'category', 'subcategory', 'tags', 'pricing_type', 'price', 'currency', 'location', 'images', 'photos', 'image', 'photo', 'media', 'files'])
-        used_fields.update(category_field_mapping.keys())
+        # CUSTOM FIELD MAPPING: Map custom fields to database columns
+        if chatbot_id:
+            custom_field_mapping = get_custom_field_mapping(chatbot_id)
+            
+            # Map custom fields directly from processed_data (field names, not question IDs)
+            for field_name, item_field in custom_field_mapping.items():
+                if field_name in processed_data:
+                    value = processed_data[field_name]
+                    if hasattr(item, item_field):
+                        setattr(item, item_field, value)
         
+        # Store any unmapped data in flexible JSON storage
+        # These are fields that are NOT displayed on the main item page
+        unmapped_data = {}
+        # Standard Item fields displayed on item detail page - EXCLUDE these from Additional Information
+        standard_displayed_fields = set([
+            'title',           # Shown in main title
+            'short_description',  # Shown in Short Description section
+            'detailed_description',  # Shown in Detailed Description section
+            'category',        # Shown in badges
+            'subcategory',    # Shown in badges
+            'tags',           # Shown in badges
+            'pricing_type',   # Implied from price section
+            'price',          # Shown in Price section
+            'currency',       # Shown in Price section
+            'location',       # Shown in Location section
+            'location_raw',   # Not displayed but stored
+            'images',         # Shown in Images section
+            'images_media',   # Shown in Images section
+            'photos',         # Same as images
+            'image',          # Same as images
+            'photo',          # Same as images
+            'media',          # Same as images
+            'files'           # Same as images
+        ])
+        
+        # Add any fields mapped to Item columns (these are already displayed)
+        used_fields = standard_displayed_fields.copy()
+        used_fields.update(category_field_mapping.keys())
+        if chatbot_id:
+            used_fields.update(custom_field_mapping.keys())
+        
+        # Only store fields that are NOT displayed on the main item page
         for key, value in processed_data.items():
             if key not in used_fields and value is not None:
                 unmapped_data[key] = value
 
-        # If location was an object, preserve full object in type_data as well
-        if isinstance(processed_data.get('location'), dict):
-            unmapped_data['location'] = processed_data.get('location')
+        # NOTE: Location object is preserved in original_processed_data for reference,
+        # but NOT added to unmapped_data since it's already displayed on the item page
         
         # Always store processed_data in type_data for rich display
         if processed_data:
@@ -1023,12 +1223,61 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
                 'display_fields': {}
             }
             
-            # Create display-friendly fields
-            for key, value in processed_data.items():
-                if value and str(value).strip():
-                    # Create human-readable labels
-                    display_key = key.replace('_', ' ').title()
-                    rich_data['display_fields'][display_key] = value
+            # Create display-friendly fields ONLY from unmapped data
+            # Exclude location and other standard fields that are already displayed elsewhere
+            excluded_from_display = set(['location', 'location_raw'])  # Already shown on item page
+            
+            # Fetch question texts and types from database if chatbot_id is available
+            question_texts = {}
+            image_question_ids = set()  # Track image upload questions to exclude them
+            if chatbot_id:
+                try:
+                    questions = ChatbotQuestion.query.filter_by(flow_id=chatbot_id).all()
+                    for q in questions:
+                        question_texts[f'question_{q.id}'] = q.question_text
+                        # Exclude image upload questions (they're only for uploading, not for displaying info)
+                        if q.question_type in ['images', 'videos', 'audio', 'files_documents']:
+                            image_question_ids.add(f'question_{q.id}')
+                except Exception as e:
+                    pass  # Could not fetch question texts
+            
+            for key, value in unmapped_data.items():
+                if key not in excluded_from_display:
+                    # Skip image/media upload questions - they're only for uploading, not displaying
+                    if key in image_question_ids:
+                        continue
+                    
+                    # Additional check: Skip if value is an object with 'files' property (file upload indicator)
+                    # This handles cases where chatbot_id might be missing or question type wasn't found
+                    if isinstance(value, dict):
+                        if 'files' in value and isinstance(value.get('files'), (list, str)):
+                            # This is a file upload response, skip it
+                            continue
+                        # Also check if it looks like a file upload object (has file-related keys)
+                        if any(file_key in value for file_key in ['files', 'file_paths', 'uploaded_files', 'media_files']):
+                            continue
+                    
+                    # Check if value has actual content (not None, not empty string, not empty list/dict)
+                    has_content = False
+                    if value is None:
+                        has_content = False
+                    elif isinstance(value, str):
+                        has_content = bool(value.strip())
+                    elif isinstance(value, (list, dict)):
+                        has_content = bool(value)  # Non-empty list or dict
+                    elif isinstance(value, (int, float, bool)):
+                        has_content = True  # Numbers and booleans are valid
+                    else:
+                        has_content = bool(value)  # Other types
+                    
+                    if has_content:
+                        # Use question text if available, otherwise create human-readable label
+                        if key in question_texts:
+                            display_key = question_texts[key]
+                        else:
+                            display_key = key.replace('_', ' ').title()
+                        
+                        rich_data['display_fields'][display_key] = value
             
             item.type_data = json.dumps(rich_data, ensure_ascii=False, indent=2)
         
@@ -1079,15 +1328,30 @@ def create_item_from_chatbot_data(processed_data, item_type, bank_id):
                 # Clear organization context from session
                 del session['organization_id']
         
+        # Clear uploaded files from session after successful item creation
+        try:
+            from flask import session
+            if 'uploaded_files' in session:
+                del session['uploaded_files']
+                session.modified = True
+                print(f"DEBUG: Cleared uploaded files from session")
+        except Exception as e:
+            print(f"DEBUG: Session cleanup error: {e}")
+        
         # Track field usage for analytics
         track_field_usage(item_type.name, category_field_mapping, processed_data)
         
         return item
         
     except Exception as e:
-        print(f"Error creating item: {str(e)}")
+        error_msg = str(e)
+        print(f"Error creating item: {error_msg}")
+        # Check for common data type mismatch errors
+        if 'invalid input syntax' in error_msg.lower() or 'type mismatch' in error_msg.lower():
+            print(f"DEBUG: Data type mismatch detected - likely invalid data type for a column")
         db.session.rollback()
-        return None
+        # Re-raise with more context for completion logic
+        raise Exception(f"Item creation failed: {error_msg}")
 
 def get_category_field_mapping(item_type_name):
     """Get field mapping for specific item type"""

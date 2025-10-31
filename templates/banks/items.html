@@ -33,24 +33,31 @@
                 <div class="card-body">
                     <form method="GET" class="row g-3">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <div class="col-md-4">
+                        <div class="col-md-12 mb-2">
                             <input type="text" class="form-control" name="search" placeholder="Search items..." value="{{ search }}">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" name="category">
-                                <option value="">All Categories</option>
-                                {% for cat in categories %}
-                                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% if popular_searches %}
+                            <small class="text-muted mt-1 d-block">
+                                <strong>Popular:</strong> 
+                                {% for term in popular_searches[:5] %}
+                                    <a href="?search={{ term|urlencode }}" class="text-decoration-none">{{ term }}</a>{% if not loop.last %}, {% endif %}
                                 {% endfor %}
-                            </select>
+                            </small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <input type="text" class="form-control" name="category" placeholder="Category..." value="{{ category }}">
                         </div>
                         <div class="col-md-2">
-                            <select class="form-select" name="location">
-                                <option value="">All Locations</option>
-                                {% for loc in locations %}
-                                    <option value="{{ loc }}" {% if location == loc %}selected{% endif %}>{{ loc }}</option>
-                                {% endfor %}
-                            </select>
+                            <input type="text" class="form-control" name="location" placeholder="Location..." value="{{ location }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">From Date</label>
+                            <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">To Date</label>
+                            <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
                         </div>
                         
                         {% if bank_type == 'products' and product_categories %}
@@ -74,6 +81,7 @@
                         
                         <div class="col-md-1">
                             <select class="form-select" name="sort_by" onchange="this.form.submit()">
+                                <option value="relevance" {% if sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
                                 <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Date</option>
                                 <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
                                 <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
@@ -91,7 +99,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-search"></i> Search
                             </button>
-                            <a href="{{ url_for('banks.bank_items', bank_slug=bank_type) }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('banks.bank_items', bank_slug=bank.slug) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-times"></i> Clear
                             </a>
                         </div>
@@ -107,7 +115,7 @@
             <!-- Part 1: Photo/Image -->
             <div class="item-image">
                 {% if item.images_media and item.images_media|length > 0 %}
-                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" alt="{{ item.title }}" class="item-photo">
+                    <img src="{{ item.images_media[0] | file_url }}" alt="{{ item.title }}" class="item-photo">
                 {% else %}
                     <div class="item-icon">
                         {% if item.item_type %}
@@ -139,14 +147,20 @@
                     </div>
                     
             <!-- Part 3: Title -->
-            <div class="item-title">{{ item.title }}</div>
+            <div class="item-title">
+                {% if search %}
+                    {{ item.title|highlight(search) }}
+                {% else %}
+                    {{ item.title }}
+                {% endif %}
+            </div>
             
             <!-- Part 4: Creator Info -->
             <div class="item-creator-row">
                 <div class="creator-info">
                     <div class="creator-avatar">
                         {% if item.profile and item.profile.photo %}
-                            <img src="{{ url_for('static', filename='uploads/' + item.profile.photo) }}" alt="{{ item.profile.name }}">
+                            <img src="{{ item.profile.photo | file_url }}" alt="{{ item.profile.name }}">
                         {% else %}
                             <i class="fas fa-user"></i>
                         {% endif %}
@@ -154,7 +168,7 @@
                     <span class="creator-name">{{ item.profile.name.split()[0] if item.profile and item.profile.name else 'Unknown' }}</span>
                 </div>
                 <div class="item-location">
-                    {{ item.location|format_location_cached }}
+                    {{ item.location|format_location }}
                 </div>
                         </div>
                 
@@ -176,7 +190,12 @@
             
             <!-- Part 6: Button Bar -->
             <div class="item-actions">
-                <button class="action-btn" onclick="event.stopPropagation(); saveItem({{ item.id }})" title="Save">
+                {% set already_saved = saved_item_ids and (item.id in saved_item_ids) %}
+                <button class="action-btn {% if already_saved %}saved{% endif %}"
+                        {% if not already_saved %}onclick="event.stopPropagation(); saveItem({{ item.id }})"{% endif %}
+                        title="{% if already_saved %}Saved{% else %}Save{% endif %}"
+                        data-save-item="{{ item.id }}"
+                        {% if already_saved %}disabled{% endif %}>
                     <i class="fas fa-bookmark"></i>
                 </button>
                 <button class="action-btn" onclick="event.stopPropagation(); requestDeal({{ item.id }})" title="Request Deal">
@@ -192,8 +211,37 @@
         <div class="empty-state-container">
             <div class="empty-state">
                 <i class="fas fa-search empty-icon"></i>
-                <h3 class="empty-title">No {{ bank_type }} found</h3>
-                <p class="empty-description">Try adjusting your search criteria or check back later for new items.</p>
+                {% if search or category or location %}
+                    <h3 class="empty-title">No results found</h3>
+                    <p class="empty-description">
+                        {% if search %}
+                            No items found for "<strong>{{ search }}</strong>"
+                        {% else %}
+                            No {{ bank_type }} found
+                        {% endif %}
+                    </p>
+                    <div class="mt-3">
+                        <p class="mb-2"><strong>Try:</strong></p>
+                        <ul class="text-start" style="max-width: 400px; margin: 0 auto;">
+                            <li>Check spelling and try different keywords</li>
+                            <li>Remove filters to see more results</li>
+                            <li>Try broader search terms</li>
+                            {% if popular_searches %}
+                            <li>Try popular searches:
+                                {% for term in popular_searches[:3] %}
+                                    <a href="?search={{ term|urlencode }}" class="text-decoration-none">{{ term }}</a>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <a href="{{ url_for('banks.bank_items', bank_slug=bank.slug) }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-times me-2"></i>Clear Search
+                    </a>
+                {% else %}
+                    <h3 class="empty-title">No {{ bank_type }} found</h3>
+                    <p class="empty-description">Check back later for new items.</p>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -206,7 +254,7 @@
                 <ul class="pagination justify-content-center">
                     {% if items.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=items.prev_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">Previous</a>
+                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=items.prev_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">Previous</a>
                     </li>
                     {% endif %}
                     
@@ -214,7 +262,7 @@
                         {% if page_num %}
                             {% if page_num != items.page %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=page_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">{{ page_num }}</a>
+                                <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=page_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">{{ page_num }}</a>
                             </li>
                             {% else %}
                             <li class="page-item active">
@@ -230,7 +278,7 @@
                     
                     {% if items.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank_type, page=items.next_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, sort_by=sort_by, sort_order=sort_order) }}">Next</a>
+                        <a class="page-link" href="{{ url_for('banks.bank_items', bank_slug=bank.slug, page=items.next_num, search=search, category=category, location=location, min_price=min_price, max_price=max_price, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">Next</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -281,6 +329,20 @@ window.itemImagesData = {
     {{ item.id }}: {{ item.images_media|tojson if item.images_media else '[]' }},
     {% endfor %}
 };
+// Global item descriptions data
+window.itemDescriptionsData = {
+    {% for item in items.items %}
+    {{ item.id }}: {{ item.short_description|tojson if item.short_description else '""' }},
+    {% endfor %}
+};
+// Saved item IDs for this page
+window.savedItemIds = {
+    {% if saved_item_ids %}
+    {% for sid in saved_item_ids %}
+    {{ sid }}: true{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+};
 // Popup functionality
 function expandItem(cardElement) {
     const itemId = cardElement.getAttribute('data-item-id');
@@ -306,6 +368,13 @@ function expandItem(cardElement) {
     // Get tags
     const tags = Array.from(cardElement.querySelectorAll('.item-tags .tag')).map(tag => tag.textContent);
     
+    // Get description from global data using item ID
+    let description = 'No description available.';
+    const itemIdNum = parseInt(itemId, 10);
+    if (window.itemDescriptionsData && window.itemDescriptionsData[itemIdNum]) {
+        description = window.itemDescriptionsData[itemIdNum] || 'No description available.';
+    }
+    
     // Get images from the card - check if there are multiple images
     const cardImage = cardElement.querySelector('.item-photo');
     const cardIcon = cardElement.querySelector('.item-icon i');
@@ -322,8 +391,11 @@ function expandItem(cardElement) {
             currentPopupImages = imageArray.map(img => {
                 if (img.startsWith('http')) {
                     return img;
+                } else if (img.startsWith('uploads/')) {
+                    // New format: already has uploads/ prefix
+                    return `/static/${img}`;
                 } else {
-                    // Construct the full URL for static files
+                    // Old format: add uploads/ prefix
                     return `/static/uploads/${img}`;
                 }
             });
@@ -381,7 +453,7 @@ function expandItem(cardElement) {
         </div>
         <div class="popup-description">
             <div class="detail-label">Description</div>
-            <p>This is a detailed description of the item. The full description would be loaded from the server when the item is clicked.</p>
+            <p>${description || 'No description available.'}</p>
         </div>
     `;
     
@@ -391,6 +463,23 @@ function expandItem(cardElement) {
     // Show popup
     popup.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Update popup Save button state if item already saved
+    const popupSaveBtn = document.querySelector('.popup-action-btn.save');
+    if (popupSaveBtn) {
+        const idNum = parseInt(itemId, 10);
+        if (window.savedItemIds && window.savedItemIds[idNum]) {
+            popupSaveBtn.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+            popupSaveBtn.classList.add('saved');
+            popupSaveBtn.disabled = true;
+            popupSaveBtn.title = 'Saved';
+        } else {
+            popupSaveBtn.innerHTML = '<i class="fas fa-bookmark"></i> Save';
+            popupSaveBtn.classList.remove('saved');
+            popupSaveBtn.disabled = false;
+            popupSaveBtn.title = 'Save';
+        }
+    }
 }
 
 function closePopup(event) {
@@ -583,6 +672,17 @@ function saveItem(itemId) {
             showToast('Item saved successfully!', 'success');
             // Update button state if needed
             updateSaveButtonState(itemId, true);
+            // Update popup save button if visible
+            const popupSaveBtn = document.querySelector('.popup-action-btn.save');
+            if (popupSaveBtn) {
+                popupSaveBtn.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+                popupSaveBtn.classList.add('saved');
+                popupSaveBtn.disabled = true;
+                popupSaveBtn.title = 'Saved';
+            }
+            // Mark as saved in memory for this session
+            if (!window.savedItemIds) window.savedItemIds = {};
+            window.savedItemIds[itemId] = true;
         } else {
             showToast(data.message || 'Failed to save item', 'error');
         }
@@ -672,9 +772,26 @@ function shareProduct(itemId) {
 }
 
 function updateSaveButtonState(itemId, isSaved) {
-    // This function can be used to update save button states in other parts of the app
+    // Update grid/card save button (icon-only)
     const saveButton = document.querySelector(`[data-save-item="${itemId}"]`);
-    if (saveButton) {
+    if (!saveButton) return;
+
+    const isActionBtn = saveButton.classList.contains('action-btn');
+
+    if (isActionBtn) {
+        if (isSaved) {
+            saveButton.innerHTML = '<i class="fas fa-bookmark"></i>';
+            saveButton.classList.add('saved');
+            saveButton.disabled = true;
+            saveButton.title = 'Saved';
+        } else {
+            saveButton.innerHTML = '<i class="fas fa-bookmark"></i>';
+            saveButton.classList.remove('saved');
+            saveButton.disabled = false;
+            saveButton.title = 'Save';
+        }
+    } else {
+        // Fallback for non-action buttons (not used on grid)
         if (isSaved) {
             saveButton.innerHTML = '<i class="fas fa-bookmark me-1"></i>Saved';
             saveButton.classList.remove('btn-outline-primary');
@@ -746,6 +863,19 @@ style.textContent = `
             transform: translateX(100%);
             opacity: 0;
         }
+    }
+    .action-btn.saved {
+        background-color: #28a745 !important;
+        color: #fff !important;
+        cursor: default;
+        opacity: 1;
+    }
+    .popup-action-btn.save.saved {
+        background-color: #ffdf00 !important; /* brighter yellow */
+        color: #212529 !important; /* readable dark text on yellow */
+        border-color: #ffdf00 !important;
+        cursor: default;
+        opacity: 1;
     }
 `;
 document.head.appendChild(style);

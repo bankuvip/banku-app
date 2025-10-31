@@ -2,6 +2,30 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, SelectField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Optional, URL
+import re
+
+def validate_website_optional(form, field):
+    """Custom validator to accept www. or https:// URLs"""
+    if field.data:
+        # Allow empty
+        if not field.data.strip():
+            return
+        # Check if it's a valid URL (with protocol)
+        url_pattern = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+            r'localhost|'  # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        
+        # Check if it's www. format
+        www_pattern = re.compile(
+            r'^www\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z]{2,6})+$', re.IGNORECASE)
+        
+        if not (url_pattern.match(field.data) or www_pattern.match(field.data)):
+            from wtforms import ValidationError
+            raise ValidationError('Please enter a valid URL (e.g., www.example.com or https://www.example.com)')
 
 class ProfileForm(FlaskForm):
     name = StringField('Profile Name', validators=[DataRequired(), Length(min=2, max=100)])
@@ -11,7 +35,7 @@ class ProfileForm(FlaskForm):
     description = TextAreaField('Description', validators=[Optional(), Length(max=500)])
     phone = StringField('Phone Number', validators=[Optional(), Length(max=50)])
     location = StringField('Location', validators=[Optional(), Length(max=100)])
-    website = StringField('Website', validators=[Optional(), URL(), Length(max=200)])
+    website = StringField('Website', validators=[Optional(), validate_website_optional, Length(max=200)])
     photo = FileField('Profile Photo', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Only image files are allowed!')])
     is_public = BooleanField('Make Profile Public', default=True, description='Public profiles appear in searches and can be discovered by others')
     submit = SubmitField('Create Profile')

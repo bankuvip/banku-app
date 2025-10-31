@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
-from models import User, Role, UserRole, Permission, RolePermission, UserPermission, Tag, Deal, Item, Profile, ProfileType, Earning, Notification, ChatbotFlow, ChatbotQuestion, ChatbotResponse, ChatbotStepBlock, Page, ContentBlock, NavigationMenu, SiteSetting, EmailTemplate, PageWidget, PageLayout, WidgetTemplate, Category, Subcategory, ButtonConfiguration, ItemType, DataStorageMapping, ChatbotCompletion, Bank, AnalyticsEvent, ABTest, ABTestAssignment, PerformanceMetric, DataCollector, BankCollector, BankContent, Organization, OrganizationType, ItemVisibilityScore, ItemCredibilityScore, ItemReviewScore, WalletTransaction, WithdrawalRequest, db
+from models import User, Role, UserRole, Permission, RolePermission, UserPermission, Tag, Deal, Item, Profile, ProfileType, Earning, Notification, ChatbotFlow, ChatbotQuestion, ChatbotResponse, ChatbotStepBlock, Page, ContentBlock, NavigationMenu, SiteSetting, EmailTemplate, PageWidget, PageLayout, WidgetTemplate, Category, Subcategory, ButtonConfiguration, ItemType, DataStorageMapping, ChatbotCompletion, Bank, AnalyticsEvent, ABTest, ABTestAssignment, PerformanceMetric, DataCollector, BankCollector, BankContent, Organization, OrganizationType, ItemVisibilityScore, ItemCredibilityScore, ItemReviewScore, WalletTransaction, WithdrawalRequest, Review, db
 from utils.data_collection import collection_engine
 from utils.permissions import require_permission, admin_required as utils_admin_required, admin_item_management_required
 from functools import wraps
@@ -992,7 +992,7 @@ def delete_item_admin(item_id):
         # Delete reviews
         try:
             print(f"DELETE: Deleting reviews for item {item_id}")
-            Review.query.filter_by(item_id=item_id).delete()
+            Review.query.filter_by(review_target_type='item', review_target_id=item_id).delete()
             print(f"DELETE: Reviews deleted successfully")
         except Exception as e:
             print(f"DELETE: Error deleting reviews: {e}")
@@ -1358,218 +1358,13 @@ def chatbots():
     return render_template('admin/chatbots.html', flows=flows)
 
 
-@admin_bp.route('/chatbots/create_simple', methods=['GET'])
-def create_chatbot_simple():
-    """Simple chatbot creator with fixed branching"""
-    return render_template('admin/create_chatbot_simple.html')
 
 @admin_bp.route('/chatbots/create_enhanced', methods=['GET'])
 def create_chatbot_enhanced():
     """Enhanced chatbot creator with all features"""
     return render_template('admin/create_chatbot_enhanced.html')
 
-@admin_bp.route('/chatbots/create', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def create_chatbot():
-    """Create a new chatbot flow"""
-    print(f"DEBUG: create_chatbot called, method: {request.method}")
-    print(f"DEBUG: current_user: {current_user}")
-    print(f"DEBUG: current_user.is_authenticated: {current_user.is_authenticated if current_user else 'None'}")
-    
-    if request.method == 'POST':
-        try:
-            data = request.get_json()
-            print(f"DEBUG: Received data: {data}")
-            
-            # Validate required fields
-            if not data:
-                return jsonify({'success': False, 'error': 'No data provided'})
-            
-            if not data.get('name'):
-                return jsonify({'success': False, 'error': 'Chatbot name is required'})
-            
-            if len(data['name'].strip()) < 3:
-                return jsonify({'success': False, 'error': 'Chatbot name must be at least 3 characters long'})
-            
-            if not data.get('step_blocks'):
-                return jsonify({'success': False, 'error': 'At least one step block is required'})
-            
-            # Validate step blocks
-            for i, step_data in enumerate(data.get('step_blocks', [])):
-                if not step_data.get('name'):
-                    return jsonify({'success': False, 'error': f'Step {i + 1}: Step name is required'})
-                
-                if len(step_data['name'].strip()) < 2:
-                    return jsonify({'success': False, 'error': f'Step {i + 1}: Step name must be at least 2 characters long'})
-                
-                if not step_data.get('questions'):
-                    return jsonify({'success': False, 'error': f'Step "{step_data["name"]}": At least one question is required'})
-                
-                # Validate questions
-                for j, question_data in enumerate(step_data.get('questions', [])):
-                    if not question_data.get('question_text'):
-                        return jsonify({'success': False, 'error': f'Step "{step_data["name"]}", Question {j + 1}: Question text is required'})
-                    
-                    if len(question_data['question_text'].strip()) < 5:
-                        return jsonify({'success': False, 'error': f'Step "{step_data["name"]}", Question {j + 1}: Question text must be at least 5 characters long'})
-                    
-                    if not question_data.get('question_type'):
-                        return jsonify({'success': False, 'error': f'Step "{step_data["name"]}", Question {j + 1}: Question type is required'})
-                    
-                    # Validate options for select/radio/checkbox
-                    if question_data['question_type'] in ['select', 'radio', 'checkbox']:
-                        if not question_data.get('options') or len(question_data['options']) < 2:
-                            return jsonify({'success': False, 'error': f'Step "{step_data["name"]}", Question {j + 1}: At least 2 options are required for {question_data["question_type"]} question'})
-                    
-                    # Validate cascading dropdown
-                    if question_data['question_type'] == 'cascading_dropdown':
-                        cascading_config = question_data.get('cascading_config', {})
-                        if not cascading_config.get('categories') or len(cascading_config['categories']) == 0:
-                            return jsonify({'success': False, 'error': f'Step "{step_data["name"]}", Question {j + 1}: At least one category is required for cascading dropdown'})
-            
-            # Create the flow with smart ID assignment
-            next_flow_id = get_next_available_flow_id()
-            if next_flow_id is None:
-                # Fallback to auto-increment if smart assignment fails
-                flow = ChatbotFlow(
-                    name=data['name'].strip(),
-                    description=data.get('description', '').strip(),
-                    flow_config=data.get('flow_config', {}),
-                    created_by=current_user.id
-                )
-            else:
-                # Use smart ID assignment
-                flow = ChatbotFlow(
-                    id=next_flow_id,  # Manually assign the smart ID
-                    name=data['name'].strip(),
-                    description=data.get('description', '').strip(),
-                    flow_config=data.get('flow_config', {}),
-                    created_by=current_user.id
-                )
-                print(f"DEBUG: Created flow with smart ID: {next_flow_id}")
-            
-            db.session.add(flow)
-            db.session.flush()  # Get the flow ID
-            
-            # Create step blocks and questions
-            for step_data in data.get('step_blocks', []):
-                # Create step block with smart ID assignment
-                next_step_id = get_next_available_step_id()
-                if next_step_id is None:
-                    # Fallback to auto-increment if smart assignment fails
-                    step_block = ChatbotStepBlock(
-                        flow_id=flow.id,
-                        name=step_data['name'].strip(),
-                        description=step_data.get('description', '').strip(),
-                        step_order=step_data.get('step_order', 0),
-                        is_required=step_data.get('is_required', True),
-                        completion_message=step_data.get('completion_message', '').strip(),
-                        created_by=current_user.id
-                    )
-                else:
-                    # Use smart ID assignment
-                    step_block = ChatbotStepBlock(
-                        id=next_step_id,  # Manually assign the smart ID
-                        flow_id=flow.id,
-                        name=step_data['name'].strip(),
-                        description=step_data.get('description', '').strip(),
-                        step_order=step_data.get('step_order', 0),
-                        is_required=step_data.get('is_required', True),
-                        completion_message=step_data.get('completion_message', '').strip(),
-                        created_by=current_user.id
-                    )
-                    print(f"DEBUG: Created step block with smart ID: {next_step_id}")
-                
-                db.session.add(step_block)
-                db.session.flush()  # Get the step block ID
-                
-                # Create questions for this step block with hierarchical IDs
-                for question_index, question_data in enumerate(step_data.get('questions', []), 1):
-                    # Generate hierarchical ID
-                    hierarchical_id = f"{flow.id}.{step_data.get('step_order', 1)}.{question_index}"
-                    full_path = f"Chatbot{flow.id} > Step{step_data.get('step_order', 1)} > Question{question_index}"
-                    
-                    # Get next available question ID (smart assignment)
-                    next_question_id = get_next_available_question_id()
-                    if next_question_id is None:
-                        # Fallback to auto-increment if smart assignment fails
-                        question = ChatbotQuestion(
-                            flow_id=flow.id,
-                            step_block_id=step_block.id,
-                            question_text=question_data['question_text'].strip(),
-                            question_type=question_data['question_type'],
-                            options=question_data.get('options'),
-                            validation_rules=question_data.get('validation_rules', {}),
-                            conditional_logic=question_data.get('conditional_logic', {}),
-                            cascading_config=question_data.get('cascading_config', {}),
-                            number_unit_config=question_data.get('number_unit_config', {}),
-                            media_upload_config=question_data.get('media_upload_config', {}),
-                            branching_logic=question_data.get('branching_logic', {}),
-                            order_index=question_data.get('order_index', 0),
-                            is_required=question_data.get('is_required', True),
-                            question_classification=question_data.get('question_classification', 'essential'),
-                            field_mapping=question_data.get('field_mapping', ''),
-                            placeholder=question_data.get('placeholder', '').strip(),
-                            help_text=question_data.get('help_text', '').strip(),
-                            default_view=question_data.get('default_view', 'show'),
-                            # HIERARCHICAL ORGANIZATION FIELDS
-                            hierarchical_id=hierarchical_id,
-                            step_sequence=step_data.get('step_order', 1),
-                            question_sequence=question_index,
-                            full_path=full_path
-                        )
-                    else:
-                        # Use smart ID assignment
-                        question = ChatbotQuestion(
-                            id=next_question_id,  # Manually assign the smart ID
-                            flow_id=flow.id,
-                            step_block_id=step_block.id,
-                            question_text=question_data['question_text'].strip(),
-                            question_type=question_data['question_type'],
-                            options=question_data.get('options'),
-                            validation_rules=question_data.get('validation_rules', {}),
-                            conditional_logic=question_data.get('conditional_logic', {}),
-                            cascading_config=question_data.get('cascading_config', {}),
-                            number_unit_config=question_data.get('number_unit_config', {}),
-                            media_upload_config=question_data.get('media_upload_config', {}),
-                            branching_logic=question_data.get('branching_logic', {}),
-                            order_index=question_data.get('order_index', 0),
-                            is_required=question_data.get('is_required', True),
-                            question_classification=question_data.get('question_classification', 'essential'),
-                            field_mapping=question_data.get('field_mapping', ''),
-                            placeholder=question_data.get('placeholder', '').strip(),
-                            help_text=question_data.get('help_text', '').strip(),
-                            default_view=question_data.get('default_view', 'show'),
-                            # HIERARCHICAL ORGANIZATION FIELDS
-                            hierarchical_id=hierarchical_id,
-                            step_sequence=step_data.get('step_order', 1),
-                            question_sequence=question_index,
-                            full_path=full_path
-                        )
-                        print(f"DEBUG: Created question with smart ID: {next_question_id}")
-                    
-                    db.session.add(question)
-            
-            db.session.commit()
-            return jsonify({'success': True, 'flow_id': flow.id})
-            
-        except Exception as e:
-            db.session.rollback()
-            error_message = str(e)
-            
-            # Provide more specific error messages
-            if 'UNIQUE constraint failed' in error_message:
-                return jsonify({'success': False, 'error': 'A chatbot with this name already exists. Please choose a different name.'})
-            elif 'NOT NULL constraint failed' in error_message:
-                return jsonify({'success': False, 'error': 'Required fields are missing. Please check all required fields are filled.'})
-            elif 'FOREIGN KEY constraint failed' in error_message:
-                return jsonify({'success': False, 'error': 'Invalid data relationships. Please refresh the page and try again.'})
-            else:
-                return jsonify({'success': False, 'error': f'Database error: {error_message}'})
-    
-    return render_template('admin/create_chatbot.html')
-
+# Legacy Creator removed - use Enhanced Creator instead
 
 @admin_bp.route('/chatbots/create-hybrid')
 @login_required
@@ -5633,16 +5428,140 @@ def view_organization_by_slug(slug):
     org_content = OrganizationContent.query.filter_by(organization_id=organization.id, content_type='item').all()
     items = [content.item for content in org_content if content.item]
     
-    # Get organization needs through OrganizationContent
-    from models import UserNeed
-    org_needs_content = OrganizationContent.query.filter_by(organization_id=organization.id, content_type='need').all()
-    needs = [content.need for content in org_needs_content if content.need]
-    
     return render_template('admin/organization_detail.html', 
-                         organization=organization,
-                         members=members,
-                         items=items,
-                         needs=needs)
+                         organization=organization, 
+                         members=members, 
+                         items=items)
+
+@admin_bp.route('/reviews-management')
+@login_required
+@require_permission('reviews', 'manage')
+def reviews_management():
+    """Manage reviews"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    search = request.args.get('search', '')
+    type_filter = request.args.get('type', '')
+    rating_filter = request.args.get('rating', '')
+    hidden_filter = request.args.get('hidden', '')
+    
+    query = Review.query.options(
+        db.joinedload(Review.reviewer)
+    )
+    
+    # Apply search filter (search in comment or reviewer name)
+    if search:
+        query = query.join(User, Review.reviewer_id == User.id).filter(
+            db.or_(
+                Review.comment.contains(search),
+                User.first_name.contains(search),
+                User.last_name.contains(search),
+                User.username.contains(search)
+            )
+        )
+    
+    # Apply type filter
+    if type_filter:
+        query = query.filter(Review.review_target_type == type_filter)
+    
+    # Apply rating filter
+    if rating_filter:
+        query = query.filter(Review.rating == int(rating_filter))
+    
+    # Apply hidden filter
+    if hidden_filter == 'yes':
+        query = query.filter(Review.is_hidden == True)
+    elif hidden_filter == 'no':
+        query = query.filter(Review.is_hidden == False)
+    
+    # Get paginated results, ordered by newest first
+    reviews = query.order_by(Review.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('admin/reviews.html', 
+                         reviews=reviews, 
+                         search=search, 
+                         type_filter=type_filter,
+                         rating_filter=rating_filter,
+                         hidden_filter=hidden_filter)
+
+@admin_bp.route('/reviews/<int:review_id>', methods=['GET'])
+@login_required
+@require_permission('reviews', 'edit')
+def get_review(review_id):
+    """Get review details for editing"""
+    review = Review.query.get_or_404(review_id)
+    
+    return jsonify({
+        'success': True,
+        'review': {
+            'id': review.id,
+            'rating': review.rating,
+            'comment': review.comment,
+            'is_hidden': review.is_hidden,
+            'review_target_type': review.review_target_type,
+            'review_target_id': review.review_target_id
+        }
+    })
+
+@admin_bp.route('/reviews/<int:review_id>/edit', methods=['POST'])
+@login_required
+@require_permission('reviews', 'edit')
+def edit_review(review_id):
+    """Edit a review"""
+    review = Review.query.get_or_404(review_id)
+    
+    try:
+        rating = int(request.form.get('rating', 0))
+        comment = request.form.get('comment', '').strip()
+        is_hidden = request.form.get('is_hidden') == '1'
+        
+        if rating < 1 or rating > 5:
+            return jsonify({'success': False, 'message': 'Rating must be between 1 and 5 stars.'}), 400
+        if not comment:
+            return jsonify({'success': False, 'message': 'Comment cannot be empty.'}), 400
+        
+        review.rating = rating
+        review.comment = comment
+        review.is_hidden = is_hidden
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Review updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error updating review: {str(e)}'}), 500
+
+@admin_bp.route('/reviews/<int:review_id>/toggle-hidden', methods=['POST'])
+@login_required
+@require_permission('reviews', 'manage')
+def toggle_review_hidden(review_id):
+    """Toggle review hidden status"""
+    review = Review.query.get_or_404(review_id)
+    
+    try:
+        review.is_hidden = not review.is_hidden
+        db.session.commit()
+        status = 'hidden' if review.is_hidden else 'visible'
+        return jsonify({'success': True, 'message': f'Review is now {status}', 'is_hidden': review.is_hidden})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error toggling review status: {str(e)}'}), 500
+
+@admin_bp.route('/reviews/<int:review_id>/delete', methods=['POST'])
+@login_required
+@require_permission('reviews', 'delete')
+def delete_review(review_id):
+    """Delete a review"""
+    review = Review.query.get_or_404(review_id)
+    
+    try:
+        db.session.delete(review)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Review deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error deleting review: {str(e)}'}), 500
 
 # Profile Management Routes
 @admin_bp.route('/profile-types-management')

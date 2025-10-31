@@ -3,18 +3,20 @@ Admin Permission Management Routes
 Handles permission management using the new relational system
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from models import db, Permission, Role, RolePermission, User, UserPermission, UserRole
 from utils.permissions_relational import grant_user_permission, revoke_user_permission, get_user_permissions
 from utils.permission_catalog import PermissionCatalog
 from datetime import datetime, timedelta
+from functools import wraps
 import json
 
 admin_permissions_bp = Blueprint('admin_permissions', __name__, url_prefix='/admin/permissions')
 
 def admin_required(f):
     """Require admin role"""
+    @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
         from utils.permissions_relational import has_permission
@@ -343,50 +345,140 @@ def update_role_permissions(role_id):
 def bulk_import_permissions():
     """Import permissions from catalog"""
     
+    imported_count = 0
+    updated_count = 0
+    errors = []
+    
     try:
         # Get all permissions from catalog
         all_permissions = PermissionCatalog.get_all_permissions()
-        imported_count = 0
-        updated_count = 0
         
+        if not all_permissions:
+            return jsonify({
+                'success': False,
+                'message': 'No permissions found in catalog.'
+            }), 400
+        
+        # Process each permission individually with its own transaction handling
         for permission_id, permission_data in all_permissions.items():
-            # Check if permission exists
-            existing_permission = Permission.query.filter_by(id=permission_id).first()
-            
-            if existing_permission:
-                # Update existing permission
-                existing_permission.name = permission_data['name']
-                existing_permission.description = permission_data['description']
-                existing_permission.category = PermissionCatalog.get_permission_group_by_id(permission_id)
-                existing_permission.resource = permission_data['resource']
-                existing_permission.action = permission_data['action']
-                existing_permission.is_system = True
-                updated_count += 1
-            else:
-                # Create new permission
-                permission = Permission(
-                    id=permission_id,
-                    name=permission_data['name'],
-                    description=permission_data['description'],
-                    category=PermissionCatalog.get_permission_group_by_id(permission_id),
-                    resource=permission_data['resource'],
-                    action=permission_data['action'],
-                    is_system=True,
-                    created_at=datetime.utcnow()
-                )
-                db.session.add(permission)
-                imported_count += 1
+            try:
+                # Validate permission_data structure
+                if not isinstance(permission_data, dict):
+                    errors.append(f"Permission {permission_id}: Invalid data structure")
+                    continue
+                
+                if 'name' not in permission_data or 'resource' not in permission_data or 'action' not in permission_data:
+                    errors.append(f"Permission {permission_id}: Missing required fields (name, resource, or action)")
+                    continue
+                
+                # Get category
+                try:
+                    category = PermissionCatalog.get_permission_group_by_id(permission_id)
+                except Exception as cat_error:
+                    category = 'unknown'
+                    errors.append(f"Permission {permission_id}: Could not determine category: {str(cat_error)}")
+                
+                # Check if permission exists by name or ID
+                existing_permission = Permission.query.filter_by(id=permission_id).first()
+                
+                if not existing_permission:
+                    # Also check by name in case ID doesn't match
+                    existing_permission = Permission.query.filter_by(name=permission_data['name']).first()
+                
+                if existing_permission:
+                    # Update existing permission (don't change ID if it already exists with different ID)
+                    existing_permission.name = permission_data['name']
+                    existing_permission.description = permission_data.get('description', '')
+                    existing_permission.category = category
+                    existing_permission.resource = permission_data['resource']
+                    existing_permission.action = permission_data['action']
+                    existing_permission.is_system = True
+                    # Try to flush to catch any errors early
+                    try:
+                        db.session.flush()
+                    except Exception as flush_error:
+                        db.session.rollback()
+                        error_msg = f"Permission {permission_id} ({permission_data.get('name', 'unknown')}): Flush error: {str(flush_error)}"
+                        errors.append(error_msg)
+                        current_app.logger.error(f"Permission {permission_id} flush error: {error_msg}")
+                        continue
+                    updated_count += 1
+                else:
+                    # Create new permission
+                    permission = Permission(
+                        id=permission_id,
+                        name=permission_data['name'],
+                        description=permission_data.get('description', ''),
+                        category=category,
+                        resource=permission_data['resource'],
+                        action=permission_data['action'],
+                        is_system=True,
+                        created_at=datetime.utcnow()
+                    )
+                    db.session.add(permission)
+                    # Try to flush to catch any errors early
+                    try:
+                        db.session.flush()
+                    except Exception as flush_error:
+                        db.session.rollback()
+                        error_msg = f"Permission {permission_id} ({permission_data.get('name', 'unknown')}): Flush error: {str(flush_error)}"
+                        errors.append(error_msg)
+                        current_app.logger.error(f"Permission {permission_id} flush error: {error_msg}")
+                        continue
+                    imported_count += 1
+                    
+            except Exception as perm_error:
+                # Catch any other errors (validation, etc.)
+                import traceback
+                error_trace = traceback.format_exc()
+                error_msg = f"Permission {permission_id} ({permission_data.get('name', 'unknown') if isinstance(permission_data, dict) else 'unknown'}): {str(perm_error)}"
+                errors.append(error_msg)
+                current_app.logger.error(f"Permission {permission_id} error: {error_trace}")
+                # Ensure session is clean
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+                continue
         
-        db.session.commit()
+        # Commit all successful changes at once
+        try:
+            db.session.commit()
+        except Exception as commit_error:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'message': f'Database commit failed: {str(commit_error)}'
+            }), 500
         
-        return jsonify({
-            'success': True, 
-            'message': f'Bulk import completed: {imported_count} imported, {updated_count} updated'
-        })
+        # All permissions processed, return results
+        if errors:
+            # If there are errors, still report success with warnings
+            error_msg = f'{imported_count} imported, {updated_count} updated. {len(errors)} error(s) occurred.'
+            return jsonify({
+                'success': True,
+                'message': error_msg,
+                'warnings': errors[:10]  # Limit to first 10 errors
+            })
+        else:
+            return jsonify({
+                'success': True, 
+                'message': f'Bulk import completed: {imported_count} imported, {updated_count} updated'
+            })
         
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': f'Error during bulk import: {str(e)}'})
+        # Final safety net - rollback everything if something catastrophic happens
+        try:
+            db.session.rollback()
+        except:
+            pass
+        import traceback
+        error_details = traceback.format_exc()
+        current_app.logger.error(f'Bulk import error: {str(e)}\n{error_details}')
+        return jsonify({
+            'success': False, 
+            'message': f'Error during bulk import: {str(e)}'
+        }), 500
 
 @admin_permissions_bp.route('/validation-report')
 @login_required

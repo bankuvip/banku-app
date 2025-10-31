@@ -4,6 +4,7 @@ from models import Profile, Item, Project, ProjectContributor, User, db, Need, A
 from utils.permissions import require_permission
 from utils.file_utils import validate_uploaded_file_comprehensive, sanitize_filename
 from forms import ProfileForm
+from wtforms.validators import Optional
 from datetime import datetime, timedelta
 import os
 import logging
@@ -112,13 +113,24 @@ def create():
                 
                 # Generate collision-free filename
                 photo_filename = f"{current_user.id}_photo_{file_base}_{timestamp}_{unique_id}{file_ext}"
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
                 
-                # Ensure upload directory exists
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                # Use new hierarchical structure for profile photos
+                from utils.file_structure import save_file_organized
+                result = save_file_organized(
+                    file=file,
+                    user_id=current_user.id,
+                    item_id=None,  # No item ID for profile photos
+                    file_type='profile',
+                    context_name=form.name.data or 'default'
+                )
                 
-                # Save file
-                file.save(file_path)
+                if result['success']:
+                    photo_filename = result['file_info']['relative_path']
+                else:
+                    # Fallback to old structure if new structure fails
+                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    file.save(file_path)
                 
                 # Log successful upload
                 logging.info(f"Photo uploaded successfully: {photo_filename} by user {current_user.id}")
@@ -149,6 +161,10 @@ def create():
         from utils.slug_utils import generate_profile_slug
         slug = generate_profile_slug(form.name.data, current_user.id)
         
+        # Handle is_public from dropdown
+        is_public_value = request.form.get('is_public', 'true').lower()
+        is_public = is_public_value == 'true'
+        
         profile = Profile(
             user_id=current_user.id,
             name=form.name.data,
@@ -160,7 +176,7 @@ def create():
             website=form.website.data,
             location=form.location.data,
             photo=photo_filename,
-            is_public=form.is_public.data
+            is_public=is_public
         )
         
         db.session.add(profile)
@@ -181,6 +197,23 @@ def create():
 def detail_by_slug(slug):
     """View profile by slug (new preferred method)"""
     from utils.permissions import has_permission
+    from flask import abort
+    
+    # Prevent system URLs from being caught by this route
+    # Only block if the slug matches system routes AND there's no actual profile with that slug
+    system_slugs = ['create', 'edit', 'delete', 'item', 'items', 'users', 'save-item', 'unsave-item', 'id']
+    
+    # Check if it's a system slug
+    if slug in system_slugs:
+        abort(404)
+    
+    # Special handling for 'admin' - only block if it's not a legitimate profile
+    if slug == 'admin':
+        # Check if there's actually a profile with slug 'admin'
+        profile_exists = Profile.query.filter_by(slug='admin').first()
+        if not profile_exists:
+            # No profile with slug 'admin' exists, so this is likely an admin URL
+            abort(404)
     
     # Check if user has permission to view private profiles
     can_view_private = has_permission(current_user, 'profiles', 'view_private')
@@ -216,19 +249,19 @@ def detail_by_slug(slug):
     else:
         can_view_activity = has_permission(current_user, 'profiles', 'view_activity_others')
     
-    # Get profile's items with pagination
+    # Get profile's items with pagination (excluding needs)
     page = request.args.get('page', 1, type=int)
     per_page = 12
-    items = Item.query.filter_by(profile_id=profile.id, is_available=True).order_by(Item.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    # Filter out needs - they're shown in a separate tab
+    items_query = Item.query.filter_by(profile_id=profile.id, is_available=True).join(ItemType).filter(ItemType.name != 'need').order_by(Item.created_at.desc())
+    items = items_query.paginate(page=page, per_page=per_page, error_out=False)
     
     # Get all profile's items for needs/saved items tabs (not paginated)
     all_items = Item.query.filter_by(profile_id=profile.id, is_available=True).order_by(Item.created_at.desc()).all()
     
-    # Separate items and needs based on category or content_type
-    items_list = [item for item in all_items if item.category != 'need' and getattr(item, 'content_type', None) != 'need']
-    needs = [item for item in all_items if item.category == 'need' or getattr(item, 'content_type', None) == 'need']
+    # Separate items and needs based on item_type.name (not category)
+    items_list = [item for item in all_items if not item.item_type or item.item_type.name != 'need']
+    needs = [item for item in all_items if item.item_type and item.item_type.name == 'need']
     
     # Get profile's projects
     projects = Project.query.filter_by(profile_id=profile.id).order_by(Project.created_at.desc()).all()
@@ -241,6 +274,22 @@ def detail_by_slug(slug):
         SavedItem.user_id == current_user.id
     ).order_by(SavedItem.saved_at.desc()).all()
     
+    # Get reviews for this profile
+    from models import Review
+    from utils.permissions import has_permission
+    
+    can_view_hidden = has_permission(current_user, 'reviews', 'view_hidden')
+    
+    reviews_query = Review.query.filter_by(
+        review_target_type='profile',
+        review_target_id=profile.id
+    )
+    
+    if not can_view_hidden:
+        reviews_query = reviews_query.filter_by(is_hidden=False)
+    
+    reviews = reviews_query.order_by(Review.created_at.desc()).all()
+    
     return render_template('profiles/detail_new.html', 
                          profile=profile, 
                          items=items,
@@ -248,6 +297,7 @@ def detail_by_slug(slug):
                          needs=needs,
                          projects=projects,
                          saved_items=saved_items,
+                         reviews=reviews,
                          can_view_about=can_view_about,
                          can_view_activity=can_view_activity,
                          is_owner=is_owner)
@@ -297,19 +347,19 @@ def detail_by_id(profile_id):
     else:
         can_view_activity = has_permission(current_user, 'profiles', 'view_activity_others')
     
-    # Get profile's items with pagination
+    # Get profile's items with pagination (excluding needs)
     page = request.args.get('page', 1, type=int)
     per_page = 12
-    items = Item.query.filter_by(profile_id=profile.id, is_available=True).order_by(Item.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    # Filter out needs - they're shown in a separate tab
+    items_query = Item.query.filter_by(profile_id=profile.id, is_available=True).join(ItemType).filter(ItemType.name != 'need').order_by(Item.created_at.desc())
+    items = items_query.paginate(page=page, per_page=per_page, error_out=False)
     
     # Get all profile's items for needs/saved items tabs (not paginated)
     all_items = Item.query.filter_by(profile_id=profile.id, is_available=True).order_by(Item.created_at.desc()).all()
     
-    # Separate items and needs based on category or content_type
-    items_list = [item for item in all_items if item.category != 'need' and getattr(item, 'content_type', None) != 'need']
-    needs = [item for item in all_items if item.category == 'need' or getattr(item, 'content_type', None) == 'need']
+    # Separate items and needs based on item_type.name (not category)
+    items_list = [item for item in all_items if not item.item_type or item.item_type.name != 'need']
+    needs = [item for item in all_items if item.item_type and item.item_type.name == 'need']
     
     # Get profile's projects
     projects = Project.query.filter_by(profile_id=profile.id).order_by(Project.created_at.desc()).all()
@@ -322,6 +372,22 @@ def detail_by_id(profile_id):
         SavedItem.user_id == current_user.id
     ).order_by(SavedItem.saved_at.desc()).all()
     
+    # Get reviews for this profile
+    from models import Review
+    from utils.permissions import has_permission
+    
+    can_view_hidden = has_permission(current_user, 'reviews', 'view_hidden')
+    
+    reviews_query = Review.query.filter_by(
+        review_target_type='profile',
+        review_target_id=profile.id
+    )
+    
+    if not can_view_hidden:
+        reviews_query = reviews_query.filter_by(is_hidden=False)
+    
+    reviews = reviews_query.order_by(Review.created_at.desc()).all()
+    
     return render_template('profiles/detail_new.html', 
                          profile=profile, 
                          items=items,
@@ -329,6 +395,7 @@ def detail_by_id(profile_id):
                          needs=needs,
                          projects=projects,
                          saved_items=saved_items,
+                         reviews=reviews,
                          can_view_about=can_view_about,
                          can_view_activity=can_view_activity,
                          is_owner=is_owner)
@@ -355,47 +422,99 @@ def detail(profile_id):
 def edit(profile_id):
     profile = Profile.query.filter_by(id=profile_id, user_id=current_user.id).first_or_404()
     form = ProfileForm()
+    # Exclude profile_type from validation since we're editing an existing profile
+    form.profile_type.validators = [Optional()]
     
     if request.method == 'GET':
         # Pre-populate form with existing data
-        form.name.data = profile.name
-        form.description.data = profile.description
-        form.phone.data = profile.phone
-        form.website.data = profile.website
-        form.location.data = profile.location
-        form.is_public.data = profile.is_public
+        form.name.data = profile.name or ''
+        form.description.data = profile.description or ''
+        form.phone.data = profile.phone or ''
+        form.website.data = profile.website or ''
+        form.location.data = profile.location or ''
+        form.is_public.data = profile.is_public if profile.is_public is not None else True
+        # Set profile_type data for the hidden field - use profile_type_id if available, otherwise use string value
+        if profile.profile_type_id:
+            form.profile_type.data = str(profile.profile_type_id)
+        else:
+            form.profile_type.data = profile.profile_type
     
     if form.validate_on_submit():
         # Handle file upload for photo
         if form.photo.data and hasattr(form.photo.data, 'filename') and form.photo.data.filename:
-            file = form.photo.data
-            filename = secure_filename(file.filename)
-            photo_filename = f"{current_user.id}_photo_{filename}"
-            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
-            file.save(file_path)
-            profile.photo = photo_filename
+            try:
+                file = form.photo.data
+                
+                # Use new hierarchical structure for profile photos
+                from utils.file_structure import save_file_organized
+                result = save_file_organized(
+                    file=file,
+                    user_id=current_user.id,
+                    item_id=None,  # No item ID for profile photos
+                    file_type='profile',
+                    context_name=profile.name or 'default'
+                )
+                
+                if result['success']:
+                    profile.photo = result['file_info']['relative_path']
+                    print(f"Profile photo saved successfully: {result['file_info']['relative_path']}")
+                else:
+                    print(f"New structure failed: {result.get('error', 'Unknown error')}")
+                    # Fallback to old structure if new structure fails
+                    filename = secure_filename(file.filename)
+                    photo_filename = f"{current_user.id}_photo_{filename}"
+                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    file.save(file_path)
+                    profile.photo = photo_filename
+                    print(f"Profile photo saved with fallback: {photo_filename}")
+                    
+            except Exception as e:
+                print(f"Profile photo upload error: {str(e)}")
+                flash(f'Photo upload failed: {str(e)}', 'error')
+                return render_template('profiles/edit.html', form=form, profile=profile)
         
         # Update profile fields
         old_name = profile.name
-        profile.name = form.name.data
-        profile.description = form.description.data
-        profile.phone = form.phone.data if form.phone.data else None
-        profile.website = form.website.data
-        profile.location = form.location.data
-        profile.is_public = form.is_public.data
+        profile.name = form.name.data or ''
+        
+        # Get description from form (it's a regular WTForms field)
+        description_value = form.description.data or ''
+        profile.description = description_value
+        
+        # Handle phone from request.form (since it's a custom input with country code)
+        phone_from_request = request.form.get('phone', '').strip()
+        profile.phone = phone_from_request if phone_from_request else None
+        
+        # Handle website and location from request.form (since they use custom inputs)
+        website_value = request.form.get('website', '').strip() or None
+        profile.website = website_value
+        
+        location_value = request.form.get('location', '').strip() or None
+        profile.location = location_value
+        
+        # Handle is_public from dropdown
+        is_public_value = request.form.get('is_public', 'true').lower()
+        profile.is_public = is_public_value == 'true'
         
         # Regenerate slug if name changed
         if old_name != profile.name:
             from utils.slug_utils import generate_profile_slug
             profile.slug = generate_profile_slug(profile.name, profile.user_id, profile.id)
         
-        db.session.commit()
-        flash('Profile updated successfully', 'success')
-        # Redirect to slug-based URL if available, otherwise use ID
-        if profile.slug:
-            return redirect(url_for('profiles.detail_by_slug', slug=profile.slug))
-        else:
-            return redirect(url_for('profiles.detail_by_id', profile_id=profile.id))
+        try:
+            db.session.commit()
+            flash('Profile updated successfully', 'success')
+            # Redirect to slug-based URL if available, otherwise use ID
+            if profile.slug:
+                return redirect(url_for('profiles.detail_by_slug', slug=profile.slug))
+            else:
+                return redirect(url_for('profiles.detail_by_id', profile_id=profile.id))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database commit error: {str(e)}")
+            flash(f'An error occurred while updating your profile: {str(e)}', 'error')
+            return render_template('profiles/edit.html', form=form, profile=profile)
     
     return render_template('profiles/edit.html', profile=profile, form=form)
 
@@ -510,7 +629,7 @@ def delete_item(item_id):
         DealItem.query.filter_by(item_id=item_id).delete()
         
         # Delete reviews
-        Review.query.filter_by(item_id=item_id).delete()
+        Review.query.filter_by(review_target_type='item', review_target_id=item_id).delete()
         
         # Delete credibility scores
         ItemCredibilityScore.query.filter_by(item_id=item_id).delete()
@@ -667,6 +786,52 @@ def save_item(item_id):
             'success': False,
             'message': f'Error saving item: {str(e)}'
         }), 500
+
+@profiles_bp.route('/<slug>/add-review', methods=['POST'])
+@login_required
+def add_profile_review(slug):
+    """Add a review for a profile"""
+    from flask import flash, redirect, url_for
+    from models import Review, Profile
+    
+    profile = Profile.query.filter_by(slug=slug).first_or_404()
+    
+    # Prevent users from reviewing their own profile
+    if profile.user_id == current_user.id:
+        flash('You cannot review your own profile.', 'warning')
+        return redirect(url_for('profiles.detail_by_slug', slug=slug))
+    
+    try:
+        rating = int(request.form.get('rating', 0))
+        comment = request.form.get('comment', '').strip()
+        
+        if rating < 1 or rating > 5:
+            flash('Rating must be between 1 and 5 stars.', 'danger')
+            return redirect(url_for('profiles.detail_by_slug', slug=slug))
+        if not comment:
+            flash('Please enter a review comment.', 'danger')
+            return redirect(url_for('profiles.detail_by_slug', slug=slug))
+        
+        # Check if user wants to hide the review
+        is_hidden = request.form.get('is_hidden') == '1'
+        
+        review = Review(
+            reviewer_id=current_user.id,
+            reviewee_id=profile.user_id,
+            review_target_type='profile',
+            review_target_id=profile.id,
+            rating=rating,
+            comment=comment,
+            is_hidden=is_hidden
+        )
+        db.session.add(review)
+        db.session.commit()
+        flash('Thank you for your review!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error submitting review: {e}', 'danger')
+    
+    return redirect(url_for('profiles.detail_by_slug', slug=slug))
 
 @profiles_bp.route('/unsave-item/<int:item_id>', methods=['POST'])
 @login_required

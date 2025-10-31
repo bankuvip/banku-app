@@ -271,9 +271,8 @@
                             <select class="form-select form-select-sm question-field-mapping-select" onchange="updateFieldMappingOptions(this)">
                                 <option value="">Select field...</option>
                                 <option value="title">Title</option>
-                                <option value="description">Description</option>
                                 <option value="short_description">Short Description</option>
-                                <option value="detailed_description">Detailed Description</option>
+                                <option value="detailed_description">Description</option>
                                 <option value="category">Category</option>
                                 <option value="subcategory">Subcategory</option>
                                 <option value="category_subcategory">Category + Subcategory (Cascading)</option>
@@ -284,7 +283,6 @@
                                 <option value="pricing_type">Pricing Type</option>
                                 <option value="feasibility">Feasibility</option>
                                 <option value="timeline">Timeline</option>
-                                <option value="budget">Budget</option>
                                 <option value="target_audience">Target Audience</option>
                                 <option value="benefits">Benefits</option>
                                 <option value="requirements">Requirements</option>
@@ -3445,9 +3443,8 @@ function addQuestionToStepForEdit(questionsList, questionData) {
                 <select class="form-select question-field-mapping-select" onchange="updateFieldMappingOptions(this)">
                     <option value="">Select field...</option>
                     <option value="title" ${questionData.field_mapping === 'title' ? 'selected' : ''}>Title</option>
-                    <option value="description" ${questionData.field_mapping === 'description' ? 'selected' : ''}>Description</option>
                     <option value="short_description" ${questionData.field_mapping === 'short_description' ? 'selected' : ''}>Short Description</option>
-                    <option value="detailed_description" ${questionData.field_mapping === 'detailed_description' ? 'selected' : ''}>Detailed Description</option>
+                    <option value="detailed_description" ${questionData.field_mapping === 'detailed_description' ? 'selected' : ''}>Description</option>
                     <option value="category" ${questionData.field_mapping === 'category' ? 'selected' : ''}>Category</option>
                     <option value="subcategory" ${questionData.field_mapping === 'subcategory' ? 'selected' : ''}>Subcategory</option>
                     <option value="category_subcategory" ${questionData.field_mapping === 'category_subcategory' ? 'selected' : ''}>Category + Subcategory (Cascading)</option>
@@ -3458,7 +3455,6 @@ function addQuestionToStepForEdit(questionsList, questionData) {
                     <option value="pricing_type" ${questionData.field_mapping === 'pricing_type' ? 'selected' : ''}>Pricing Type</option>
                     <option value="feasibility" ${questionData.field_mapping === 'feasibility' ? 'selected' : ''}>Feasibility</option>
                     <option value="timeline" ${questionData.field_mapping === 'timeline' ? 'selected' : ''}>Timeline</option>
-                    <option value="budget" ${questionData.field_mapping === 'budget' ? 'selected' : ''}>Budget</option>
                     <option value="target_audience" ${questionData.field_mapping === 'target_audience' ? 'selected' : ''}>Target Audience</option>
                     <option value="benefits" ${questionData.field_mapping === 'benefits' ? 'selected' : ''}>Benefits</option>
                     <option value="requirements" ${questionData.field_mapping === 'requirements' ? 'selected' : ''}>Requirements</option>

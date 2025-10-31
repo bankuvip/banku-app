@@ -1,11 +1,84 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session
 from flask_login import login_required, current_user
-from models import Item, Bank, Tag, Profile, ProductCategory, SearchAnalytics, ItemVisibilityScore, ItemCredibilityScore, ItemReviewScore, ItemType, OrganizationType, Organization, User, db
+from models import Item, Bank, Tag, Profile, ProductCategory, SearchAnalytics, ItemVisibilityScore, ItemCredibilityScore, ItemReviewScore, ItemType, OrganizationType, Organization, User, SavedItem, db, Review
 from utils.permissions import require_permission
-from sqlalchemy import or_, and_
-from datetime import datetime
+from sqlalchemy import or_, and_, cast, case, func
+from datetime import datetime, date
 
 banks_bp = Blueprint('banks', __name__)
+
+# Helper functions for search improvements
+
+def track_search_analytics(bank, search_term, category, location, min_price, max_price, date_from, date_to, results_count):
+    """Track search analytics in database"""
+    try:
+        # Get user info
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('_id', None) if session else None
+        ip_address = request.remote_addr
+        
+        # Parse dates if provided
+        date_from_obj = None
+        date_to_obj = None
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        
+        # Create search analytics record
+        search_analytics = SearchAnalytics(
+            bank_type=bank.bank_type if bank else None,
+            bank_slug=bank.slug if bank else None,
+            search_term=search_term if search_term else None,
+            category_filter=category if category else None,
+            location_filter=location if location else None,
+            date_from=date_from_obj,
+            date_to=date_to_obj,
+            min_price=min_price,
+            max_price=max_price,
+            results_count=results_count,
+            user_id=user_id,
+            session_id=session_id,
+            ip_address=ip_address
+        )
+        
+        db.session.add(search_analytics)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        # Don't break search if analytics fails
+        pass
+
+def get_popular_searches(bank_slug, limit=10):
+    """Get popular searches for suggestions based on analytics"""
+    try:
+        # Get searches from last 30 days for this bank
+        from datetime import timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        popular = db.session.query(
+            SearchAnalytics.search_term,
+            func.count(SearchAnalytics.id).label('count')
+        ).filter(
+            SearchAnalytics.bank_slug == bank_slug,
+            SearchAnalytics.search_term.isnot(None),
+            SearchAnalytics.search_term != '',
+            SearchAnalytics.created_at >= thirty_days_ago
+        ).group_by(
+            SearchAnalytics.search_term
+        ).order_by(
+            func.count(SearchAnalytics.id).desc()
+        ).limit(limit).all()
+        
+        return [term for term, count in popular if term]
+    except Exception:
+        return []
 
 @banks_bp.route('/')
 @login_required
@@ -99,16 +172,15 @@ def index():
             
             bank.item_count = base_query.count()
         elif bank.bank_type == 'users':
-            # Count users based on filter
+            # Count profiles based on filter (not users, since we display profiles)
+            base_query = Profile.query.join(User, Profile.user_id == User.id).filter(
+                User.is_active == True,
+                Profile.is_active == True
+            )
+            
+            # Filter by profile type if bank.user_filter is set
             if bank.user_filter:
-                base_query = User.query.join(Profile, User.id == Profile.user_id).filter(
-                    User.is_active == True,
-                    Profile.profile_type == bank.user_filter
-                )
-            else:
-                base_query = User.query.join(Profile, User.id == Profile.user_id).filter(
-                    User.is_active == True
-                )
+                base_query = base_query.filter(Profile.profile_type == bank.user_filter)
             
             # Apply privacy filter
             if bank.privacy_filter == 'public':
@@ -195,7 +267,11 @@ def bank_items(bank_slug):
     location = request.args.get('location', '')
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
-    sort_by = request.args.get('sort_by', 'created_at')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    # Default to relevance if searching, otherwise date
+    default_sort = 'relevance' if search else 'created_at'
+    sort_by = request.args.get('sort_by', default_sort)
     sort_order = request.args.get('sort_order', 'desc')
     
     # Find bank by slug, name, or bank_type (OPTIMIZED - single query)
@@ -220,10 +296,18 @@ def bank_items(bank_slug):
         return handle_organization_bank(bank, page, per_page, search, sort_by, sort_order)
     else:
         # Default to items bank
-        return handle_item_bank(bank, page, per_page, search, category, location, min_price, max_price, sort_by, sort_order)
+        result = handle_item_bank(bank, page, per_page, search, category, location, min_price, max_price, date_from, date_to, sort_by, sort_order)
+        
+        # Track search in analytics (after getting results)
+        track_search_analytics(bank, search, category, location, min_price, max_price, date_from, date_to, result[1] if isinstance(result, tuple) else 0)
+        
+        # Return result (could be tuple with results count or just render_template)
+        if isinstance(result, tuple):
+            return result[0]  # render_template result
+        return result
 
-def handle_item_bank(bank, page, per_page, search, category, location, min_price, max_price, sort_by, sort_order):
-    """Handle item banks"""
+def handle_item_bank(bank, page, per_page, search, category, location, min_price, max_price, date_from, date_to, sort_by, sort_order):
+    """Handle item banks with improved search, relevance sorting, and date filtering"""
     # Build query using simple join (FIXED PERFORMANCE ISSUE)
     query = Item.query.join(Profile).filter(Item.is_available == True)
     
@@ -270,25 +354,51 @@ def handle_item_bank(bank, page, per_page, search, category, location, min_price
     if bank.bank_type in ['physical', 'digital', 'knowledge', 'rights_licenses', 'plans_strategies', 'imagination_innovations']:
         query = query.filter(Item.subcategory == bank.bank_type)
     
-    # Apply filters (EXACT SAME AS OLD ROUTE)
+    # Apply filters with improved search
+    search_lower = ''
     if search:
+        search_lower = search.lower().strip()
         query = query.filter(
             or_(
-                Item.title.contains(search),
-                Item.description.contains(search)
+                Item.title.ilike(f'%{search_lower}%'),
+                Item.detailed_description.ilike(f'%{search_lower}%'),
+                Item.short_description.ilike(f'%{search_lower}%'),
+                Item.category.ilike(f'%{search_lower}%'),
+                Item.subcategory.ilike(f'%{search_lower}%'),
+                Item.location.ilike(f'%{search_lower}%'),
+                cast(Item.tags, db.Text).ilike(f'%{search_lower}%')
             )
         )
     
+    # Category filter - now text-based (searches in category field)
     if category:
-        query = query.filter(Item.category == category)
+        category_lower = category.lower().strip()
+        query = query.filter(Item.category.ilike(f'%{category_lower}%'))
     
     # For products, add product category filtering (EXACT SAME AS OLD ROUTE)
     product_category_id = request.args.get('product_category_id', type=int)
     if bank.bank_type == 'products' and product_category_id:
         query = query.filter(Item.product_category_id == product_category_id)
     
+    # Location filter - now text-based (searches in location field)
     if location:
-        query = query.filter(Item.location.contains(location))
+        location_lower = location.lower().strip()
+        query = query.filter(Item.location.ilike(f'%{location_lower}%'))
+    
+    # Date range filter
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(func.date(Item.created_at) >= date_from_obj)
+        except ValueError:
+            pass  # Invalid date format, ignore
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(func.date(Item.created_at) <= date_to_obj)
+        except ValueError:
+            pass  # Invalid date format, ignore
     
     if min_price is not None:
         query = query.filter(Item.price >= min_price)
@@ -296,8 +406,28 @@ def handle_item_bank(bank, page, per_page, search, category, location, min_price
     if max_price is not None:
         query = query.filter(Item.price <= max_price)
     
-    # Apply sorting (EXACT SAME AS OLD ROUTE)
-    if sort_by == 'price':
+    # Calculate relevance score if search term exists
+    relevance_score = None
+    if search_lower:
+        relevance_score = (
+            case(
+                (Item.title.ilike(f'%{search_lower}%'), 10),
+                (cast(Item.tags, db.Text).ilike(f'%{search_lower}%'), 8),
+                (Item.short_description.ilike(f'%{search_lower}%'), 5),
+                (Item.category.ilike(f'%{search_lower}%'), 4),
+                (Item.subcategory.ilike(f'%{search_lower}%'), 4),
+                (Item.location.ilike(f'%{search_lower}%'), 2),
+                (Item.detailed_description.ilike(f'%{search_lower}%'), 3),
+                else_=0
+            )
+        )
+    
+    # Apply sorting with relevance support
+    # If search exists but sort_by is not specified or is relevance, use relevance sorting
+    if (sort_by == 'relevance' or (not sort_by and search_lower)) and search_lower and relevance_score:
+        # Sort by relevance first, then by rating, then by date
+        query = query.order_by(relevance_score.desc(), Item.rating.desc(), Item.created_at.desc())
+    elif sort_by == 'price':
         if sort_order == 'asc':
             query = query.order_by(Item.price.asc())
         else:
@@ -307,7 +437,7 @@ def handle_item_bank(bank, page, per_page, search, category, location, min_price
             query = query.order_by(Item.rating.asc())
         else:
             query = query.order_by(Item.rating.desc())
-    else:  # created_at
+    else:  # created_at (default when no search)
         if sort_order == 'asc':
             query = query.order_by(Item.created_at.asc())
         else:
@@ -321,6 +451,19 @@ def handle_item_bank(bank, page, per_page, search, category, location, min_price
     )
     
     items = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    # Determine which of the current page's items are saved by the user
+    saved_item_ids = set()
+    try:
+        if current_user.is_authenticated and items.items:
+            page_item_ids = [it.id for it in items.items]
+            saved_rows = SavedItem.query.filter(
+                SavedItem.user_id == current_user.id,
+                SavedItem.item_id.in_(page_item_ids)
+            ).all()
+            saved_item_ids = {row.item_id for row in saved_rows}
+    except Exception as e:
+        print(f"DEBUG: Error loading saved_item_ids: {e}")
     
     # Debug logging removed for performance
     
@@ -402,38 +545,42 @@ def handle_item_bank(bank, page, per_page, search, category, location, min_price
             }
         })
     
+    # Get popular searches for suggestions
+    popular_searches = get_popular_searches(bank.slug)
+    
     # Use EXACT SAME template and parameters as old route to maintain styling
-    return render_template('banks/items.html', 
+    return (render_template('banks/items.html', 
                          items=items,
                          bank=bank,  # Pass bank object for color access
                          bank_type=bank.bank_type,  # Use bank.bank_type to match old route parameter
                          categories=categories,
                          locations=locations,
                          product_categories=product_categories,
+                         saved_item_ids=saved_item_ids,
                          search=search,
                          category=category,
                          location=location,
                          min_price=min_price,
                          max_price=max_price,
+                         date_from=date_from,
+                         date_to=date_to,
                          sort_by=sort_by,
-                         sort_order=sort_order)
+                         sort_order=sort_order,
+                         popular_searches=popular_searches), items.total)
 
 def handle_user_bank(bank, page, per_page, search, sort_by, sort_order):
-    """Handle user banks - show users/profiles based on bank configuration"""
+    """Handle user banks - show profiles based on bank configuration"""
     from models import ProfileType
     
-    # Build query for users based on bank.user_filter (Profile Type) and privacy_filter
+    # Query profiles directly (not users) since the template expects Profile objects
+    base_query = Profile.query.join(User, Profile.user_id == User.id).filter(
+        User.is_active == True,
+        Profile.is_active == True
+    )
+    
+    # Filter by profile type if bank.user_filter is set
     if bank.user_filter:
-        # Filter users by specific profile type
-        base_query = User.query.join(Profile, User.id == Profile.user_id).filter(
-            User.is_active == True,
-            Profile.profile_type == bank.user_filter
-        )
-    else:
-        # Show all users (no profile type filter)
-        base_query = User.query.join(Profile, User.id == Profile.user_id).filter(
-            User.is_active == True
-        )
+        base_query = base_query.filter(Profile.profile_type == bank.user_filter)
     
     # Apply privacy filter
     if bank.privacy_filter == 'public':
@@ -443,72 +590,61 @@ def handle_user_bank(bank, page, per_page, search, sort_by, sort_order):
     else:  # 'all'
         query = base_query  # No privacy filter
     
-    # Apply search filter
+    # Apply search filter - search in profile name, user fields, profile_type, and location
     if search:
+        search_lower = search.lower().strip()
         query = query.filter(
             or_(
-                User.first_name.contains(search),
-                User.last_name.contains(search),
-                User.username.contains(search),
-                User.email.contains(search)
+                Profile.name.ilike(f'%{search_lower}%'),
+                User.first_name.ilike(f'%{search_lower}%'),
+                User.last_name.ilike(f'%{search_lower}%'),
+                User.username.ilike(f'%{search_lower}%'),
+                Profile.description.ilike(f'%{search_lower}%'),
+                Profile.location.ilike(f'%{search_lower}%'),
+                Profile.profile_type.ilike(f'%{search_lower}%')
             )
         )
     
     # Apply sorting
     if sort_by == 'name':
         if sort_order == 'asc':
-            query = query.order_by(User.first_name.asc(), User.last_name.asc())
+            query = query.order_by(Profile.name.asc())
         else:
-            query = query.order_by(User.first_name.desc(), User.last_name.desc())
+            query = query.order_by(Profile.name.desc())
     else:  # created_at
         if sort_order == 'asc':
-            query = query.order_by(User.created_at.asc())
+            query = query.order_by(Profile.created_at.asc())
         else:
-            query = query.order_by(User.created_at.desc())
+            query = query.order_by(Profile.created_at.desc())
     
-    users = query.paginate(page=page, per_page=per_page, error_out=False)
-    
-    # Get profile objects for each user based on privacy filter
-    user_profiles = {}
-    for user in users.items:
-        # Get the appropriate profile based on privacy filter
-        if bank.privacy_filter == 'public':
-            profile = Profile.query.filter_by(user_id=user.id, is_public=True).first()
-        elif bank.privacy_filter == 'private':
-            profile = Profile.query.filter_by(user_id=user.id, is_public=False).first()
-        else:  # 'all'
-            profile = Profile.query.filter_by(user_id=user.id).first()
-        
-        if profile:
-            user_profiles[user.id] = profile  # Store profile object instead of just ID
+    # Paginate profiles
+    profiles = query.paginate(page=page, per_page=per_page, error_out=False)
     
     # Support AJAX requests
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({
             'users': [{
-                'id': user.id,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'username': user.username,
-                'email': user.email,
-                'location': user.location,
-                'bio': user.bio,
-                'avatar': user.avatar,
-                'created_at': user.created_at.isoformat()
-            } for user in users.items],
+                'id': profile.id,
+                'name': profile.name,
+                'description': profile.description,
+                'photo': profile.photo,
+                'slug': profile.slug,
+                'profile_type': profile.profile_type,
+                'created_at': profile.created_at.isoformat()
+            } for profile in profiles.items],
             'pagination': {
-                'page': users.page,
-                'pages': users.pages,
-                'per_page': users.per_page,
-                'total': users.total,
-                'has_next': users.has_next,
-                'has_prev': users.has_prev
+                'page': profiles.page,
+                'pages': profiles.pages,
+                'per_page': profiles.per_page,
+                'total': profiles.total,
+                'has_next': profiles.has_next,
+                'has_prev': profiles.has_prev
             }
         })
     
     return render_template('banks/users.html', 
-                         users=users,
-                         user_profiles=user_profiles,
+                         users=profiles,  # Pass profiles pagination object (template expects 'users' variable name)
+                         user_profiles={},  # Not needed anymore since we're passing profiles directly
                          bank=bank,
                          bank_type=bank.bank_type,
                          search=search,
@@ -538,13 +674,14 @@ def handle_organization_bank(bank, page, per_page, search, sort_by, sort_order):
     if bank.organization_type_id:
         query = query.filter(Organization.organization_type_id == bank.organization_type_id)
     
-    # Apply search filter
+    # Apply search filter (case-insensitive)
     if search:
+        search_lower = search.lower().strip()
         query = query.filter(
             or_(
-                Organization.name.contains(search),
-                Organization.description.contains(search),
-                Organization.location.contains(search)
+                Organization.name.ilike(f'%{search_lower}%'),
+                Organization.description.ilike(f'%{search_lower}%'),
+                Organization.location.ilike(f'%{search_lower}%')
             )
         )
     
@@ -615,7 +752,7 @@ def handle_organization_bank(bank, page, per_page, search, sort_by, sort_order):
 def item_detail(item_id):
     try:
         print(f"DEBUG: Loading item {item_id}")
-        item = Item.query.options(db.joinedload(Item.item_type)).get_or_404(item_id)
+        item = Item.query.options(db.joinedload(Item.item_type), db.joinedload(Item.profile)).get_or_404(item_id)
         print(f"DEBUG: Item loaded: {item.title}")
         print(f"DEBUG: Item location: {item.location}")
         
@@ -659,17 +796,82 @@ def item_detail(item_id):
         ).limit(6).all()
         print(f"DEBUG: Similar items count: {len(similar_items)}")
         
+        # Determine if current user has saved this item
+        is_saved = False
+        try:
+            if current_user.is_authenticated:
+                is_saved = SavedItem.query.filter_by(user_id=current_user.id, item_id=item.id).first() is not None
+        except Exception as e:
+            print(f"DEBUG: Error checking saved state: {e}")
+
+        # Get reviews for this item using new polymorphic columns
+        # Filter out hidden reviews unless user has permission to view them
+        from utils.permissions import has_permission
+        can_view_hidden = has_permission(current_user, 'reviews', 'view_hidden')
+        
+        reviews_query = Review.query.filter_by(
+            review_target_type='item',
+            review_target_id=item.id
+        )
+        
+        if not can_view_hidden:
+            reviews_query = reviews_query.filter_by(is_hidden=False)
+        
+        reviews = reviews_query.order_by(Review.created_at.desc()).all()
+
         print("DEBUG: About to render template")
         return render_template('banks/item_detail.html', 
                              item=item, 
                              bank=bank,
-                             similar_items=similar_items)
+                             similar_items=similar_items,
+                             is_saved=is_saved,
+                             reviews=reviews)
     except Exception as e:
         print(f"DEBUG: Error in item_detail: {str(e)}")
         print(f"DEBUG: Error type: {type(e).__name__}")
         import traceback
         print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise
+
+@banks_bp.route('/item/<int:item_id>/add-review', methods=['POST'])
+@login_required
+def add_review(item_id):
+    item = Item.query.options(db.joinedload(Item.item_type)).get_or_404(item_id)
+    profile = Profile.query.get_or_404(item.profile_id)
+
+    if profile.user_id == current_user.id:
+        flash('You cannot review your own item.', 'warning')
+        return redirect(url_for('banks.item_detail', item_id=item_id))
+
+    try:
+        rating = int(request.form.get('rating', 0))
+        comment = request.form.get('comment', '').strip()
+        if rating < 1 or rating > 5:
+            flash('Rating must be between 1 and 5 stars.', 'danger')
+            return redirect(url_for('banks.item_detail', item_id=item_id))
+        if not comment:
+            flash('Please enter a review comment.', 'danger')
+            return redirect(url_for('banks.item_detail', item_id=item_id))
+
+        # Check if user wants to hide the review
+        is_hidden = request.form.get('is_hidden') == '1'
+        
+        review = Review(
+            reviewer_id=current_user.id,
+            reviewee_id=profile.user_id,
+            review_target_type='item',
+            review_target_id=item_id,
+            rating=rating,
+            comment=comment,
+            is_hidden=is_hidden
+        )
+        db.session.add(review)
+        db.session.commit()
+        flash('Thank you for your review!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error submitting review: {e}', 'danger')
+    return redirect(url_for('banks.item_detail', item_id=item_id))
 
 @banks_bp.route('/debug-items')
 @login_required
@@ -699,13 +901,18 @@ def search():
     if not query:
         return jsonify({'items': []})
     
-    # Search across all items
+    # Search across all items (case-insensitive)
+    query_lower = query.lower().strip()
     search_query = Item.query.join(Profile).filter(
         Item.is_available == True,
         or_(
-            Item.title.contains(query),
-            Item.description.contains(query),
-            Item.category.contains(query)
+            Item.title.ilike(f'%{query_lower}%'),
+            Item.detailed_description.ilike(f'%{query_lower}%'),
+            Item.short_description.ilike(f'%{query_lower}%'),
+            Item.category.ilike(f'%{query_lower}%'),
+            Item.subcategory.ilike(f'%{query_lower}%'),
+            Item.location.ilike(f'%{query_lower}%'),
+            cast(Item.tags, db.Text).ilike(f'%{query_lower}%')
         )
     )
     
@@ -843,12 +1050,18 @@ def product_items_by_category(category_id, subcategory_id, sub_subcategory_id):
         Item.is_available == True
     )
     
-    # Apply search filter
+    # Apply search filter (case-insensitive with expanded fields)
     if search:
+        search_lower = search.lower().strip()
         query = query.filter(
             or_(
-                Item.title.contains(search),
-                Item.description.contains(search)
+                Item.title.ilike(f'%{search_lower}%'),
+                Item.detailed_description.ilike(f'%{search_lower}%'),
+                Item.short_description.ilike(f'%{search_lower}%'),
+                Item.category.ilike(f'%{search_lower}%'),
+                Item.subcategory.ilike(f'%{search_lower}%'),
+                Item.location.ilike(f'%{search_lower}%'),
+                cast(Item.tags, db.Text).ilike(f'%{search_lower}%')
             )
         )
     
@@ -860,8 +1073,8 @@ def product_items_by_category(category_id, subcategory_id, sub_subcategory_id):
                          search=search)
 
 
-def track_search_analytics(item_type, search_term, category, location, product_category_id):
-    """Track search analytics for optimization"""
+def track_search_analytics_legacy(item_type, search_term, category, location, product_category_id):
+    """Track search analytics for optimization (Legacy function - deprecated)"""
     try:
         # Track general search
         if search_term:

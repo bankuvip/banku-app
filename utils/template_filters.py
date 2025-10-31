@@ -1,76 +1,106 @@
 #!/usr/bin/env python3
 """
-Custom template filters for Flask
+Template Filters for File Path Handling
+Handles both old and new file structure paths
 """
 
-from flask import current_app
-from utils.geocoding import parse_location
+def get_file_url(filename):
+    """
+    Generate proper URL for file, handling both old and new file structures
+    
+    Args:
+        filename: File path from database (could be old or new format)
+    
+    Returns:
+        str: Proper URL for the file
+    """
+    if not filename:
+        return ""
+    
+    # Normalize path separators (convert backslashes to forward slashes)
+    filename = filename.replace('\\', '/')
+    
+    # If it's already a full path starting with uploads/, use it as is
+    if filename.startswith('uploads/'):
+        return f"/static/{filename}"
+    
+    # If it's an old format filename, prepend uploads/
+    return f"/static/uploads/{filename}"
+
+def is_old_format(filename):
+    """
+    Check if filename is in old format (question_id_filename_timestamp_uuid.ext)
+    
+    Args:
+        filename: File path to check
+    
+    Returns:
+        bool: True if old format, False if new format
+    """
+    if not filename:
+        return False
+    
+    # Old format: question_id_filename_timestamp_uuid.ext
+    # New format: uploads/users/user_id/.../user_id_item_id_timestamp_uuid.ext
+    return not filename.startswith('uploads/')
+
+def get_file_display_name(filename):
+    """
+    Get display name for file (without path)
+    
+    Args:
+        filename: Full file path
+    
+    Returns:
+        str: Just the filename without path
+    """
+    if not filename:
+        return ""
+    
+    return filename.split('/')[-1] if '/' in filename else filename
 
 def register_template_filters(app):
-    """Register custom template filters"""
+    """Register all template filters with Flask app"""
+    from markupsafe import Markup
+    import re
     
-    @app.template_filter('format_location_cached')
-    def format_location_cached(location_string):
-        """
-        Format location using cached data for fast performance
-        
-        Args:
-            location_string: Raw location string (URL, coordinates, or plain text)
-            
-        Returns:
-            Formatted location string like "Dubai, UAE"
-        """
-        if not location_string:
-            return "Location not specified"
-        
-        # Import here to avoid circular imports
-        from utils.location_cache import get_formatted_location
-        
-        try:
-            formatted = get_formatted_location(location_string)
-            return formatted if formatted else location_string[:50] + ("..." if len(location_string) > 50 else "")
-        except Exception as e:
-            print(f"Location formatting error: {e}")
-            return location_string[:50] + ("..." if len(location_string) > 50 else "")
+    @app.template_filter('file_url')
+    def file_url_filter(filename):
+        """Template filter to get proper file URL"""
+        return get_file_url(filename)
     
-    @app.template_filter('format_location')
-    def format_location(location_string):
-        """
-        Format location string to show city, country format
-        
-        Args:
-            location_string: Raw location string (URL, coordinates, or plain text)
-            
-        Returns:
-            Formatted location string like "Dubai, UAE"
-        """
-        if not location_string:
-            return 'Location not specified'
-        
-        try:
-            result = parse_location(location_string)
-            return result.get('formatted', location_string)
-        except Exception as e:
-            # Fallback to original location if geocoding fails
-            print(f"Location formatting failed: {e}")
-            return location_string
+    @app.template_filter('is_old_file_format')
+    def is_old_file_format_filter(filename):
+        """Template filter to check if file is in old format"""
+        return is_old_format(filename)
     
-    @app.template_filter('extract_location_details')
-    def extract_location_details(location_string):
-        """
-        Extract detailed location information
+    @app.template_filter('file_display_name')
+    def file_display_name_filter(filename):
+        """Template filter to get file display name"""
+        return get_file_display_name(filename)
+    
+    @app.template_filter('highlight')
+    def highlight_filter(text, search_term):
+        """Highlight search term in text"""
+        if not search_term or not text:
+            return text
         
-        Args:
-            location_string: Raw location string
-            
-        Returns:
-            Dictionary with location details
-        """
-        if not location_string:
-            return {'formatted': 'Location not specified', 'coordinates': None}
+        search_term = str(search_term).strip()
+        if not search_term:
+            return text
         
+        # Escape HTML in text first
+        from markupsafe import escape
+        text_str = str(text)
+        escaped_text = escape(text_str)
+        
+        # Case-insensitive replacement with highlighting
         try:
-            return parse_location(location_string)
-        except Exception as e:
-            print(f"Location parsing failed: {e}")
-            return {'formatted': location_string, 'coordinates': None}
+            pattern = re.compile(re.escape(search_term), re.IGNORECASE)
+            highlighted = pattern.sub(
+                lambda m: f'<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px;">{m.group()}</mark>',
+                escaped_text
+            )
+            return Markup(highlighted)
+        except Exception:
+            return text

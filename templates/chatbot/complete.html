@@ -2,6 +2,29 @@
 
 {% block title %}Flow Complete - {{ flow.name }} - BankU{% endblock %}
 
+{% block extra_css %}
+<style>
+    .response-value {
+        word-break: break-word;
+        max-width: 100%;
+    }
+    .response-value pre {
+        display: none; /* Hide any raw code/pre blocks */
+    }
+    .response-value code {
+        display: none; /* Hide any raw code blocks */
+    }
+    .badge {
+        font-size: 0.8em;
+    }
+    .location-coords {
+        font-family: monospace;
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
@@ -31,17 +54,60 @@
                                 </div>
                                 <div class="col-sm-8">
                                     {% set response_value = response.responses.get(question.id|string) %}
-                                    {% if response_value %}
-                                        {% if question.question_type == 'checkbox' and response_value is iterable %}
-                                            <span class="text-muted">
-                                                {{ response_value|join(', ') }}
-                                            </span>
+                                    <div class="response-value">
+                                        {% if response_value %}
+                                            {% if question.question_type == 'checkbox' and response_value is iterable and response_value is not string %}
+                                                <span class="text-muted">
+                                                    {{ response_value|join(', ') }}
+                                                </span>
+                                            {% elif response_value is mapping %}
+                                                <!-- Handle dictionary responses (like category, location, file uploads) -->
+                                                {% if 'category' in response_value and 'subcategory' in response_value %}
+                                                    <span class="text-muted">
+                                                        <strong>Category:</strong> {{ response_value.category }}
+                                                        {% if response_value.subcategory %}
+                                                            <br><strong>Subcategory:</strong> {{ response_value.subcategory }}
+                                                        {% endif %}
+                                                    </span>
+                                                {% elif 'lat' in response_value and 'lng' in response_value %}
+                                                    <span class="text-muted">
+                                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                                        {% if response_value.link %}
+                                                            <a href="{{ response_value.link }}" target="_blank" rel="noopener noreferrer">{{ response_value.link }}</a>
+                                                        {% else %}
+                                                            <span class="location-coords">{{ "%.4f"|format(response_value.lat) }}, {{ "%.4f"|format(response_value.lng) }}</span>
+                                                        {% endif %}
+                                                    </span>
+                                                {% elif 'files' in response_value %}
+                                                    <span class="text-muted">
+                                                        <i class="fas fa-paperclip me-1"></i>
+                                                        {% for file in response_value.files %}
+                                                            <span class="badge bg-primary me-1">{{ file.name }}</span>
+                                                        {% endfor %}
+                                                    </span>
+                                                {% else %}
+                                                    <!-- Fallback for other dictionary types - sanitize output -->
+                                                    <span class="text-muted">
+                                                        {% for key, value in response_value.items() %}
+                                                            <strong>{{ key|title|e }}:</strong> {{ value|e }}{% if not loop.last %}<br>{% endif %}
+                                                        {% endfor %}
+                                                    </span>
+                                                {% endif %}
+                                            {% elif response_value is iterable and response_value is not string %}
+                                                <!-- Handle list responses (like tags) -->
+                                                <span class="text-muted">
+                                                    {% for item in response_value %}
+                                                        <span class="badge bg-secondary me-1">{{ item|e }}</span>
+                                                    {% endfor %}
+                                                </span>
+                                            {% else %}
+                                                <!-- Handle simple string/number responses - sanitize output -->
+                                                <span class="text-muted">{{ response_value|e }}</span>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="text-muted">{{ response_value }}</span>
+                                            <span class="text-muted fst-italic">No response</span>
                                         {% endif %}
-                                    {% else %}
-                                        <span class="text-muted fst-italic">No response</span>
-                                    {% endif %}
+                                    </div>
                                 </div>
                             </div>
                             {% if not loop.last %}<hr class="my-2">{% endif %}
@@ -51,10 +117,7 @@
                     
                     <!-- Action buttons -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                        <a href="{{ url_for('chatbot.index') }}" class="btn btn-primary">
-                            <i class="fas fa-robot me-2"></i>View Other Flows
-                        </a>
-                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
                             <i class="fas fa-home me-2"></i>Go to Dashboard
                         </a>
                     </div>

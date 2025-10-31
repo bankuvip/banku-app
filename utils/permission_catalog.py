@@ -172,6 +172,11 @@ class PermissionCatalog:
         
         251: {'resource': 'reviews', 'action': 'create', 'name': 'reviews.create', 'description': 'Create reviews'},
         252: {'resource': 'reviews', 'action': 'edit_own', 'name': 'reviews.edit_own', 'description': 'Edit own reviews'},
+        253: {'resource': 'reviews', 'action': 'view', 'name': 'reviews.view', 'description': 'View reviews'},
+        254: {'resource': 'reviews', 'action': 'view_hidden', 'name': 'reviews.view_hidden', 'description': 'View hidden reviews (admin/moderation)'},
+        255: {'resource': 'reviews', 'action': 'edit', 'name': 'reviews.edit', 'description': 'Edit any review (admin)'},
+        256: {'resource': 'reviews', 'action': 'delete', 'name': 'reviews.delete', 'description': 'Delete reviews (admin)'},
+        257: {'resource': 'reviews', 'action': 'manage', 'name': 'reviews.manage', 'description': 'Manage reviews in admin panel'},
         
         261: {'resource': 'notifications', 'action': 'create', 'name': 'notifications.create', 'description': 'Create notifications'},
         262: {'resource': 'notifications', 'action': 'delete', 'name': 'notifications.delete', 'description': 'Delete notifications'},
@@ -454,6 +459,15 @@ class PermissionCatalog:
     def get_permission_groups(cls):
         """Get all permission groups"""
         return cls.PERMISSION_GROUPS
+    
+    @classmethod
+    def get_permission_group_by_id(cls, permission_id):
+        """Get the group name that a permission ID belongs to"""
+        for group_name, group_info in cls.PERMISSION_GROUPS.items():
+            group_range = group_info['range']
+            if group_range[0] <= permission_id <= group_range[1]:
+                return group_name
+        return 'unknown'
     
     @classmethod
     def validate_permission_id(cls, permission_id):

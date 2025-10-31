@@ -79,13 +79,17 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ 'success' if member.status == 'active' else 'warning' if member.status == 'invited' else 'secondary' }}">
+                                            <span class="badge bg-{{ 'success' if member.status == 'active' else 'warning' if member.status == 'pending' else 'info' if member.status == 'invited' else 'secondary' }}">
                                                 {{ member.status.title() }}
                                             </span>
                                         </td>
                                         <td>
                                             <div class="small">
-                                                {{ member.joined_at.strftime('%b %d, %Y') }}
+                                                {% if member.joined_at %}
+                                                    {{ member.joined_at.strftime('%b %d, %Y') }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
                                             </div>
                                         </td>
                                         <td>
@@ -102,11 +106,27 @@
                                                 <a href="{{ url_for('profiles.user_profile', username=member.user.username) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-eye me-1"></i>View
                                                 </a>
-                                                {% if member.role != 'owner' and current_member.role in ['owner', 'admin'] %}
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="editMemberRole({{ member.id }}, '{{ member.role }}')">
+                                                {% if member.status == 'pending' and current_member.role in ['owner', 'admin'] %}
+                                                    <button type="button" class="btn btn-sm btn-success approve-member-btn" 
+                                                            data-member-id="{{ member.id }}"
+                                                            data-member-name="{{ member.user.first_name }} {{ member.user.last_name }}">
+                                                        <i class="fas fa-check me-1"></i>Approve
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-danger reject-member-btn" 
+                                                            data-member-id="{{ member.id }}"
+                                                            data-member-name="{{ member.user.first_name }} {{ member.user.last_name }}">
+                                                        <i class="fas fa-times me-1"></i>Reject
+                                                    </button>
+                                                {% elif member.role != 'owner' and member.status == 'active' and current_member.role in ['owner', 'admin'] %}
+                                                    <button type="button" class="btn btn-sm btn-outline-warning edit-member-btn" 
+                                                            data-member-id="{{ member.id }}" 
+                                                            data-member-role="{{ member.role }}"
+                                                            data-member-name="{{ member.user.first_name }} {{ member.user.last_name }}">
                                                         <i class="fas fa-edit me-1"></i>Edit
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMember({{ member.id }}, '{{ member.user.first_name }} {{ member.user.last_name }}')">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-member-btn" 
+                                                            data-member-id="{{ member.id }}"
+                                                            data-member-name="{{ member.user.first_name }} {{ member.user.last_name }}">
                                                         <i class="fas fa-user-times me-1"></i>Remove
                                                     </button>
                                                 {% endif %}
@@ -224,8 +244,9 @@
 </style>
 
 <script>
-// Filter members by status
+// Filter members by status and set up button event handlers
 document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
     const filterButtons = document.querySelectorAll('input[name="memberFilter"]');
     const rows = document.querySelectorAll('tbody tr');
     
@@ -238,12 +259,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.style.display = '';
                 } else if (filter === 'activeMembers' && status === 'active') {
                     row.style.display = '';
-                } else if (filter === 'pendingMembers' && status === 'invited') {
+                } else if (filter === 'pendingMembers' && status === 'pending') {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
+        });
+    });
+    
+    // Handle edit member button clicks
+    document.querySelectorAll('.edit-member-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const memberId = parseInt(this.getAttribute('data-member-id'));
+            const currentRole = this.getAttribute('data-member-role');
+            editMemberRole(memberId, currentRole);
+        });
+    });
+    
+    // Handle remove member button clicks
+    document.querySelectorAll('.remove-member-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const memberId = parseInt(this.getAttribute('data-member-id'));
+            const memberName = this.getAttribute('data-member-name');
+            removeMember(memberId, memberName);
+        });
+    });
+    
+    // Handle approve member button clicks
+    document.querySelectorAll('.approve-member-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const memberId = parseInt(this.getAttribute('data-member-id'));
+            const memberName = this.getAttribute('data-member-name');
+            approveMember(memberId, memberName);
+        });
+    });
+    
+    // Handle reject member button clicks
+    document.querySelectorAll('.reject-member-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const memberId = parseInt(this.getAttribute('data-member-id'));
+            const memberName = this.getAttribute('data-member-name');
+            rejectMember(memberId, memberName);
         });
     });
 });
@@ -252,10 +309,15 @@ function sendInvitation() {
     const form = document.getElementById('inviteMemberForm');
     const formData = new FormData(form);
     
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                     document.querySelector('input[name="csrf_token"]')?.value || '';
+    
     fetch('{{ url_for("organizations.members", slug=organization.slug) }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             action: 'invite',
@@ -264,17 +326,24 @@ function sendInvitation() {
             message: formData.get('message')
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to send invitation');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             location.reload();
         } else {
-            alert('Error: ' + data.message);
+            alert('Error: ' + (data.message || 'Failed to send invitation'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while sending the invitation.');
+        alert('An error occurred while sending the invitation: ' + error.message);
     });
 }
 
@@ -286,14 +355,20 @@ function editMemberRole(memberId, currentRole) {
     modal.show();
 }
 
+
 function updateMemberRole() {
     const memberId = document.getElementById('editMemberId').value;
     const newRole = document.getElementById('editRole').value;
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                     document.querySelector('input[name="csrf_token"]')?.value || '';
     
     fetch('{{ url_for("organizations.members", slug=organization.slug) }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             action: 'update_role',
@@ -301,43 +376,132 @@ function updateMemberRole() {
             role: newRole
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to update member role');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             location.reload();
         } else {
-            alert('Error: ' + data.message);
+            alert('Error: ' + (data.message || 'Failed to update member role'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while updating the role.');
+        alert('An error occurred while updating the role: ' + error.message);
     });
+}
+
+function approveMember(memberId, memberName) {
+    if (confirm(`Approve ${memberName}'s request to join this organization?`)) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                         document.querySelector('input[name="csrf_token"]')?.value || '';
+        
+        fetch('{{ url_for("organizations.approve_member", slug=organization.slug, member_id=0) }}'.replace('/0', '/' + memberId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to approve member');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to approve member'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while approving the member: ' + error.message);
+        });
+    }
+}
+
+function rejectMember(memberId, memberName) {
+    if (confirm(`Reject ${memberName}'s request to join this organization?`)) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                         document.querySelector('input[name="csrf_token"]')?.value || '';
+        
+        fetch('{{ url_for("organizations.reject_member", slug=organization.slug, member_id=0) }}'.replace('/0', '/' + memberId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to reject member');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to reject member'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while rejecting the member: ' + error.message);
+        });
+    }
 }
 
 function removeMember(memberId, memberName) {
     if (confirm(`Are you sure you want to remove ${memberName} from this organization?`)) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                         document.querySelector('input[name="csrf_token"]')?.value || '';
+        
         fetch('{{ url_for("organizations.members", slug=organization.slug) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 action: 'remove',
                 member_id: memberId
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to remove member');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                alert('Error: ' + (data.message || 'Failed to remove member'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while removing the member.');
+            alert('An error occurred while removing the member: ' + error.message);
         });
     }
 }

@@ -201,7 +201,8 @@ class Item(db.Model):
     short_description = db.Column(db.String(500), nullable=False)
     detailed_description = db.Column(db.Text, nullable=False)
     images_media = db.Column(db.JSON)  # Store image/media URLs as JSON array
-    location = db.Column(db.String(100))
+    location_raw = db.Column(db.String(500))  # Raw input: coordinates, URL, or text
+    location = db.Column(db.String(200))  # Formatted location: "Dubai, UAE" or "Cairo, Egypt"
     
     # Owner/Creator Information
     owner_type = db.Column(db.String(20), nullable=False)  # me, other
@@ -373,7 +374,8 @@ class Item(db.Model):
     
     # Relationships
     item_type = db.relationship('ItemType', backref='items', lazy=True)
-    reviews = db.relationship('Review', backref='item', lazy=True, cascade='all, delete-orphan')
+    # Note: Reviews are now accessed via review_target_type and review_target_id (polymorphic)
+    # Use: Review.query.filter_by(review_target_type='item', review_target_id=self.id)
     deal_items = db.relationship('DealItem', backref='item', lazy=True)
 
 class SearchAnalytics(db.Model):
@@ -381,14 +383,27 @@ class SearchAnalytics(db.Model):
     __tablename__ = 'search_analytics'
     
     id = db.Column(db.Integer, primary_key=True)
+    bank_type = db.Column(db.String(50), nullable=True)  # items, users, organizations
+    bank_slug = db.Column(db.String(100), nullable=True)  # Specific bank being searched
+    search_term = db.Column(db.String(200), nullable=True, index=True)  # The actual search query
+    category_filter = db.Column(db.String(200), nullable=True)  # Category filter if used
+    location_filter = db.Column(db.String(200), nullable=True)  # Location filter if used
+    date_from = db.Column(db.Date, nullable=True)  # Date range from
+    date_to = db.Column(db.Date, nullable=True)  # Date range to
+    min_price = db.Column(db.Float, nullable=True)  # Price filter min
+    max_price = db.Column(db.Float, nullable=True)  # Price filter max
+    results_count = db.Column(db.Integer, default=0)  # How many results returned
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)  # Who searched
+    session_id = db.Column(db.String(255), nullable=True)  # Session ID for anonymous users
+    ip_address = db.Column(db.String(45), nullable=True)  # IP address
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # When search happened
+    
+    # Legacy fields (keeping for backward compatibility)
     item_type = db.Column(db.String(50))
-    search_term = db.Column(db.String(200))
     filter_field = db.Column(db.String(100))
     filter_value = db.Column(db.String(200))
     search_count = db.Column(db.Integer, default=1)
     last_searched = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     user = db.relationship('User', backref='search_analytics')
@@ -671,9 +686,12 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     reviewee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
+    # Polymorphic target: what is being reviewed
+    review_target_type = db.Column(db.Enum('item', 'profile', 'organization', name='review_target_type'), nullable=False)
+    review_target_id = db.Column(db.Integer, nullable=False, index=True)
     rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
     comment = db.Column(db.Text)
+    is_hidden = db.Column(db.Boolean, default=False, nullable=False)  # Hidden reviews only visible to users with permission
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Earning(db.Model):

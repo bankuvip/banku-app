@@ -5,7 +5,7 @@ Handles creation, management, and administration of organizations
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
-from models import db, OrganizationType, Organization, OrganizationMember, OrganizationContent, OrganizationHistory, User
+from models import db, OrganizationType, Organization, OrganizationMember, OrganizationContent, OrganizationHistory, User, Notification
 from utils.permissions import require_permission
 from utils.data_collection import collection_engine
 from datetime import datetime
@@ -239,18 +239,35 @@ def view(slug):
         # Others need view_activity_others permission
         can_view_activity = has_permission(current_user, 'organizations', 'view_activity_others')
     
+    # Get reviews for this organization
+    from models import Review
+    from utils.permissions import has_permission
+    
+    can_view_hidden = has_permission(current_user, 'reviews', 'view_hidden')
+    
+    reviews_query = Review.query.filter_by(
+        review_target_type='organization',
+        review_target_id=organization.id
+    )
+    
+    if not can_view_hidden:
+        reviews_query = reviews_query.filter_by(is_hidden=False)
+    
+    reviews = reviews_query.order_by(Review.created_at.desc()).all()
+    
     return render_template('organizations/view.html', 
                          organization=organization,
                          membership=membership,
                          members=members,
                          content=content,
                          history=history,
+                         reviews=reviews,
                          can_view_about=can_view_about,
                          can_view_members=can_view_members,
                          can_view_activity=can_view_activity,
                          is_owner=is_owner)
 
-@organizations_bp.route('/organizations/<slug>/members')
+@organizations_bp.route('/organizations/<slug>/members', methods=['GET', 'POST'])
 @login_required
 def members(slug):
     """Manage organization members"""
@@ -264,16 +281,114 @@ def members(slug):
     ).first()
     
     if not membership or membership.role not in ['owner', 'admin']:
+        if request.is_json or request.method == 'POST':
+            return jsonify({'success': False, 'message': 'You do not have permission to manage members'})
         flash('You do not have permission to manage members', 'error')
         return redirect(url_for('organizations.view', slug=slug))
     
-    members = OrganizationMember.query.filter_by(
+    # Handle POST requests (update role, remove member, invite)
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            action = data.get('action')
+            
+            if action == 'update_role':
+                member_id = data.get('member_id')
+                new_role = data.get('role')
+                
+                if not member_id or not new_role:
+                    return jsonify({'success': False, 'message': 'Missing member_id or role'})
+                
+                member_to_update = OrganizationMember.query.filter_by(
+                    id=member_id,
+                    organization_id=organization.id
+                ).first()
+                
+                if not member_to_update:
+                    return jsonify({'success': False, 'message': 'Member not found'})
+                
+                if member_to_update.role == 'owner':
+                    return jsonify({'success': False, 'message': 'Cannot change owner role'})
+                
+                member_to_update.role = new_role
+                
+                # Record in history
+                history = OrganizationHistory(
+                    organization_id=organization.id,
+                    event_type='member_role_changed',
+                    event_description=f"{current_user.username} changed {member_to_update.user.username}'s role to {new_role}",
+                    actor_id=current_user.id
+                )
+                db.session.add(history)
+                
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'Member role updated successfully'})
+            
+            elif action == 'remove':
+                member_id = data.get('member_id')
+                
+                if not member_id:
+                    return jsonify({'success': False, 'message': 'Missing member_id'})
+                
+                member_to_remove = OrganizationMember.query.filter_by(
+                    id=member_id,
+                    organization_id=organization.id
+                ).first()
+                
+                if not member_to_remove:
+                    return jsonify({'success': False, 'message': 'Member not found'})
+                
+                if member_to_remove.role == 'owner':
+                    return jsonify({'success': False, 'message': 'Cannot remove owner'})
+                
+                username = member_to_remove.user.username if member_to_remove.user else 'user'
+                
+                # Record in history before deletion
+                history = OrganizationHistory(
+                    organization_id=organization.id,
+                    event_type='member_removed',
+                    event_description=f"{current_user.username} removed {username} from the organization",
+                    actor_id=current_user.id
+                )
+                db.session.add(history)
+                
+                db.session.delete(member_to_remove)
+                db.session.commit()
+                
+                return jsonify({'success': True, 'message': 'Member removed successfully'})
+            
+            elif action == 'invite':
+                # Invite functionality can be added here later
+                return jsonify({'success': False, 'message': 'Invite functionality not yet implemented'})
+            
+            else:
+                return jsonify({'success': False, 'message': 'Invalid action'})
+                
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error in members POST: {str(e)}")
+            return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+    
+    # Handle GET request - display members page
+    # Get all members including pending requests
+    members_list = OrganizationMember.query.filter_by(
         organization_id=organization.id
-    ).order_by(OrganizationMember.joined_at.desc()).all()
+    ).order_by(
+        OrganizationMember.status.desc(),  # pending first
+        OrganizationMember.joined_at.desc()
+    ).all()
+    
+    # Separate pending and active members for easier template handling
+    pending_members = [m for m in members_list if m.status == 'pending']
+    active_members = [m for m in members_list if m.status == 'active']
+    other_members = [m for m in members_list if m.status not in ['pending', 'active']]
     
     return render_template('organizations/members.html', 
                          organization=organization,
-                         members=members,
+                         members=members_list,
+                         pending_members=pending_members,
+                         active_members=active_members,
+                         other_members=other_members,
                          current_member=membership)
 
 @organizations_bp.route('/organizations/<slug>/content')
@@ -401,16 +516,30 @@ def settings(slug):
             organization.description = request.form.get('description', organization.description)
             organization.is_public = request.form.get('is_public') == '1'
             
+            # Helper function to normalize URLs
+            def normalize_url(url):
+                if not url or url.strip() == '':
+                    return None
+                url = url.strip()
+                # If URL starts with www., prepend http://
+                if url.startswith('www.'):
+                    url = 'http://' + url
+                # If URL doesn't have a protocol, prepend http://
+                elif not url.startswith(('http://', 'https://')):
+                    url = 'http://' + url
+                return url
+            
             # Update new contact and social media fields
-            organization.website = request.form.get('website', '') or None
+            website = request.form.get('website', '').strip()
+            organization.website = normalize_url(website)
             organization.phone = request.form.get('phone', '') or None
             organization.location = request.form.get('location', '') or None
-            organization.linkedin_url = request.form.get('linkedin_url', '') or None
-            organization.youtube_url = request.form.get('youtube_url', '') or None
-            organization.facebook_url = request.form.get('facebook_url', '') or None
-            organization.instagram_url = request.form.get('instagram_url', '') or None
-            organization.tiktok_url = request.form.get('tiktok_url', '') or None
-            organization.x_url = request.form.get('x_url', '') or None
+            organization.linkedin_url = normalize_url(request.form.get('linkedin_url', '').strip())
+            organization.youtube_url = normalize_url(request.form.get('youtube_url', '').strip())
+            organization.facebook_url = normalize_url(request.form.get('facebook_url', '').strip())
+            organization.instagram_url = normalize_url(request.form.get('instagram_url', '').strip())
+            organization.tiktok_url = normalize_url(request.form.get('tiktok_url', '').strip())
+            organization.x_url = normalize_url(request.form.get('x_url', '').strip())
             
             db.session.commit()
             flash('Settings updated successfully!', 'success')
@@ -448,31 +577,189 @@ def join(slug):
             existing_membership.left_reason = None
             db.session.commit()
             flash('Welcome back to the organization!', 'success')
+        elif existing_membership.status == 'pending':
+            flash('Your membership request is pending approval', 'info')
         else:
             flash('Your membership request is pending', 'info')
     else:
-        # Create new membership
+        # Create new membership with pending status
         member = OrganizationMember(
             organization_id=organization.id,
             user_id=current_user.id,
             role='member',
-            status='active'
+            status='pending',
+            joined_at=datetime.utcnow()
         )
         db.session.add(member)
+        
+        # Find the organization owner to send notification
+        owner_member = OrganizationMember.query.filter_by(
+            organization_id=organization.id,
+            role='owner',
+            status='active'
+        ).first()
+        
+        if owner_member:
+            owner = User.query.get(owner_member.user_id)
+            if owner:
+                # Create notification for owner
+                notification = Notification(
+                    user_id=owner.id,
+                    title="New Join Request",
+                    message=f"{current_user.username} ({current_user.email}) has requested to join your organization '{organization.name}'",
+                    notification_type="organization_join_request",
+                    data={
+                        'organization_id': organization.id,
+                        'organization_slug': organization.slug,
+                        'organization_name': organization.name,
+                        'requester_id': current_user.id,
+                        'requester_username': current_user.username,
+                        'membership_id': member.id
+                    }
+                )
+                db.session.add(notification)
         
         # Record in history
         history = OrganizationHistory(
             organization_id=organization.id,
-            event_type='member_joined',
-            event_description=f"{current_user.username} joined the organization",
+            event_type='member_join_requested',
+            event_description=f"{current_user.username} requested to join the organization",
             actor_id=current_user.id
         )
         db.session.add(history)
         
         db.session.commit()
-        flash('Successfully joined the organization!', 'success')
+        flash('Join request sent! The organization owner will review your request.', 'info')
     
     return redirect(url_for('organizations.view', slug=slug))
+
+@organizations_bp.route('/organizations/<slug>/approve-member/<int:member_id>', methods=['POST'])
+@login_required
+def approve_member(slug, member_id):
+    """Approve a pending member request"""
+    organization = Organization.query.filter_by(slug=slug).first_or_404()
+    
+    # Check if user is owner or admin
+    membership = OrganizationMember.query.filter_by(
+        organization_id=organization.id,
+        user_id=current_user.id,
+        status='active'
+    ).first()
+    
+    if not membership or membership.role not in ['owner', 'admin']:
+        if request.is_json:
+            return jsonify({'success': False, 'message': 'Only organization owners/admins can approve members'})
+        flash('Only organization owners/admins can approve members', 'error')
+        return redirect(url_for('organizations.members', slug=slug))
+    
+    # Get the pending member
+    pending_member = OrganizationMember.query.filter_by(
+        id=member_id,
+        organization_id=organization.id,
+        status='pending'
+    ).first_or_404()
+    
+    # Approve the membership
+    pending_member.status = 'active'
+    pending_member.joined_at = datetime.utcnow()
+    
+    # Notify the user that they've been approved
+    user = User.query.get(pending_member.user_id)
+    if user:
+        notification = Notification(
+            user_id=user.id,
+            title="Organization Join Request Approved",
+            message=f"Your request to join '{organization.name}' has been approved!",
+            notification_type="organization_join_approved",
+            data={
+                'organization_id': organization.id,
+                'organization_slug': organization.slug,
+                'organization_name': organization.name
+            }
+        )
+        db.session.add(notification)
+    
+    # Record in history
+    history = OrganizationHistory(
+        organization_id=organization.id,
+        event_type='member_approved',
+        event_description=f"{current_user.username} approved {user.username if user else 'a user'}'s membership request",
+        actor_id=current_user.id
+    )
+    db.session.add(history)
+    
+    db.session.commit()
+    
+    if request.is_json:
+        return jsonify({'success': True, 'message': 'Member request approved successfully'})
+    
+    flash('Member request approved successfully', 'success')
+    return redirect(url_for('organizations.members', slug=slug))
+
+@organizations_bp.route('/organizations/<slug>/reject-member/<int:member_id>', methods=['POST'])
+@login_required
+def reject_member(slug, member_id):
+    """Reject a pending member request"""
+    organization = Organization.query.filter_by(slug=slug).first_or_404()
+    
+    # Check if user is owner or admin
+    membership = OrganizationMember.query.filter_by(
+        organization_id=organization.id,
+        user_id=current_user.id,
+        status='active'
+    ).first()
+    
+    if not membership or membership.role not in ['owner', 'admin']:
+        if request.is_json:
+            return jsonify({'success': False, 'message': 'Only organization owners/admins can reject members'})
+        flash('Only organization owners/admins can reject members', 'error')
+        return redirect(url_for('organizations.members', slug=slug))
+    
+    # Get the pending member
+    pending_member = OrganizationMember.query.filter_by(
+        id=member_id,
+        organization_id=organization.id,
+        status='pending'
+    ).first_or_404()
+    
+    # Get user before deleting
+    user = User.query.get(pending_member.user_id)
+    username = user.username if user else 'a user'
+    
+    # Remove the membership request
+    db.session.delete(pending_member)
+    
+    # Notify the user that they've been rejected
+    if user:
+        notification = Notification(
+            user_id=user.id,
+            title="Organization Join Request Rejected",
+            message=f"Your request to join '{organization.name}' was not approved.",
+            notification_type="organization_join_rejected",
+            data={
+                'organization_id': organization.id,
+                'organization_slug': organization.slug,
+                'organization_name': organization.name
+            }
+        )
+        db.session.add(notification)
+    
+    # Record in history
+    history = OrganizationHistory(
+        organization_id=organization.id,
+        event_type='member_rejected',
+        event_description=f"{current_user.username} rejected {username}'s membership request",
+        actor_id=current_user.id
+    )
+    db.session.add(history)
+    
+    db.session.commit()
+    
+    if request.is_json:
+        return jsonify({'success': True, 'message': 'Member request rejected'})
+    
+    flash('Member request rejected', 'info')
+    return redirect(url_for('organizations.members', slug=slug))
 
 @organizations_bp.route('/organizations/<slug>/leave', methods=['POST'])
 @login_required
@@ -555,7 +842,37 @@ def upload_logo(slug):
         if file_size > 5 * 1024 * 1024:
             return jsonify({'success': False, 'message': 'File too large. Maximum size is 5MB.'})
         
-        # Generate unique filename
+        # Use new organized file structure
+        try:
+            from utils.file_structure import save_file_organized
+            result = save_file_organized(
+                file=file,
+                user_id=current_user.id,
+                item_id=None,  # No item ID for organization logos
+                file_type='organization',
+                context_name=organization.slug or organization.name
+            )
+            
+            if result['success']:
+                # Get relative path from result
+                relative_path = result['file_info']['relative_path']
+                logo_url = f"/static/{relative_path.replace(os.sep, '/')}"
+                organization.logo = logo_url
+                organization.updated_at = datetime.utcnow()  # Update timestamp for cache-busting
+                db.session.commit()
+                
+                return jsonify({'success': True, 'message': 'Logo uploaded successfully', 'logo_url': logo_url})
+            else:
+                # Fallback to old structure if new structure fails
+                error_msg = result.get('error', 'Failed to save file')
+                current_app.logger.warning(f"Organized structure failed for org logo: {error_msg}")
+                
+        except Exception as e:
+            current_app.logger.error(f"Error using organized structure: {str(e)}")
+            # Fallback to old structure
+            pass
+        
+        # Fallback to old structure
         filename = secure_filename(file.filename)
         file_extension = filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{organization.slug}_{uuid.uuid4().hex[:8]}.{file_extension}"
@@ -599,11 +916,23 @@ def remove_logo(slug):
     
     if organization.logo:
         # Remove file from filesystem
-        logo_path = os.path.join(current_app.root_path, organization.logo.lstrip('/'))
+        # Handle both old and new path formats
+        logo_path_relative = organization.logo.lstrip('/')
+        
+        # Try to find the file - could be in old structure or new organized structure
+        if logo_path_relative.startswith('static/'):
+            logo_path = os.path.join(current_app.root_path, logo_path_relative)
+        elif logo_path_relative.startswith('uploads/'):
+            logo_path = os.path.join(current_app.static_folder or current_app.root_path, logo_path_relative)
+        else:
+            # Assume it's relative to static folder
+            logo_path = os.path.join(current_app.static_folder or current_app.root_path, 'static', logo_path_relative)
+        
         if os.path.exists(logo_path):
             try:
                 os.remove(logo_path)
-            except OSError:
+            except OSError as e:
+                current_app.logger.warning(f"Failed to remove logo file {logo_path}: {str(e)}")
                 pass  # Continue even if file removal fails
         
         # Clear logo from database
@@ -829,9 +1158,55 @@ def remove_need(slug, need_id):
         
         db.session.commit()
         flash('Need removed from organization successfully.', 'success')
-        
+        return redirect(url_for('organizations.view', slug=slug))
+    
     except Exception as e:
         db.session.rollback()
         flash(f'Error removing need: {str(e)}', 'error')
+        return redirect(url_for('organizations.view', slug=slug))
+
+@organizations_bp.route('/organizations/<slug>/add-review', methods=['POST'])
+@login_required
+def add_organization_review(slug):
+    """Add a review for an organization"""
+    from flask import flash, redirect, url_for
+    from models import Review, Organization
+    
+    organization = Organization.query.filter_by(slug=slug).first_or_404()
+    
+    # Prevent organization owners from reviewing their own organization
+    if organization.created_by == current_user.id:
+        flash('You cannot review your own organization.', 'warning')
+        return redirect(url_for('organizations.view', slug=slug))
+    
+    try:
+        rating = int(request.form.get('rating', 0))
+        comment = request.form.get('comment', '').strip()
+        
+        if rating < 1 or rating > 5:
+            flash('Rating must be between 1 and 5 stars.', 'danger')
+            return redirect(url_for('organizations.view', slug=slug))
+        if not comment:
+            flash('Please enter a review comment.', 'danger')
+            return redirect(url_for('organizations.view', slug=slug))
+        
+        # Check if user wants to hide the review
+        is_hidden = request.form.get('is_hidden') == '1'
+        
+        review = Review(
+            reviewer_id=current_user.id,
+            reviewee_id=organization.created_by,  # Organization owner
+            review_target_type='organization',
+            review_target_id=organization.id,
+            rating=rating,
+            comment=comment,
+            is_hidden=is_hidden
+        )
+        db.session.add(review)
+        db.session.commit()
+        flash('Thank you for your review!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error submitting review: {e}', 'danger')
     
     return redirect(url_for('organizations.view', slug=slug))

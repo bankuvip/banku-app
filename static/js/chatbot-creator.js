@@ -5,6 +5,9 @@ let questionCounter = 0;
 let isEditModeLoading = false;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Clear used columns for new session
+    usedColumns.clear();
+    
     // Check if we're in edit mode
     const isEditMode = window.isEditMode === true;
     const hasFlowData = window.flowData && window.flowData.step_blocks && window.flowData.step_blocks.length > 0;
@@ -479,16 +482,39 @@ function addQuestion(buttonOrStepItem, questionData = null) {
         // Set field mapping
         const fieldMappingSelect = clone.querySelector('.question-field-mapping-select');
         const fieldMappingDiv = clone.querySelector('.question-field-mapping');
+        const customFieldMappingDiv = clone.querySelector('.question-custom-field-mapping');
+        const customFieldInput = clone.querySelector('.question-custom-column-name');
+        
+        if (questionClassification === 'essential') {
         if (fieldMappingSelect) {
             fieldMappingSelect.value = fieldMapping;
             console.log(`🔍 Set field mapping to: ${fieldMapping}`);
-        } else {
-            console.error('❌ Field mapping select not found in template');
         }
-        
-        // Show/hide field mapping based on classification
         if (fieldMappingDiv) {
-            fieldMappingDiv.style.display = questionClassification === 'essential' ? 'block' : 'none';
+                fieldMappingDiv.style.display = 'block';
+            }
+            if (customFieldMappingDiv) {
+                customFieldMappingDiv.style.display = 'none';
+            }
+        } else if (questionClassification === 'essential_custom') {
+            if (customFieldInput) {
+                customFieldInput.value = fieldMapping;
+                customFieldInput.setAttribute('onkeyup', 'validateCustomColumn(this)');
+                console.log(`🔍 Set custom field mapping to: ${fieldMapping}`);
+            }
+            if (customFieldMappingDiv) {
+                customFieldMappingDiv.style.display = 'block';
+            }
+            if (fieldMappingDiv) {
+                fieldMappingDiv.style.display = 'none';
+            }
+        } else {
+            if (fieldMappingDiv) {
+                fieldMappingDiv.style.display = 'none';
+            }
+            if (customFieldMappingDiv) {
+                customFieldMappingDiv.style.display = 'none';
+            }
         }
         
         // Update question display badges
@@ -584,7 +610,15 @@ function addQuestion(buttonOrStepItem, questionData = null) {
 function removeQuestion(button) {
     if (confirm('Are you sure you want to remove this question?')) {
         const stepItem = button.closest('.step-item');
-        button.closest('.question-item').remove();
+        const questionItem = button.closest('.question-item');
+        
+        // Remove from used columns if it's a custom field
+        const customInput = questionItem.querySelector('.question-custom-column-name');
+        if (customInput && customInput.value.trim()) {
+            usedColumns.delete(customInput.value.trim().toLowerCase());
+        }
+        
+        questionItem.remove();
         
         // Update question count badge
         updateQuestionCount(stepItem);
@@ -641,10 +675,374 @@ function updateQuestionDisplay(input) {
     } else if (input.classList.contains('question-classification')) {
         const classification = input.value;
         const fieldMappingDiv = questionItem.querySelector('.question-field-mapping');
+        const customFieldMappingDiv = questionItem.querySelector('.question-custom-field-mapping');
+        const customInput = questionItem.querySelector('.question-custom-column-name');
+        
+        // Remove from used columns if changing away from essential_custom
+        if (customInput && customInput.value.trim() && classification !== 'essential_custom') {
+            usedColumns.delete(customInput.value.trim().toLowerCase());
+        }
+        
         if (fieldMappingDiv) {
             fieldMappingDiv.style.display = classification === 'essential' ? 'block' : 'none';
         }
+        if (customFieldMappingDiv) {
+            customFieldMappingDiv.style.display = classification === 'essential_custom' ? 'block' : 'none';
+        }
     }
+}
+
+// Column validation data - this would normally come from the server
+const validColumns = [
+    // Basic Information
+    'title', 'item_type_id', 'category', 'subcategory', 'product_category_id', 'custom_category',
+    'tags', 'short_description', 'detailed_description', 'images_media', 'location',
+    
+    // Owner/Creator Information
+    'owner_type', 'owner_name', 'owner_link',
+    
+    // Pricing
+    'pricing_type', 'price', 'currency',
+    
+    // Status and Metadata
+    'is_available', 'is_verified', 'rating', 'review_count', 'request_count', 'views',
+    'created_at', 'updated_at',
+    
+    // Product-specific fields
+    'condition', 'quantity', 'shipping', 'creator', 'intellectual_property', 'patent_number',
+    'business_stage', 'investment_needed', 'timeline', 'target_market', 'collaboration_type',
+    'innovation_type',
+    
+    // Service-specific fields
+    'duration', 'experience_level', 'availability', 'service_type',
+    
+    // Experience-specific fields
+    'experience_type', 'lessons_learned', 'mistakes_avoided', 'success_factors',
+    
+    // Opportunity-specific fields
+    'opportunity_type', 'urgency_level', 'deadline', 'requirements',
+    
+    // Event-specific fields
+    'event_type', 'event_date', 'event_location', 'max_participants', 'registration_required',
+    
+    // Information-specific fields
+    'information_type', 'source', 'reliability_score', 'last_updated',
+    
+    // Observation-specific fields
+    'observation_type', 'context', 'significance', 'potential_impact',
+    
+    // Hidden Gems & Resources fields
+    'gem_type', 'recognition_level', 'unique_value', 'promotion_potential',
+    
+    // Funder-specific fields
+    'funding_type', 'funding_amount_min', 'funding_amount_max', 'interest_rate',
+    'term_length', 'collateral_required', 'funding_criteria',
+    
+    // Enhanced Product fields
+    'brand', 'model', 'specifications', 'warranty', 'accessories',
+    
+    // Enhanced Service fields
+    'availability_schedule', 'service_area', 'certifications', 'portfolio',
+    
+    // Enhanced Event fields
+    'venue', 'capacity', 'event_type_category', 'registration_fee',
+    
+    // Enhanced Project fields
+    'project_status', 'team_size', 'project_type', 'technologies_used',
+    
+    // Enhanced Fund fields
+    'funding_goal', 'funding_type_category', 'investment_terms', 'roi_expectation',
+    
+    // Enhanced Experience fields
+    'group_size', 'location_type', 'difficulty_level', 'equipment_needed',
+    
+    // Enhanced Opportunity fields
+    'compensation_type', 'compensation_amount', 'remote_work', 'part_time',
+    
+    // Enhanced Information fields
+    'format', 'language', 'accessibility', 'update_frequency',
+    
+    // Enhanced Observation fields
+    'observation_date', 'data_source', 'confidence_level', 'actionable_insights',
+    
+    // Enhanced Hidden Gem fields
+    'discovery_context', 'rarity_level', 'value_type', 'promotion_strategy',
+    
+    // Enhanced Auction fields
+    'start_price', 'end_date', 'bid_increment', 'reserve_price',
+    
+    // Enhanced Need fields
+    'need_type', 'budget_range',
+    
+    // Analytics and Flexible Storage
+    'search_analytics', 'type_data', 'field_usage_stats',
+    
+    // Enhanced creator tracking
+    'creator_type', 'creator_id', 'creator_name'
+];
+
+const columnData = {
+    // Basic Information
+    'title': { type: 'VARCHAR(200)', description: 'Main title of the item' },
+    'item_type_id': { type: 'INTEGER', description: 'Foreign key to item_types table' },
+    'category': { type: 'VARCHAR(50)', description: 'Primary category classification' },
+    'subcategory': { type: 'VARCHAR(50)', description: 'Secondary category classification' },
+    'product_category_id': { type: 'INTEGER', description: 'Foreign key to product_category table' },
+    'custom_category': { type: 'VARCHAR(100)', description: 'Custom category for "Other" selections' },
+    'tags': { type: 'JSON', description: 'Tags and keywords as JSON array' },
+    'short_description': { type: 'VARCHAR(500)', description: 'Brief description of the item' },
+    'detailed_description': { type: 'TEXT', description: 'Detailed description of the item' },
+    'images_media': { type: 'JSON', description: 'Image and media URLs as JSON array' },
+    'location': { type: 'VARCHAR(100)', description: 'Physical location of the item' },
+    
+    // Owner/Creator Information
+    'owner_type': { type: 'VARCHAR(20)', description: 'Type of owner (me, other)' },
+    'owner_name': { type: 'VARCHAR(200)', description: 'Name of owner if not me' },
+    'owner_link': { type: 'VARCHAR(500)', description: 'Link to owner if not me' },
+    
+    // Pricing
+    'pricing_type': { type: 'VARCHAR(20)', description: 'Type of pricing (free, paid, hybrid)' },
+    'price': { type: 'FLOAT', description: 'Price value of the item' },
+    'currency': { type: 'VARCHAR(3)', description: 'Currency code (USD, EUR, etc.)' },
+    
+    // Status and Metadata
+    'is_available': { type: 'BOOLEAN', description: 'Whether the item is currently available' },
+    'is_verified': { type: 'BOOLEAN', description: 'Whether the item has been verified' },
+    'rating': { type: 'FLOAT', description: 'Average rating of the item' },
+    'review_count': { type: 'INTEGER', description: 'Number of reviews received' },
+    'request_count': { type: 'INTEGER', description: 'Number of requests made' },
+    'views': { type: 'INTEGER', description: 'Number of times viewed' },
+    'created_at': { type: 'DATETIME', description: 'When the item was created' },
+    'updated_at': { type: 'DATETIME', description: 'When the item was last updated' },
+    
+    // Product-specific fields
+    'condition': { type: 'VARCHAR(50)', description: 'Condition of physical products' },
+    'quantity': { type: 'INTEGER', description: 'Available quantity' },
+    'shipping': { type: 'VARCHAR(50)', description: 'Shipping information for physical products' },
+    'creator': { type: 'VARCHAR(200)', description: 'Creator of the product' },
+    'intellectual_property': { type: 'VARCHAR(200)', description: 'IP rights and licenses' },
+    'patent_number': { type: 'VARCHAR(100)', description: 'Patent number if applicable' },
+    'business_stage': { type: 'VARCHAR(50)', description: 'Stage of business for ideas' },
+    'investment_needed': { type: 'FLOAT', description: 'Investment amount needed for ideas' },
+    'timeline': { type: 'VARCHAR(100)', description: 'Timeline for ideas and plans' },
+    'target_market': { type: 'VARCHAR(200)', description: 'Target market for ideas and plans' },
+    'collaboration_type': { type: 'VARCHAR(50)', description: 'Type of collaboration needed' },
+    'innovation_type': { type: 'VARCHAR(50)', description: 'Type of innovation' },
+    
+    // Service-specific fields
+    'duration': { type: 'VARCHAR(50)', description: 'Duration of the service' },
+    'experience_level': { type: 'VARCHAR(50)', description: 'Required experience level' },
+    'availability': { type: 'VARCHAR(200)', description: 'Availability schedule' },
+    'service_type': { type: 'VARCHAR(50)', description: 'Type of service (physical, mental, hybrid)' },
+    
+    // Experience-specific fields
+    'experience_type': { type: 'VARCHAR(50)', description: 'Type of experience (business, personal, technical)' },
+    'lessons_learned': { type: 'TEXT', description: 'Lessons learned from the experience' },
+    'mistakes_avoided': { type: 'TEXT', description: 'Mistakes to avoid based on experience' },
+    'success_factors': { type: 'TEXT', description: 'Key factors for success' },
+    
+    // Opportunity-specific fields
+    'opportunity_type': { type: 'VARCHAR(50)', description: 'Type of opportunity (business, investment, partnership)' },
+    'urgency_level': { type: 'VARCHAR(20)', description: 'Urgency level (low, medium, high, urgent)' },
+    'deadline': { type: 'DATE', description: 'Deadline for the opportunity' },
+    'requirements': { type: 'TEXT', description: 'Requirements for the opportunity' },
+    
+    // Event-specific fields
+    'event_type': { type: 'VARCHAR(50)', description: 'Type of event (conference, workshop, meeting)' },
+    'event_date': { type: 'DATETIME', description: 'Date and time of the event' },
+    'event_location': { type: 'VARCHAR(200)', description: 'Location of the event' },
+    'max_participants': { type: 'INTEGER', description: 'Maximum number of participants' },
+    'registration_required': { type: 'BOOLEAN', description: 'Whether registration is required' },
+    
+    // Information-specific fields
+    'information_type': { type: 'VARCHAR(50)', description: 'Type of information (market, technical, personal)' },
+    'source': { type: 'VARCHAR(200)', description: 'Source of the information' },
+    'reliability_score': { type: 'FLOAT', description: 'Reliability score (0-10)' },
+    'last_updated': { type: 'DATETIME', description: 'When the information was last updated' },
+    
+    // Observation-specific fields
+    'observation_type': { type: 'VARCHAR(50)', description: 'Type of observation (market, behavior, trend)' },
+    'context': { type: 'TEXT', description: 'Context of the observation' },
+    'significance': { type: 'TEXT', description: 'Significance of the observation' },
+    'potential_impact': { type: 'VARCHAR(200)', description: 'Potential impact of the observation' },
+    
+    // Hidden Gems & Resources fields
+    'gem_type': { type: 'VARCHAR(50)', description: 'Type of hidden gem (person, product, knowledge)' },
+    'recognition_level': { type: 'VARCHAR(20)', description: 'Recognition level (unknown, underrated, emerging)' },
+    'unique_value': { type: 'TEXT', description: 'Unique value proposition' },
+    'promotion_potential': { type: 'TEXT', description: 'Potential for promotion' },
+    
+    // Funder-specific fields
+    'funding_type': { type: 'VARCHAR(50)', description: 'Type of funding (investment, loan, grant)' },
+    'funding_amount_min': { type: 'FLOAT', description: 'Minimum funding amount' },
+    'funding_amount_max': { type: 'FLOAT', description: 'Maximum funding amount' },
+    'interest_rate': { type: 'FLOAT', description: 'Interest rate for loans' },
+    'term_length': { type: 'VARCHAR(100)', description: 'Length of funding term' },
+    'collateral_required': { type: 'VARCHAR(50)', description: 'Collateral requirements' },
+    'funding_criteria': { type: 'TEXT', description: 'Criteria for funding approval' },
+    
+    // Enhanced Product fields
+    'brand': { type: 'VARCHAR(100)', description: 'Brand name of the product' },
+    'model': { type: 'VARCHAR(100)', description: 'Model number or name' },
+    'specifications': { type: 'TEXT', description: 'Technical specifications' },
+    'warranty': { type: 'VARCHAR(200)', description: 'Warranty information' },
+    'accessories': { type: 'TEXT', description: 'Included accessories' },
+    
+    // Enhanced Service fields
+    'availability_schedule': { type: 'TEXT', description: 'Detailed availability schedule' },
+    'service_area': { type: 'VARCHAR(200)', description: 'Geographic service area' },
+    'certifications': { type: 'TEXT', description: 'Professional certifications' },
+    'portfolio': { type: 'TEXT', description: 'Portfolio or work samples' },
+    
+    // Enhanced Event fields
+    'venue': { type: 'VARCHAR(200)', description: 'Event venue name' },
+    'capacity': { type: 'INTEGER', description: 'Event capacity' },
+    'event_type_category': { type: 'VARCHAR(100)', description: 'Event type category' },
+    'registration_fee': { type: 'FLOAT', description: 'Registration fee amount' },
+    
+    // Enhanced Project fields
+    'project_status': { type: 'VARCHAR(50)', description: 'Current project status' },
+    'team_size': { type: 'INTEGER', description: 'Size of the project team' },
+    'project_type': { type: 'VARCHAR(100)', description: 'Type of project' },
+    'technologies_used': { type: 'TEXT', description: 'Technologies used in the project' },
+    
+    // Enhanced Fund fields
+    'funding_goal': { type: 'FLOAT', description: 'Funding goal amount' },
+    'funding_type_category': { type: 'VARCHAR(100)', description: 'Funding type category' },
+    'investment_terms': { type: 'TEXT', description: 'Investment terms and conditions' },
+    'roi_expectation': { type: 'VARCHAR(100)', description: 'Expected return on investment' },
+    
+    // Enhanced Experience fields
+    'group_size': { type: 'INTEGER', description: 'Size of the experience group' },
+    'location_type': { type: 'VARCHAR(100)', description: 'Type of location for the experience' },
+    'difficulty_level': { type: 'VARCHAR(50)', description: 'Difficulty level of the experience' },
+    'equipment_needed': { type: 'TEXT', description: 'Equipment needed for the experience' },
+    
+    // Enhanced Opportunity fields
+    'compensation_type': { type: 'VARCHAR(100)', description: 'Type of compensation offered' },
+    'compensation_amount': { type: 'FLOAT', description: 'Compensation amount' },
+    'remote_work': { type: 'BOOLEAN', description: 'Whether remote work is allowed' },
+    'part_time': { type: 'BOOLEAN', description: 'Whether part-time work is acceptable' },
+    
+    // Enhanced Information fields
+    'format': { type: 'VARCHAR(100)', description: 'Format of the information' },
+    'language': { type: 'VARCHAR(50)', description: 'Language of the information' },
+    'accessibility': { type: 'VARCHAR(100)', description: 'Accessibility features' },
+    'update_frequency': { type: 'VARCHAR(50)', description: 'How frequently the information is updated' },
+    
+    // Enhanced Observation fields
+    'observation_date': { type: 'DATE', description: 'Date when the observation was made' },
+    'data_source': { type: 'VARCHAR(200)', description: 'Source of the observation data' },
+    'confidence_level': { type: 'INTEGER', description: 'Confidence level in the observation' },
+    'actionable_insights': { type: 'TEXT', description: 'Actionable insights from the observation' },
+    
+    // Enhanced Hidden Gem fields
+    'discovery_context': { type: 'TEXT', description: 'Context of how the gem was discovered' },
+    'rarity_level': { type: 'VARCHAR(50)', description: 'Rarity level of the hidden gem' },
+    'value_type': { type: 'VARCHAR(100)', description: 'Type of value provided' },
+    'promotion_strategy': { type: 'TEXT', description: 'Strategy for promoting the gem' },
+    
+    // Enhanced Auction fields
+    'start_price': { type: 'FLOAT', description: 'Starting price for auction' },
+    'end_date': { type: 'DATETIME', description: 'End date and time of auction' },
+    'bid_increment': { type: 'FLOAT', description: 'Minimum bid increment' },
+    'reserve_price': { type: 'FLOAT', description: 'Reserve price for auction' },
+    
+    // Enhanced Need fields
+    'need_type': { type: 'VARCHAR(100)', description: 'Type of need' },
+    'budget_range': { type: 'VARCHAR(100)', description: 'Budget range for the need' },
+    
+    // Analytics and Flexible Storage
+    'search_analytics': { type: 'TEXT', description: 'Search analytics data as JSON' },
+    'type_data': { type: 'TEXT', description: 'Flexible additional data as JSON' },
+    'field_usage_stats': { type: 'TEXT', description: 'Field usage statistics as JSON' },
+    
+    // Enhanced creator tracking
+    'creator_type': { type: 'VARCHAR(20)', description: 'Type of creator (user or organization)' },
+    'creator_id': { type: 'INTEGER', description: 'ID of the creator' },
+    'creator_name': { type: 'VARCHAR(200)', description: 'Cached name of the creator' }
+};
+
+let usedColumns = new Set(); // Track used columns in current chatbot
+
+function validateCustomColumn(input) {
+    const columnName = input.value.trim().toLowerCase();
+    const questionItem = input.closest('.question-item');
+    const validationDiv = questionItem.querySelector('.validation-feedback') || createValidationDiv(questionItem);
+    const infoDiv = questionItem.querySelector('.column-info') || createColumnInfoDiv(questionItem);
+    
+    if (columnName === '') {
+        input.classList.remove('is-valid', 'is-invalid');
+        validationDiv.innerHTML = '';
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    // Check if column exists
+    if (!validColumns.includes(columnName)) {
+        input.classList.remove('is-valid');
+        input.classList.add('is-invalid');
+        validationDiv.innerHTML = '<div class="invalid-feedback">✗ Column name not found</div>';
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    // Check if already used
+    if (usedColumns.has(columnName)) {
+        input.classList.remove('is-valid');
+        input.classList.add('is-invalid');
+        validationDiv.innerHTML = '<div class="invalid-feedback">✗ Column already used in this chatbot</div>';
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    // Valid column
+    input.classList.remove('is-invalid');
+    input.classList.add('is-valid');
+    validationDiv.innerHTML = '<div class="valid-feedback">✓ Valid column name</div>';
+    
+    // Show column info
+    const columnInfo = columnData[columnName];
+    const typeSpan = infoDiv.querySelector('#column-type');
+    const descSpan = infoDiv.querySelector('#column-description');
+    if (typeSpan) typeSpan.textContent = columnInfo.type;
+    if (descSpan) descSpan.textContent = columnInfo.description;
+    infoDiv.style.display = 'block';
+    
+    // Add to used columns
+    usedColumns.add(columnName);
+}
+
+function createValidationDiv(questionItem) {
+    const div = document.createElement('div');
+    div.className = 'validation-feedback';
+    questionItem.querySelector('.question-custom-field-mapping').appendChild(div);
+    return div;
+}
+
+function createColumnInfoDiv(questionItem) {
+    const div = document.createElement('div');
+    div.className = 'column-info';
+    div.style.display = 'none';
+    div.innerHTML = `
+        <small class="text-muted">
+            <strong>Data Type:</strong> <span id="column-type"></span> | 
+            <strong>Description:</strong> <span id="column-description"></span>
+        </small>
+    `;
+    questionItem.querySelector('.question-custom-field-mapping').appendChild(div);
+    return div;
+}
+
+function getQuestionFieldMapping(questionElement) {
+    const classification = questionElement.querySelector('.question-classification').value;
+    if (classification === 'essential') {
+        return questionElement.querySelector('.question-field-mapping-select').value;
+    } else if (classification === 'essential_custom') {
+        const customInput = questionElement.querySelector('.question-custom-column-name');
+        return customInput ? customInput.value : '';
+    }
+    return '';
 }
 
 function updateFieldMappingOptions(select) {
@@ -1364,16 +1762,27 @@ function loadExistingFlowData() {
         return;
     }
     
-    // Clear existing steps
+    // Clear existing steps and used columns
     const stepsContainer = document.getElementById('stepsContainer');
     if (stepsContainer) {
         stepsContainer.innerHTML = '';
     }
+    usedColumns.clear();
     
     // Load each step block
     window.flowData.step_blocks.forEach((stepBlock) => {
         addStep(stepBlock);
     });
+    
+    // Populate used columns from existing custom fields
+    setTimeout(() => {
+        const customInputs = document.querySelectorAll('.question-custom-column-name');
+        customInputs.forEach(input => {
+            if (input.value.trim()) {
+                usedColumns.add(input.value.trim().toLowerCase());
+            }
+        });
+    }, 100);
 }
 
 // Status indicator functions
@@ -1617,7 +2026,7 @@ function createChatbot() {
                 default_view: questionElement.querySelector('.default-view').value,
                 is_required: questionElement.querySelector('.question-required').checked,
                 question_classification: questionElement.querySelector('.question-classification').value,
-                field_mapping: questionElement.querySelector('.question-field-mapping-select').value,
+                field_mapping: getQuestionFieldMapping(questionElement),
                 placeholder: questionElement.querySelector('.question-placeholder').value,
                 help_text: questionElement.querySelector('.question-help').value,
                 order_index: questionIndex,

@@ -30,11 +30,6 @@
                         {% endif %}
                     </div>
                     
-                    <div class="mb-4">
-                        <h5>Description</h5>
-                        <p class="lead">{{ item.detailed_description }}</p>
-                    </div>
-                    
                     <!-- Images Section -->
                     {% if item.images_media %}
                     <div class="mb-4">
@@ -43,11 +38,16 @@
                             {% for image in item.images_media %}
                                 {% if image and image.strip() and not image in ['folo', 'momo', 'iphone'] %}
                                 <div class="col-md-3 mb-2">
-                                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
-                                         alt="{{ item.title }}" 
-                                         class="img-fluid rounded shadow-sm"
-                                         style="height: 150px; object-fit: cover; cursor: pointer;"
-                                         onclick="openImageModal('{{ url_for('static', filename='uploads/' + image) }}', '{{ item.title }}')">
+                                    <div class="image-container" style="position: relative; display: inline-block;">
+                                        <img src="{{ image | file_url }}" 
+                                             alt="{{ item.title }}" 
+                                             class="img-fluid rounded shadow-sm"
+                                             style="height: 150px; object-fit: cover; cursor: pointer;"
+                                             onclick="showImage('{{ image | file_url }}', '{{ item.title }}')">
+                                        <div class="image-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; color: white; font-size: 14px;">
+                                            Click to view
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endif %}
                             {% endfor %}
@@ -55,10 +55,21 @@
                     </div>
                     {% endif %}
                     
+                    <!-- Short Description Section -->
+                    {% if item.short_description %}
+                    <div class="mb-4">
+                        <h5>Short Description</h5>
+                        <p class="lead">{{ item.short_description }}</p>
+                    </div>
+                    {% endif %}
+                    
                     {% if item.price %}
                     <div class="mb-4">
                         <h5>Price</h5>
-                        <h3 class="text-primary">${{ "%.2f"|format(item.price) }}</h3>
+                        <h3 class="text-primary">
+                            {{ "%.2f"|format(item.price) }}
+                            <span class="currency">{{ item.currency or '$' }}</span>
+                        </h3>
                     </div>
                     {% endif %}
                     
@@ -67,7 +78,7 @@
                             <h6 class="text-muted">Location</h6>
                             {% if item.location %}
                                 <p><i class="fas fa-map-marker-alt me-1"></i>
-                                    {{ item.location|format_location_cached }}
+                                    {{ item.location|format_location }}
                                 </p>
                             {% else %}
                                 <p><i class="fas fa-map-marker-alt me-1"></i>Online</p>
@@ -79,13 +90,29 @@
                         </div>
                     </div>
                     
+                    <!-- Long Description Section -->
+                    {% if item.detailed_description %}
+                    <div class="mb-4">
+                        <h5>Detailed Description</h5>
+                        <div class="description-content">
+                            {{ item.detailed_description|replace('\n', '<br>')|safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="d-flex gap-2">
                         <a href="{{ url_for('deals.create_deal_request', item_id=item.id) }}" class="btn btn-primary">
                             <i class="fas fa-handshake me-1"></i>Request Deal
                         </a>
-                        <button class="btn btn-outline-secondary" onclick="saveItem({{ item.id }})">
+                        {% if is_saved %}
+                        <button class="btn btn-danger" disabled>
+                            <i class="fas fa-heart me-1"></i>Saved
+                        </button>
+                        {% else %}
+                        <button class="btn btn-outline-secondary" onclick="saveItem({{ item.id }}, event)">
                             <i class="fas fa-heart me-1"></i>Save
                         </button>
+                        {% endif %}
                         <button class="btn btn-outline-info" onclick="shareItem({{ item.id }})">
                             <i class="fas fa-share me-1"></i>Share
                         </button>
@@ -101,54 +128,152 @@
                         <i class="fas fa-comments me-2"></i>Additional Information
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" id="additionalInfoContainer">
+                    {% if item.type_data %}
                     <script>
-                        // Parse the type_data JSON
-                        try {
-                            var richData = JSON.parse('{{ item.type_data|e }}');
-                            var displayFields = richData.display_fields || {};
-                            
-                            // Display each field
-                            for (var key in displayFields) {
-                                var value = displayFields[key];
-                                if (value && typeof value === 'string' && value.trim()) {
-                                    document.write(`
-                                        <div class="mb-3">
-                                            <h6 class="text-muted">${key}</h6>
-                                            <p>${value}</p>
-                                        </div>
-                                    `);
-                                } else if (value && typeof value === 'object') {
-                                    // Handle complex objects (like images, categories, etc.)
-                                    if (value.files && Array.isArray(value.files)) {
-                                        document.write(`
-                                            <div class="mb-3">
-                                                <h6 class="text-muted">${key}</h6>
-                                                <p>${value.files.length} file(s) uploaded</p>
-                                            </div>
-                                        `);
-                                    } else if (value.category) {
-                                        document.write(`
-                                            <div class="mb-3">
-                                                <h6 class="text-muted">${key}</h6>
-                                                <p>Category: ${value.category}${value.subcategory ? ', Subcategory: ' + value.subcategory : ''}</p>
-                                            </div>
-                                        `);
-                                    } else {
-                                        document.write(`
-                                            <div class="mb-3">
-                                                <h6 class="text-muted">${key}</h6>
-                                                <p>${JSON.stringify(value)}</p>
-                                            </div>
-                                        `);
+                        // Run immediately - container should exist since script is inline
+                        (function() {
+                            // Parse the type_data JSON
+                            try {
+                                var typeDataRaw = {{ item.type_data|tojson }};
+                                
+                                // Parse JSON if it's a string, otherwise use directly
+                                var richData;
+                                if (typeof typeDataRaw === 'string') {
+                                    richData = JSON.parse(typeDataRaw);
+                                } else {
+                                    richData = typeDataRaw;
+                                }
+                                
+                                // Get display fields - these are ONLY unmapped fields that aren't shown on main item page
+                                var displayFields = richData.display_fields || {};
+                                var unmappedData = richData.unmapped_additional_data || {};
+                                
+                                // Standard fields displayed on item detail page - exclude these
+                                var standardDisplayedFields = [
+                                    'title', 'short_description', 'detailed_description', 'category', 'subcategory', 
+                                    'tags', 'images_media', 'images', 'photos', 'image', 'photo', 'media', 'files',
+                                    'location', 'location_raw', 'price', 'currency', 'pricing_type', 
+                                    'is_available', 'rating', 'review_count', 'created_at', 'updated_at'
+                                ];
+                                
+                                // Only use display_fields - don't rebuild from unmapped_data to avoid duplicates
+                                // display_fields already contains properly labeled data with question texts
+                                // For backward compatibility with old items that might not have display_fields,
+                                // we'll only fall back if display_fields is completely empty
+                                if (Object.keys(displayFields).length === 0 && Object.keys(unmappedData).length > 0) {
+                                    for (var key in unmappedData) {
+                                        if (!standardDisplayedFields.includes(key) && key !== 'location' && key !== 'location_raw') {
+                                            var displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+                                            displayFields[displayKey] = unmappedData[key];
+                                        }
                                     }
                                 }
+                                
+                                // DO NOT add unmapped_data items again - this causes duplicates!
+                                // display_fields already contains all the data we need with proper labels
+                                
+                                // Get container element
+                                var container = document.getElementById('additionalInfoContainer');
+                                if (!container) {
+                                    return;
+                                }
+                                
+                                // Clear any existing content in container (except this script tag)
+                                // We'll append to a wrapper to avoid issues
+                                var wrapper = document.createElement('div');
+                                
+                                // Display each field using DOM manipulation
+                                var hasContent = false;
+                                for (var key in displayFields) {
+                                    var value = displayFields[key];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        // Skip file upload questions - they should not appear in Additional Information
+                                        // Check if value is an object with files property (upload indicator)
+                                        if (typeof value === 'object' && value !== null) {
+                                            // Skip if it has file-related properties (these are upload questions, not info fields)
+                                            if (value.files || value.file_paths || value.uploaded_files || value.media_files) {
+                                                continue; // Skip this field - it's a file upload, not additional information
+                                            }
+                                        }
+                                        
+                                        hasContent = true;
+                                        var fieldDiv = document.createElement('div');
+                                        fieldDiv.className = 'mb-3';
+                                        
+                                        var labelH6 = document.createElement('h6');
+                                        labelH6.className = 'text-muted';
+                                        labelH6.textContent = key;
+                                        
+                                        var valueElement = document.createElement('p');
+                                        
+                                        if (typeof value === 'string' && value.trim()) {
+                                            valueElement.textContent = value;
+                                        } else if (typeof value === 'number' || typeof value === 'boolean') {
+                                            valueElement.textContent = value.toString();
+                                        } else if (typeof value === 'object') {
+                                            // Handle complex objects (like categories, etc.)
+                                            // Note: file uploads are already filtered above
+                                            if (value.category) {
+                                                valueElement.textContent = 'Category: ' + value.category + (value.subcategory ? ', Subcategory: ' + value.subcategory : '');
+                                            } else if (Array.isArray(value)) {
+                                                valueElement.textContent = value.join(', ');
+                                            } else {
+                                                // Try to format object as readable text
+                                                var objStr = JSON.stringify(value, null, 2);
+                                                if (objStr.length < 200) {
+                                                    var preElement = document.createElement('pre');
+                                                    preElement.style.whiteSpace = 'pre-wrap';
+                                                    preElement.style.wordWrap = 'break-word';
+                                                    preElement.textContent = objStr;
+                                                    valueElement = preElement;
+                                                } else {
+                                                    valueElement.className = 'text-muted small';
+                                                    valueElement.textContent = 'Complex data (object with ' + Object.keys(value).length + ' fields)';
+                                                }
+                                            }
+                                        }
+                                        
+                                        fieldDiv.appendChild(labelH6);
+                                        fieldDiv.appendChild(valueElement);
+                                        wrapper.appendChild(fieldDiv);
+                                    }
+                                }
+                                
+                                if (!hasContent) {
+                                    var noContentP = document.createElement('p');
+                                    noContentP.className = 'text-muted';
+                                    noContentP.textContent = 'No additional information available.';
+                                    wrapper.appendChild(noContentP);
+                                }
+                                
+                                // Remove script tag if it exists, then append wrapper
+                                var scripts = container.getElementsByTagName('script');
+                                for (var i = 0; i < scripts.length; i++) {
+                                    if (scripts[i].textContent.includes('additionalInfoContainer')) {
+                                        scripts[i].remove();
+                                        break;
+                                    }
+                                }
+                                
+                                container.appendChild(wrapper);
+                                
+                            } catch (e) {
+                                // Fallback for invalid JSON
+                                console.error('Error parsing type_data:', e);
+                                var container = document.getElementById('additionalInfoContainer');
+                                if (container) {
+                                    var errorP = document.createElement('p');
+                                    errorP.className = 'text-muted';
+                                    errorP.textContent = 'Additional information is available but could not be parsed. Error: ' + e.message;
+                                    container.appendChild(errorP);
+                                }
                             }
-                        } catch (e) {
-                            // Fallback for invalid JSON
-                            document.write('<p class="text-muted">Additional information is available but could not be parsed.</p>');
-                        }
+                        })();
                     </script>
+                    {% else %}
+                    <p class="text-muted">No additional information available.</p>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -159,8 +284,8 @@
                     <h5 class="card-title mb-0">Reviews</h5>
                 </div>
                 <div class="card-body">
-                    {% if item.reviews %}
-                        {% for review in item.reviews %}
+                    {% if reviews %}
+                        {% for review in reviews %}
                         <div class="border-bottom pb-3 mb-3">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="mb-0">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</h6>
@@ -181,6 +306,71 @@
                     {% endif %}
                 </div>
             </div>
+
+{# --- Review Submission Form: Only visible to logged-in users not owning the item --- #}
+{% if current_user.is_authenticated and item.profile.user_id != current_user.id %}
+<div class="card border-0 shadow-sm mt-4">
+  <div class="card-header bg-white">
+    <h5 class="card-title mb-0">Add a Review</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('banks.add_review', item_id=item.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="mb-3">
+        <label for="rating" class="form-label">Your Rating</label>
+        <div id="rating-stars" style="font-size:1.5rem;">
+          {% for star in range(1,6) %}
+            <input type="radio" id="star{{star}}" name="rating" value="{{star}}" style="display:none;" required>
+            <label for="star{{star}}" style="cursor:pointer; color: #ffc107;">
+              <i class="fas fa-star"></i>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="review-comment" class="form-label">Comment</label>
+        <textarea class="form-control" name="comment" id="review-comment" rows="3" maxlength="1000" required placeholder="Write your honest feedback..."></textarea>
+      </div>
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" name="is_hidden" id="review-hidden" value="1">
+        <label class="form-check-label" for="review-hidden">
+          <i class="fas fa-eye-slash me-1"></i>Make this review hidden (only visible to admins and users with permission)
+        </label>
+      </div>
+      <button class="btn btn-primary" type="submit">Submit Review</button>
+    </form>
+  </div>
+</div>
+<script>
+// Make star rating clickable and color change when selected
+(function() {
+    const stars = document.querySelectorAll('#rating-stars label');
+    const radios = document.querySelectorAll('#rating-stars input[type="radio"]');
+    stars.forEach((label, idx) => {
+      label.addEventListener('mouseenter', function() {
+        for(let i=0;i<=idx;i++) {
+          stars[i].firstElementChild.style.color='#ffc107';
+        }
+      });
+      label.addEventListener('mouseleave', function() {
+        updateStarColors();
+      });
+      label.addEventListener('click', function() {
+        radios[idx].checked = true;
+        updateStarColors();
+      });
+    });
+    function updateStarColors() {
+      let val = 0;
+      radios.forEach((el,i) => {if(el.checked) val=i+1;});
+      stars.forEach((label,i)=>{
+        label.firstElementChild.style.color=i<val?'#ffc107':'#e4e5e9';
+      });
+    }
+    updateStarColors();
+})();
+</script>
+{% endif %}
         </div>
         
         <div class="col-md-4">
@@ -261,9 +451,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+        <script>
 // Save item functionality
-function saveItem(itemId) {
+function saveItem(itemId, event) {
     fetch(`/profiles/save-item/${itemId}`, {
         method: 'POST',
         headers: {
@@ -276,7 +466,7 @@ function saveItem(itemId) {
         if (data.success) {
             showToast('Item saved successfully!', 'success');
             // Update button state
-            const saveBtn = event.target.closest('button');
+            const saveBtn = event && event.target ? event.target.closest('button') : document.querySelector('button[onclick^="saveItem("]');
             saveBtn.innerHTML = '<i class="fas fa-heart me-1"></i>Saved';
             saveBtn.classList.remove('btn-outline-secondary');
             saveBtn.classList.add('btn-danger');
@@ -362,40 +552,49 @@ function showToast(message, type = 'info') {
     });
 }
 
-function openImageModal(imageSrc, imageTitle) {
-    // Create modal HTML
-    const modalHtml = `
-        <div class="modal fade" id="imageModal" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${imageTitle}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <img src="${imageSrc}" class="img-fluid" alt="${imageTitle}">
-                    </div>
-                </div>
+function showImage(imageSrc, imageTitle) {
+    console.log('Showing image:', imageSrc, imageTitle);
+    
+    // Create a simple image viewer
+    const viewer = document.createElement('div');
+    viewer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    `;
+    
+    viewer.innerHTML = `
+        <div style="position: relative; max-width: 90%; max-height: 90%;">
+            <img src="${imageSrc}" 
+                 alt="${imageTitle}" 
+                 style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; cursor: pointer;" onclick="event.stopPropagation(); this.parentElement.parentElement.remove();">
+                Close
             </div>
         </div>
     `;
     
-    // Remove existing modal if any
-    const existingModal = document.getElementById('imageModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
+    // Add to page
+    document.body.appendChild(viewer);
     
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    modal.show();
-    
-    // Remove modal from DOM when hidden
-    document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
+    // Close on click
+    viewer.onclick = function() {
         this.remove();
+    };
+    
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            viewer.remove();
+        }
     });
 }
 </script>

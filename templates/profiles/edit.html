@@ -14,34 +14,56 @@
                     <p class="text-muted mb-0">Update your profile information</p>
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <form method="POST" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         {{ form.hidden_tag() }}
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.name.label(class="form-label") }}
-                                {{ form.name(class="form-control") }}
-                                {% if form.name.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.name.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Profile Type</label>
-                                <input type="text" class="form-control" value="{{ profile.profile_type.title() }}" readonly>
-                                <div class="form-text">Profile type cannot be changed</div>
-                            </div>
+                        <!-- Profile Photo -->
+                        <div class="mb-3">
+                            {{ form.photo.label(class="form-label") }}
+                            {{ form.photo(class="form-control") }}
+                            {% if form.photo.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.photo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if profile.photo %}
+                                <div class="form-text">Current photo: {{ profile.photo }}</div>
+                            {% else %}
+                                <div class="form-text">No photo uploaded - default person icon will be shown</div>
+                            {% endif %}
                         </div>
                         
+                        <!-- Profile Name -->
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control " + ("is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Profile Type -->
+                        <div class="mb-3">
+                            <label for="profileType" class="form-label">Profile Type</label>
+                            <input type="text" class="form-control" id="profileType" name="profileType" value="{{ profile.profile_type.title() }}" readonly>
+                            <!-- Hidden field with correct name for form validation - use ID if available -->
+                            <input type="hidden" name="profile_type" value="{% if profile.profile_type_id %}{{ profile.profile_type_id }}{% else %}{{ profile.profile_type }}{% endif %}">
+                            <div class="form-text">Profile type cannot be changed</div>
+                        </div>
+                        
+                        <!-- Description -->
                         <div class="mb-3">
                             {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows="4") }}
+                            {{ form.description(class="form-control " + ("is-invalid" if form.description.errors else ""), rows="4") }}
                             {% if form.description.errors %}
-                                <div class="text-danger">
+                                <div class="invalid-feedback d-block">
                                     {% for error in form.description.errors %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
@@ -49,35 +71,11 @@
                             {% endif %}
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.website.label(class="form-label") }}
-                                {{ form.website(class="form-control") }}
-                                {% if form.website.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.website.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.location.label(class="form-label") }}
-                                {{ form.location(class="form-control") }}
-                                {% if form.location.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.location.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
+                        <!-- Phone Number -->
                         <div class="mb-3">
                             {{ form.phone.label(class="form-label") }}
                             <div class="input-group">
-                                <select class="form-select" id="countryCodeProfileEdit" name="country_code" style="max-width: 140px; max-height: none !important;">
+                                <select class="form-select" id="countryCodeProfileEdit" name="country_code" autocomplete="tel-country-code" style="max-width: 140px; max-height: none !important;">
                                     <option value="+1">🇺🇸 +1 (USA)</option>
                                     <option value="+1">🇨🇦 +1 (Canada)</option>
                                     <option value="+7">🇷🇺 +7 (Russia)</option>
@@ -263,7 +261,7 @@
                                     <option value="+996">🇰🇬 +996 (Kyrgyzstan)</option>
                                     <option value="+998">🇺🇿 +998 (Uzbekistan)</option>
                                 </select>
-                                <input type="tel" class="form-control" id="profilePhoneEdit" name="phone" placeholder="(555) 123-4567">
+                                <input type="tel" class="form-control" id="profilePhoneEdit" name="phone" value="{{ form.phone.data or '' }}" autocomplete="tel-national" placeholder="(555) 123-4567">
                             </div>
                             <div class="form-text">
                                 Select country code and enter phone number
@@ -271,29 +269,41 @@
                             </div>
                         </div>
                         
+                        <!-- Location -->
                         <div class="mb-3">
-                            {{ form.photo.label(class="form-label") }}
-                            {{ form.photo(class="form-control") }}
-                            {% if form.photo.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.photo.errors %}
+                            {{ form.location.label(class="form-label", for_="location") }}
+                            <input type="text" class="form-control {% if form.location.errors %}is-invalid{% endif %}" id="location" name="location" value="{{ form.location.data or '' }}" autocomplete="address-level2">
+                            {% if form.location.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.location.errors %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            {% if profile.photo %}
-                                <div class="form-text">Current photo: {{ profile.photo }}</div>
-                            {% else %}
-                                <div class="form-text">No photo uploaded - default person icon will be shown</div>
+                        </div>
+                        
+                        <!-- Website -->
+                        <div class="mb-3">
+                            {{ form.website.label(class="form-label", for_="website") }}
+                            <input type="text" class="form-control {% if form.website.errors %}is-invalid{% endif %}" id="website" name="website" value="{{ form.website.data or '' }}" autocomplete="url" placeholder="www.example.com or https://www.example.com">
+                            <div class="form-text">Enter a valid URL (e.g., www.example.com or https://www.example.com)</div>
+                            {% if form.website.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.website.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                         
+                        <!-- Public/Private Dropdown -->
                         <div class="mb-3">
-                            <div class="form-check">
-                                {{ form.is_public(class="form-check-input") }}
-                                {{ form.is_public.label(class="form-check-label") }}
-                                <small class="form-text text-muted">{{ form.is_public.description }}</small>
-                            </div>
+                            <label for="is_public" class="form-label">Profile Visibility</label>
+                            <select class="form-select" id="is_public" name="is_public">
+                                <option value="true" {% if form.is_public.data %}selected{% endif %}>Public</option>
+                                <option value="false" {% if not form.is_public.data %}selected{% endif %}>Private</option>
+                            </select>
+                            <div class="form-text">Public profiles appear in searches and can be discovered by others. Private profiles are only visible to you.</div>
                         </div>
                         
                         <div class="d-flex justify-content-between">

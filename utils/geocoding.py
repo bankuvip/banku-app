@@ -10,10 +10,11 @@ from typing import Dict, Optional, Tuple
 
 def extract_coordinates_from_url(url: str) -> Optional[Tuple[float, float]]:
     """
-    Extract latitude and longitude from Google Maps URL
+    Extract latitude and longitude from map URLs (Google Maps, Apple Maps, Bing Maps, etc.)
+    Supports short URLs by resolving them first.
     
     Args:
-        url: Google Maps URL string
+        url: Map URL string (supports multiple map services)
         
     Returns:
         Tuple of (latitude, longitude) or None if not found
@@ -21,26 +22,228 @@ def extract_coordinates_from_url(url: str) -> Optional[Tuple[float, float]]:
     if not url or not isinstance(url, str):
         return None
     
-    # Pattern to match coordinates in Google Maps URLs
-    # Examples: @25.2618616,55.3254198 or !3d25.2651264!4d55.3151191
-    patterns = [
-        r'@(-?\d+\.?\d*),(-?\d+\.?\d*)',  # @lat,lng format
-        r'!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)',  # !3dlat!4dlng format
+    # URL decode in case it's encoded
+    try:
+        from urllib.parse import unquote
+        url = unquote(url)
+    except:
+        pass
+    
+    url_lower = url.lower()
+    
+    # Handle Google Maps short URLs (maps.app.goo.gl, goo.gl/maps)
+    if 'maps.app.goo.gl' in url_lower or ('goo.gl' in url_lower and '/maps' in url_lower):
+        print(f"DEBUG: Detected Google Maps short URL: {url}")
+        # Try to resolve the short URL by following redirects
+        try:
+            resolved_url = resolve_short_url(url)
+            if resolved_url and resolved_url != url:
+                print(f"DEBUG: Resolved short URL to: {resolved_url[:200]}")
+                # Recursively try to extract coordinates from resolved URL
+                return extract_coordinates_from_url(resolved_url)
+        except Exception as e:
+            print(f"DEBUG: Failed to resolve short URL: {e}")
+        # If resolution fails, try to extract from original URL (might have embedded data)
+        # Continue with normal processing below
+    
+    # ===== GOOGLE MAPS =====
+    # Examples:
+    # https://www.google.com/maps/place/.../@25.2618616,55.3254198,...
+    # https://maps.google.com/?q=25.2618616,55.3254198
+    # https://www.google.com/maps/@25.2618616,55.3254198,15z
+    # https://www.google.com/maps/search/?api=1&query=25.2618616,55.3254198
+    if 'maps.google.com' in url_lower or 'google.com/maps' in url_lower:
+        patterns = [
+            r'@(-?\d+\.?\d*),(-?\d+\.?\d*)',  # @lat,lng format (most common) - must be first
+            r'!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)',  # !3dlat!4dlng format
+            r'[?&]query=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?query=lat,lng format (new Google Maps)
+            r'[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?q=lat,lng or &q=lat,lng format
+            r'[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?ll=lat,lng format
+            r'[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?center=lat,lng format
+            r'@(-?\d+\.?\d*),(-?\d+\.?\d*),',  # @lat,lng, format (with trailing comma)
+            r'/(\d+\.?\d+),(\d+\.?\d+)',  # /lat.lng format (like /maps/25.2618,55.3254)
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    lat, lng = float(match.group(1)), float(match.group(2))
+                    # Validate coordinates (latitude: -90 to 90, longitude: -180 to 180)
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        print(f"DEBUG: Extracted coordinates from Google Maps URL: {lat}, {lng}")
+                        return (lat, lng)
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Failed to parse coordinates from Google Maps URL: {e}")
+                    continue
+    
+    # ===== APPLE MAPS =====
+    # Examples:
+    # https://maps.apple.com/?ll=25.2618616,55.3254198
+    # https://maps.apple.com/?q=25.2618616,55.3254198
+    # https://maps.apple.com/?ll=25.2618616,55.3254198&t=m
+    elif 'maps.apple.com' in url_lower:
+        patterns = [
+            r'[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?ll=lat,lng format
+            r'[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?q=lat,lng format
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    lat, lng = float(match.group(1)), float(match.group(2))
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        return (lat, lng)
+                except (ValueError, IndexError):
+                    continue
+    
+    # ===== BING MAPS =====
+    # Examples:
+    # https://www.bing.com/maps?cp=25.2618616~55.3254198
+    # https://www.bing.com/maps?where1=25.2618616,55.3254198
+    elif 'bing.com/maps' in url_lower:
+        patterns = [
+            r'[?&]cp=(-?\d+\.?\d*)~(-?\d+\.?\d*)',  # ?cp=lat~lng format
+            r'[?&]where1=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?where1=lat,lng format
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    lat, lng = float(match.group(1)), float(match.group(2))
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        return (lat, lng)
+                except (ValueError, IndexError):
+                    continue
+    
+    # ===== OPENSTREETMAP / OSM =====
+    # Examples:
+    # https://www.openstreetmap.org/?mlat=25.2618616&mlon=55.3254198
+    # https://www.openstreetmap.org/#map=15/25.2618616/55.3254198
+    elif 'openstreetmap.org' in url_lower:
+        patterns = [
+            r'[?&]mlat=(-?\d+\.?\d*)&mlon=(-?\d+\.?\d*)',  # ?mlat=lat&mlon=lng format
+            r'#map=\d+/(-?\d+\.?\d*)/(-?\d+\.?\d*)',  # #map=zoom/lat/lng format
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    lat, lng = float(match.group(1)), float(match.group(2))
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        return (lat, lng)
+                except (ValueError, IndexError):
+                    continue
+    
+    # ===== MAPS.ME / HERE MAPS =====
+    # Examples:
+    # https://maps.me/?lat=25.2618616&lon=55.3254198
+    elif 'maps.me' in url_lower or 'here.com' in url_lower:
+        patterns = [
+            r'[?&]lat=(-?\d+\.?\d*)&lon=(-?\d+\.?\d*)',  # ?lat=lat&lon=lng format
+            r'[?&]latitude=(-?\d+\.?\d*)&longitude=(-?\d+\.?\d*)',  # ?latitude=lat&longitude=lng format
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                try:
+                    lat, lng = float(match.group(1)), float(match.group(2))
+                    if -90 <= lat <= 90 and -180 <= lng <= 180:
+                        return (lat, lng)
+                except (ValueError, IndexError):
+                    continue
+    
+    # ===== GENERIC PATTERNS (fallback for other map services) =====
+    # Try common coordinate patterns that might work for other services
+    generic_patterns = [
+        r'[?&]lat=(-?\d+\.?\d*)&lng=(-?\d+\.?\d*)',  # ?lat=lat&lng=lng
+        r'[?&]lat=(-?\d+\.?\d*)&lon=(-?\d+\.?\d*)',  # ?lat=lat&lon=lng
+        r'[?&]latitude=(-?\d+\.?\d*)&longitude=(-?\d+\.?\d*)',  # ?latitude=lat&longitude=lng
+        r'[?&]coordinates=(-?\d+\.?\d*),(-?\d+\.?\d*)',  # ?coordinates=lat,lng
     ]
     
-    for pattern in patterns:
-        match = re.search(pattern, url)
+    for pattern in generic_patterns:
+        match = re.search(pattern, url, re.IGNORECASE)
         if match:
             try:
-                if pattern.startswith('@'):
-                    lat, lng = float(match.group(1)), float(match.group(2))
-                else:  # !3d!4d format
-                    lat, lng = float(match.group(1)), float(match.group(2))
-                return (lat, lng)
+                lat, lng = float(match.group(1)), float(match.group(2))
+                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                    return (lat, lng)
+            except (ValueError, IndexError):
+                continue
+    
+    # ===== LAST RESORT: Try to find any two decimal numbers that look like coordinates =====
+    # This is a fallback for URLs that don't match standard patterns
+    # Look for patterns like: number.number,number.number anywhere in URL
+    coord_pattern = r'(\d{1,2}\.\d+),(\d{1,3}\.\d+)'  # Match lat (1-2 digits),lng (1-3 digits) with decimals
+    matches = list(re.finditer(coord_pattern, url))
+    if matches:
+        # Try each match to see if it looks like valid coordinates
+        for match in matches:
+            try:
+                lat = float(match.group(1))
+                lng = float(match.group(2))
+                # Validate coordinates (latitude: -90 to 90, longitude: -180 to 180)
+                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                    # Additional validation: if it's in a reasonable range, it's likely coordinates
+                    print(f"DEBUG: Fallback pattern matched coordinates: {lat}, {lng}")
+                    return (lat, lng)
             except (ValueError, IndexError):
                 continue
     
     return None
+
+def resolve_short_url(url: str, max_redirects: int = 5) -> Optional[str]:
+    """
+    Resolve a short URL by following redirects
+    
+    Args:
+        url: Short URL to resolve
+        max_redirects: Maximum number of redirects to follow
+        
+    Returns:
+        Resolved URL or None if failed
+    """
+    try:
+        current_url = url
+        redirects = 0
+        
+        while redirects < max_redirects:
+            response = requests.get(
+                current_url,
+                allow_redirects=False,
+                timeout=5,
+                headers={'User-Agent': 'BankU-App/1.0'}
+            )
+            
+            # Check if there's a redirect
+            if response.status_code in (301, 302, 303, 307, 308):
+                location = response.headers.get('Location')
+                if location:
+                    if location.startswith('http'):
+                        current_url = location
+                    else:
+                        # Relative URL, construct absolute
+                        from urllib.parse import urljoin
+                        current_url = urljoin(current_url, location)
+                    redirects += 1
+                    continue
+            
+            # If we got a final response (not redirect), return the current URL
+            if response.status_code == 200:
+                return current_url
+            
+            # If not a redirect and not 200, break
+            break
+        
+        return current_url if redirects > 0 else url
+    except Exception as e:
+        print(f"DEBUG: Error resolving short URL {url}: {e}")
+        return None
 
 def reverse_geocode(latitude: float, longitude: float) -> Optional[Dict[str, str]]:
     """
@@ -177,9 +380,11 @@ def parse_location(location: str) -> Dict[str, str]:
     
     if coordinates:
         lat, lng = coordinates
+        print(f"DEBUG: Extracted coordinates: {lat}, {lng} from location: {location[:100]}")
         geocode_result = reverse_geocode(lat, lng)
         
         if geocode_result:
+            print(f"DEBUG: Reverse geocoded to: {geocode_result.get('formatted')}")
             return {
                 'formatted': geocode_result['formatted'],
                 'city': geocode_result['city'],
@@ -188,12 +393,15 @@ def parse_location(location: str) -> Dict[str, str]:
                 'original_url': location if location.startswith('http') else None
             }
         else:
+            print(f"DEBUG: Reverse geocoding failed, using coordinates: {lat:.4f}, {lng:.4f}")
             # Fallback to coordinates if geocoding fails
             return {
                 'formatted': f"{lat:.4f}, {lng:.4f}",
                 'coordinates': f"{lat:.6f}, {lng:.6f}",
                 'original_url': location if location.startswith('http') else None
             }
+    else:
+        print(f"DEBUG: Could not extract coordinates from URL: {location[:100]}")
     
     # If no coordinates found, return original location
     return {'formatted': location, 'coordinates': None}

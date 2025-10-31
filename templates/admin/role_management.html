@@ -248,7 +248,7 @@
                                 <button class="btn btn-outline-primary" onclick="exportPermissions()">
                                     <i class="fas fa-download me-1"></i>Export Permissions
                                 </button>
-                                <button class="btn btn-outline-secondary" onclick="importPermissions()">
+                                <button class="btn btn-outline-secondary" onclick="importPermissions(event)">
                                     <i class="fas fa-upload me-1"></i>Import Permissions
                                 </button>
                             </div>
@@ -1193,8 +1193,65 @@ function exportPermissions() {
     alert('Export permissions functionality coming soon!');
 }
 
-function importPermissions() {
-    alert('Import permissions functionality coming soon!');
+function importPermissions(event) {
+    if (!confirm('This will import/update all permissions from the catalog into the database. Continue?')) {
+        return;
+    }
+    
+    // Show loading state
+    const importBtn = event ? event.target : document.querySelector('button[onclick*="importPermissions"]');
+    const originalText = importBtn ? importBtn.innerHTML : '';
+    if (importBtn) {
+        importBtn.disabled = true;
+        importBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Importing...';
+    }
+    
+    fetch('/admin/permissions/bulk-import', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}`);
+                }
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Success! ' + data.message + '\n\nPlease refresh the page to see the updated permissions.');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to import permissions'));
+            if (importBtn) {
+                importBtn.disabled = false;
+                importBtn.innerHTML = originalText;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        console.error('Error stack:', error.stack);
+        let errorMsg = 'An error occurred while importing permissions.\n\nError details: ' + error.message;
+        if (error.response) {
+            errorMsg += '\n\nServer response: ' + JSON.stringify(error.response);
+        }
+        errorMsg += '\n\nPlease check the browser console (F12) and server logs for more details.';
+        alert(errorMsg);
+        if (importBtn) {
+            importBtn.disabled = false;
+            importBtn.innerHTML = originalText;
+        }
+    });
 }
 
 // Search and filter functions

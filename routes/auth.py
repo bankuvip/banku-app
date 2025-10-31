@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -546,13 +546,34 @@ def settings():
                         file_extension = filename.rsplit('.', 1)[1].lower()
                         unique_filename = f"{current_user.id}_{uuid.uuid4().hex}.{file_extension}"
                         
-                        # Create uploads directory if it doesn't exist
-                        upload_dir = os.path.join('static', 'uploads')
-                        os.makedirs(upload_dir, exist_ok=True)
-                        
-                        # Save file
-                        file_path = os.path.join(upload_dir, unique_filename)
-                        avatar_file.save(file_path)
+                        # Use new hierarchical structure for user avatars
+                        try:
+                            from utils.file_structure import save_file_organized
+                            result = save_file_organized(
+                                file=avatar_file,
+                                user_id=current_user.id,
+                                item_id=None,  # No item ID for user avatars
+                                file_type='profile',
+                                context_name='avatar'
+                            )
+                            
+                            if result['success']:
+                                unique_filename = result['file_info']['relative_path']
+                                file_path = os.path.join(current_app.static_folder, unique_filename)
+                                print(f"Avatar saved successfully: {unique_filename}")
+                            else:
+                                print(f"New structure failed: {result.get('error', 'Unknown error')}")
+                                # Fallback to old structure if new structure fails
+                                upload_dir = os.path.join('static', 'uploads')
+                                os.makedirs(upload_dir, exist_ok=True)
+                                file_path = os.path.join(upload_dir, unique_filename)
+                                avatar_file.save(file_path)
+                                print(f"Avatar saved with fallback: {unique_filename}")
+                                
+                        except Exception as e:
+                            print(f"Avatar upload error: {str(e)}")
+                            flash(f'Avatar upload failed: {str(e)}', 'error')
+                            return render_template('auth/settings.html', user=current_user)
                         
                         # Resize image to 200x200 for consistency
                         try:

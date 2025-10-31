@@ -1272,19 +1272,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 const filePreviews = previewArea.querySelectorAll('.file-preview');
                 filePreviews.forEach(preview => {
                     const fileName = preview.querySelector('.fw-bold').textContent.replace(' ✓', '').trim();
-                    const savedNameElement = preview.querySelector('small.text-success');
-                    const savedName = savedNameElement ? savedNameElement.textContent.replace('Saved as: ', '') : fileName;
                     
-                    // Find the original file info
-                    const originalFile = files.find(f => f.name === fileName);
-                    if (originalFile) {
-                        result.files.push({
-                            name: fileName,
-                            size: originalFile.size,
-                            type: originalFile.type,
-                            lastModified: originalFile.lastModified,
-                            saved_name: savedName
-                        });
+                    // Try to get the full fileInfo from data attribute (new method)
+                    const fileInfoAttr = preview.getAttribute('data-file-info');
+                    if (fileInfoAttr) {
+                        try {
+                            const fileInfo = JSON.parse(fileInfoAttr);
+                            // Find the original file info for metadata
+                            const originalFile = files.find(f => f.name === fileName);
+                            result.files.push({
+                                name: fileName,
+                                size: originalFile ? originalFile.size : fileInfo.size,
+                                type: originalFile ? originalFile.type : fileInfo.mime_type,
+                                lastModified: originalFile ? originalFile.lastModified : Date.now(),
+                                saved_name: fileInfo.saved_name,
+                                relative_path: fileInfo.relative_path // This is the key field!
+                            });
+                        } catch (e) {
+                            console.error('Failed to parse file info:', e);
+                        }
+                    } else {
+                        // Fallback to old method (scraping UI text)
+                        const savedNameElement = preview.querySelector('small.text-success');
+                        const savedName = savedNameElement ? savedNameElement.textContent.replace('Saved as: ', '') : fileName;
+                        
+                        // Find the original file info
+                        const originalFile = files.find(f => f.name === fileName);
+                        if (originalFile) {
+                            result.files.push({
+                                name: fileName,
+                                size: originalFile.size,
+                                type: originalFile.type,
+                                lastModified: originalFile.lastModified,
+                                saved_name: savedName
+                            });
+                        }
                     }
                 });
             } else {
@@ -2300,7 +2322,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateProgress();
     });
     
-    nextBtn.addEventListener('click', function() {
+    nextBtn.addEventListener('click', function(e) {
+        // CRITICAL: Block if uploads are in progress
+        const uploadingElements = document.querySelectorAll('[data-uploading="true"]');
+        if (uploadingElements.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('⏳ Please wait for file uploads to complete before proceeding.');
+            return false;
+        }
+        
         saveCurrentResponse();
         
         if (steps.length > 0) {
@@ -2350,6 +2381,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('chatbotForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        // CRITICAL: Block if uploads are in progress
+        const uploadingElements = document.querySelectorAll('[data-uploading="true"]');
+        if (uploadingElements.length > 0) {
+            e.stopPropagation();
+            alert('⏳ Please wait for file uploads to complete before submitting.');
+            return false;
+        }
+        
         saveCurrentResponse();
         submitForm();
     });
@@ -2403,6 +2443,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function submitForm() {
         showLoading();
         
+        // SIMPLIFIED APPROACH: Only check for actual loading indicators (exclude loading overlay)
+        const allSpinners = document.querySelectorAll('.fa-spinner');
+        const loadingOverlaySpinner = document.querySelector('#loadingOverlay .fa-spinner');
+        const actualSpinners = Array.from(allSpinners).filter(spinner => spinner !== loadingOverlaySpinner);
+        const uploading = document.querySelectorAll('.uploading');
+        const dataUploading = document.querySelectorAll('[data-uploading="true"]');
+        
+        const loadingIndicators = [...actualSpinners, ...uploading, ...dataUploading];
+        const pendingUploads = loadingIndicators.length;
+        
+        console.log(`DEBUG: Found ${pendingUploads} pending uploads (loading indicators only)`);
+        console.log(`DEBUG: Loading indicators found:`, loadingIndicators);
+        
+        // Debug: Check each type of indicator
+        console.log(`DEBUG: All spinners: ${allSpinners.length}, Actual spinners: ${actualSpinners.length}, Uploading: ${uploading.length}, Data-uploading: ${dataUploading.length}`);
+        
+        // Only send pending uploads if there are actual loading indicators
+        const shouldSendPendingUploads = pendingUploads > 0;
+        
         // Get CSRF token
         const csrfToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
         
@@ -2415,14 +2474,36 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 responses: responses,
                 completed: true,
+                ...(shouldSendPendingUploads && { pending_uploads: pendingUploads }),  // Only send if there are actual uploads
                 csrf_token: csrfToken
             })
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.storage_status === 'stored') {
+                // Only redirect if item was successfully created
                 window.location.href = `/chatbot/${flowId}/complete`;
             } else {
+                // Handle item creation failures
+                if (data.storage_status === 'failed') {
+                    let errorMessage = 'Item Creation Failed\n\n';
+                    errorMessage += data.message || data.error || 'Failed to create item due to data validation errors.\n\n';
+                    errorMessage += 'Possible issues:\n';
+                    errorMessage += '- Data type mismatch (e.g., text in a number field)\n';
+                    errorMessage += '- Missing required fields\n';
+                    errorMessage += '- Invalid data format\n\n';
+                    errorMessage += 'Please check your responses and try again.';
+                    alert(errorMessage);
+                    
+                    // Re-enable submit button
+                    const submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Complete';
+                    }
+                    return;
+                }
+                
                 // Handle validation errors
                 if (data.errors && data.errors.length > 0) {
                     let errorMessage = 'Please fix the following errors:\n\n';
@@ -2507,8 +2588,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Show loading state
+        // Show loading state and mark as uploading
         previewArea.innerHTML = '<p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Uploading files...</p>';
+        previewArea.setAttribute('data-uploading', 'true');
+        
+        // Mark as uploading
+        console.log(`DEBUG: Started upload of ${files.length} files`);
+        
+        // Update button states immediately
+        if (typeof updateNavigationButtons === 'function') {
+            updateNavigationButtons();
+        }
         
         // Upload each file to the server
         const uploadPromises = files.map((file, index) => {
@@ -2518,8 +2608,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wait for all uploads to complete
         Promise.all(uploadPromises)
             .then((uploadResults) => {
-                // Clear loading state
+                // Clear loading state and mark as not uploading
                 previewArea.innerHTML = '';
+                previewArea.removeAttribute('data-uploading');
+                
+                // Mark as completed
+                console.log(`DEBUG: Completed upload of ${files.length} files`);
+                
+                // Update button states immediately after upload completes
+                if (typeof updateNavigationButtons === 'function') {
+                    updateNavigationButtons();
+                }
                 
                 // Create preview for each successfully uploaded file
                 uploadResults.forEach((result, index) => {
@@ -2538,11 +2637,47 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch((error) => {
                 console.error('Upload error:', error);
                 previewArea.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error uploading files</p>';
+                previewArea.removeAttribute('data-uploading');
+                
+                // Mark as completed with error
+                console.log(`DEBUG: Error in upload of ${files.length} files`);
+                
+                // Update button states immediately after error
+                if (typeof updateNavigationButtons === 'function') {
+                    updateNavigationButtons();
+                }
             });
     }
     
     function uploadFileToServer(file, fileType, questionId, index) {
         return new Promise((resolve) => {
+            // Mobile device detection
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Mobile-specific file validation
+            const maxSize = isMobile ? 8 * 1024 * 1024 : 10 * 1024 * 1024; // 8MB mobile, 10MB desktop
+            
+            if (file.size > maxSize) {
+                const maxSizeMB = isMobile ? 8 : 10;
+                resolve({
+                    success: false,
+                    file: file,
+                    error: `File too large for ${isMobile ? 'mobile' : 'desktop'}. Maximum size: ${maxSizeMB}MB. Please compress your photo or use a smaller image.`
+                });
+                return;
+            }
+            
+            // Check for HEIC/HEIF format (iPhone default)
+            const fileName = file.name.toLowerCase();
+            if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+                resolve({
+                    success: false,
+                    file: file,
+                    error: 'HEIC/HEIF format not supported. Please convert to JPG or PNG on your device. iPhone users: Settings → Camera → Formats → Most Compatible'
+                });
+                return;
+            }
+            
             const formData = new FormData();
             formData.append('file', file);
             formData.append('question_id', questionId);
@@ -2554,14 +2689,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData.append('csrf_token', csrfToken);
             }
             
+            // Mobile-specific timeout handling
+            const timeoutDuration = isMobile ? 45000 : 120000; // 45s mobile, 2min desktop
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, timeoutDuration);
+            
             fetch(`/chatbot/${flowId}/upload`, {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'X-CSRFToken': csrfToken || ''
-                }
+                },
+                signal: controller.signal
             })
-            .then(response => response.json())
+            .then(response => {
+                clearTimeout(timeoutId);
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     console.log('File uploaded successfully:', data.file_info);
@@ -2580,11 +2726,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Upload error:', error);
+                
+                let errorMessage = error.message;
+                if (error.name === 'AbortError') {
+                    errorMessage = isMobile ? 
+                        'Upload timeout. Mobile uploads may take longer. Please try again with a smaller file.' :
+                        'Upload timeout. Please try again.';
+                }
+                
                 resolve({
                     success: false,
                     file: file,
-                    error: error.message
+                    error: errorMessage
                 });
             });
         });
@@ -2621,6 +2776,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const preview = document.createElement('div');
         preview.className = 'file-preview d-flex align-items-center p-2 mb-2 bg-light rounded';
+        
+        // Store the full fileInfo as a data attribute so we can retrieve it later
+        if (fileInfo) {
+            preview.setAttribute('data-file-info', JSON.stringify(fileInfo));
+        }
         
         // Show upload status
         const statusIcon = fileInfo ? '<i class="fas fa-check-circle text-success me-1"></i>' : '<i class="fas fa-upload text-warning me-1"></i>';
@@ -2728,6 +2888,145 @@ document.addEventListener('DOMContentLoaded', function() {
             previewArea.innerHTML = '<p class="text-muted">No files or URLs provided</p>';
         }
     }
+    
+    // ===== BUTTON STATE MANAGEMENT =====
+    // Function to check if any uploads are in progress
+    function hasActiveUploads() {
+        const uploadingElements = document.querySelectorAll('[data-uploading="true"]');
+        return uploadingElements.length > 0;
+    }
+    
+    // Function to validate required fields in current step
+    function hasUnfilledRequiredFields() {
+        const currentStep = steps[currentStepIndex];
+        if (!currentStep || !currentStep.questions) return false;
+        
+        for (const question of currentStep.questions) {
+            // Skip if question is not visible
+            const questionElement = document.getElementById(`question-${question.id}`);
+            if (!questionElement || questionElement.style.display === 'none') {
+                continue;
+            }
+            
+            // Check if question is required
+            if (question.is_required) {
+                const response = getQuestionResponse(question);
+                
+                // Check if response is empty/null
+                if (!response) {
+                    return true; // Has unfilled required field
+                }
+                
+                // Additional checks for different field types
+                if (typeof response === 'string' && response.trim() === '') {
+                    return true;
+                }
+                if (Array.isArray(response) && response.length === 0) {
+                    return true;
+                }
+                if (typeof response === 'object') {
+                    // For file uploads
+                    if (response.files && response.files.length === 0 && response.urls && response.urls.length === 0) {
+                        return true;
+                    }
+                    // For other object responses (like cascading dropdowns)
+                    if (Object.keys(response).length === 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false; // All required fields are filled
+    }
+    
+    // Function to update button states
+    function updateNavigationButtons() {
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        const uploadsInProgress = hasActiveUploads();
+        const requiredFieldsMissing = hasUnfilledRequiredFields();
+        const shouldDisable = uploadsInProgress || requiredFieldsMissing;
+        
+        // Debug logging
+        if (uploadsInProgress) {
+            console.log('🔴 UPLOADS IN PROGRESS - Buttons disabled');
+        }
+        
+        // Update Next button
+        if (nextBtn && nextBtn.style.display !== 'none') {
+            if (shouldDisable) {
+                nextBtn.disabled = true;
+                nextBtn.classList.remove('btn-primary');
+                nextBtn.classList.add('btn-secondary');
+                
+                // Update button text to show why it's disabled
+                const icon = nextBtn.querySelector('i');
+                if (uploadsInProgress) {
+                    nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+                } else if (requiredFieldsMissing) {
+                    nextBtn.innerHTML = 'Complete Required Fields <i class="fas fa-arrow-right ms-2"></i>';
+                }
+            } else {
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('btn-secondary');
+                nextBtn.classList.add('btn-primary');
+                nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right ms-2"></i>';
+            }
+        }
+        
+        // Update Submit button (Complete button)
+        if (submitBtn && submitBtn.style.display !== 'none') {
+            if (shouldDisable) {
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-success');
+                submitBtn.classList.add('btn-secondary');
+                
+                // Update button text to show why it's disabled
+                if (uploadsInProgress) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+                } else if (requiredFieldsMissing) {
+                    submitBtn.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Complete Required Fields';
+                }
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.classList.add('btn-success');
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Complete';
+            }
+        }
+    }
+    
+    // Call updateNavigationButtons whenever there's a change
+    // Set up observers for form changes
+    const chatbotForm = document.getElementById('chatbotForm');
+    if (chatbotForm) {
+        // Update on any input change
+        chatbotForm.addEventListener('input', function() {
+            updateNavigationButtons();
+        });
+        
+        // Update on any change event (for selects, checkboxes, etc.)
+        chatbotForm.addEventListener('change', function() {
+            updateNavigationButtons();
+        });
+    }
+    
+    // Set up a periodic check for upload status (every 200ms for faster response)
+    setInterval(function() {
+        updateNavigationButtons();
+    }, 200);
+    
+    // Initial button state update
+    updateNavigationButtons();
+    
+    // Also update when page becomes visible again (user switches back to tab)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateNavigationButtons();
+        }
+    });
     
     // Initialize media upload toggles and file handling
     setupMediaUploadToggles();

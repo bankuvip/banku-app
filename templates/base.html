@@ -41,7 +41,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="animate-fadeInUp">
+<body class="animate-fadeInUp d-flex flex-column min-vh-100">
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -249,7 +249,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                 {% if current_user.avatar %}
-                                    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" 
+                                    <img src="{{ current_user.avatar | file_url }}" 
                                          alt="Profile Photo" class="rounded-circle me-2" 
                                          style="width: 32px; height: 32px; object-fit: cover;">
                                 {% else %}
@@ -273,6 +273,9 @@
                                         <span class="badge bg-warning ms-1">!</span>
                                     {% endif %}
                                 </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('downloads') }}">
+                                    <i class="fas fa-download me-2"></i>Download Mobile App
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
                                     <i class="fas fa-sign-out-alt me-2"></i>Logout
@@ -280,6 +283,11 @@
                             </ul>
                         </li>
                     {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('downloads') }}">
+                                <i class="fas fa-download me-1"></i>Download App
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
@@ -293,20 +301,20 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="container-fluid" style="margin-top: 80px;">
+    <main class="container-fluid flex-grow-1" style="margin-top: 80px;">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
+    <footer class="bg-dark text-light py-4 mt-auto">
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
                     <h5>BankU</h5>
-                    <p>Your comprehensive banking and financial services platform.</p>
+                    <p>The Only Bank For U</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p>&copy; 2025 BankU. All rights reserved.</p>
+                    <p>&copy; {{ datetime.now().year }} BankU. All rights reserved.</p>
                 </div>
             </div>
         </div>
@@ -640,6 +648,25 @@
                 document.body.removeChild(toast);
             });
         }
+    </script>
+    
+    <!-- Chrome Mobile Address Bar Fix -->
+    <script>
+        // Fix for Chrome mobile address bar viewport issue
+        function setViewportHeight() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', vh + 'px');
+        }
+        
+        // Set on load
+        setViewportHeight();
+        
+        // Update on resize and orientation change
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', setViewportHeight);
+        
+        // Update when address bar shows/hides
+        window.addEventListener('scroll', setViewportHeight);
     </script>
     
     {% block extra_js %}{% endblock %}

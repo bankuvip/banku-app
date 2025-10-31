@@ -25,7 +25,7 @@
                             <div class="d-flex align-items-center gap-3">
                                 {% if user.avatar %}
                                     <div class="position-relative">
-                                        <img src="{{ url_for('static', filename='uploads/' + user.avatar) }}" 
+                                        <img src="{{ user.avatar | file_url }}" 
                                              alt="Profile Photo" class="rounded-circle" 
                                              style="width: 80px; height: 80px; object-fit: cover;">
                                         <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ profile.name }} - BankU{% endblock %}
+{% block title %}{{ profile.name if profile and profile.name else 'Profile' }} - BankU{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -14,9 +14,9 @@
                         <div class="me-4">
                             <div class="profile-photo">
                                 {% if profile.photo %}
-                                    <img src="{{ url_for('static', filename='uploads/' + profile.photo) }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Photo" class="profile-custom-photo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
+                                    <img src="{{ profile.photo | file_url }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Photo" class="profile-custom-photo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
                                 {% elif profile.logo %}
-                                    <img src="{{ url_for('static', filename='uploads/' + profile.logo) }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Logo" class="profile-custom-logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
+                                    <img src="{{ profile.logo | file_url }}?v={{ profile.updated_at.strftime('%Y%m%d%H%M%S') if profile.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="{{ profile.name }} Logo" class="profile-custom-logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;">
                                 {% else %}
                                     <i class="fas fa-user-circle fa-4x text-primary"></i>
                                 {% endif %}
@@ -54,7 +54,7 @@
                                     <a href="{{ url_for('profiles.create_item_redirect') }}" class="btn btn-primary btn-sm me-2">
                                         <i class="fas fa-plus me-1"></i>Add Item
                                     </a>
-                                    <a href="{{ url_for('profiles.create_item_by_type', item_type_name='need') }}" class="btn btn-success btn-sm">
+                                    <a href="{{ url_for('dashboard.add_need', profile_id=profile.id) }}" class="btn btn-success btn-sm">
                                         <i class="fas fa-hand-holding-heart me-1"></i>I Need
                                     </a>
                                 {% else %}
@@ -65,41 +65,6 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Profile Description -->
-                    {% if profile.description %}
-                    <div class="row">
-                        <div class="col-12">
-                            <p class="text-muted mb-0">{{ profile.description }}</p>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Profile Details -->
-                    <div class="row mt-3">
-                        {% if profile.location %}
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-map-marker-alt me-1"></i>{{ profile.location }}
-                            </small>
-                        </div>
-                        {% endif %}
-                        {% if profile.website %}
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-globe me-1"></i>
-                                <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">{{ profile.website }}</a>
-                            </small>
-                        </div>
-                        {% endif %}
-                        {% if profile.phone %}
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="fas fa-phone me-1"></i>{{ profile.phone }}
-                            </small>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -137,6 +102,17 @@
                             </button>
                         </li>
                         {% endif %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab">
+                                <i class="fas fa-file-alt me-2"></i>Description
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                                <i class="fas fa-star me-2"></i>Reviews
+                                <span class="badge bg-secondary ms-1">{{ reviews|length }}</span>
+                            </button>
+                        </li>
                         {% if can_view_about %}
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
@@ -158,7 +134,7 @@
                                 </a>
                             </div>
                             
-                            {% if items %}
+                            {% if items.items %}
                                 <div class="row">
                                     {% for item in items %}
                                     <div class="col-md-4 col-lg-3 col-xl-2 mb-2">
@@ -166,7 +142,7 @@
                                             <!-- Item Image -->
                                             {% if item.images_media and item.images_media|length > 0 %}
                                                 <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
-                                                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" 
+                                                    <img src="{{ item.images_media[0] | file_url }}" 
                                                          class="img-fluid h-100 w-100" 
                                                          style="object-fit: cover;"
                                                          alt="{{ item.title }}"
@@ -200,7 +176,12 @@
                                                 
                                                 <!-- Item Type Badge -->
                                                 {% if item.item_type %}
-                                                    <span class="badge bg-primary mb-2" style="font-size: 0.6rem;">{{ item.item_type.name.title() }}</span>
+                                                    <span class="badge bg-primary mb-1" style="font-size: 0.6rem;">{{ item.item_type.name.title() }}</span>
+                                                {% endif %}
+                                                
+                                                <!-- Short Description -->
+                                                {% if item.short_description %}
+                                                    <p class="card-text text-muted flex-grow-1 mb-1" style="font-size: 0.7rem; line-height: 1.2;">{{ item.short_description[:50] }}{% if item.short_description|length > 50 %}...{% endif %}</p>
                                                 {% endif %}
                                                 
                                                 <!-- Action Buttons -->
@@ -212,7 +193,6 @@
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <form method="POST" action="{{ url_for('profiles.delete_item', item_id=item.id) }}" style="display: inline;" class="flex-fill">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Are you sure you want to delete this item?')" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
                                                             <i class="fas fa-trash"></i>
@@ -228,10 +208,7 @@
                                 <div class="text-center py-5">
                                     <i class="fas fa-box fa-3x text-muted mb-3"></i>
                                     <h5 class="text-muted">No Items Yet</h5>
-                                    <p class="text-muted">Start by adding your first item!</p>
-                                    <a href="{{ url_for('profiles.create_item_redirect') }}" class="btn btn-primary">
-                                        <i class="fas fa-plus me-1"></i>Add Your First Item
-                                    </a>
+                                    <p class="text-muted">Let Others Know Your Items!</p>
                                 </div>
                             {% endif %}
                         </div>
@@ -253,7 +230,7 @@
                                             <!-- Need Image -->
                                             {% if need.images_media and need.images_media|length > 0 %}
                                                 <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
-                                                    <img src="{{ url_for('static', filename='uploads/' + need.images_media[0]) }}" 
+                                                    <img src="{{ need.images_media[0] | file_url }}" 
                                                          class="img-fluid h-100 w-100" 
                                                          style="object-fit: cover;"
                                                          alt="{{ need.title }}"
@@ -299,7 +276,6 @@
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <form method="POST" action="{{ url_for('profiles.delete_item', item_id=need.id) }}" style="display: inline;" class="flex-fill">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Are you sure you want to delete this need?')" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
                                                             <i class="fas fa-trash"></i>
@@ -315,10 +291,7 @@
                                 <div class="text-center py-5">
                                     <i class="fas fa-hand-holding-heart fa-3x text-muted mb-3"></i>
                                     <h5 class="text-muted">No Needs Yet</h5>
-                                    <p class="text-muted">Let others know what you need!</p>
-                                    <a href="{{ url_for('profiles.create_item_by_type', item_type_name='need') }}" class="btn btn-success">
-                                        <i class="fas fa-plus me-1"></i>Add Your First Need
-                                    </a>
+                                    <p class="text-muted">Let Others Know What You Need!</p>
                                 </div>
                             {% endif %}
                         </div>
@@ -337,7 +310,7 @@
                                             <!-- Item Image -->
                                             {% if item.images_media and item.images_media|length > 0 %}
                                                 <div class="card-img-top" style="height: 100px; overflow: hidden; background: #f8f9fa;">
-                                                    <img src="{{ url_for('static', filename='uploads/' + item.images_media[0]) }}" 
+                                                    <img src="{{ item.images_media[0] | file_url }}" 
                                                          class="img-fluid h-100 w-100" 
                                                          style="object-fit: cover;"
                                                          alt="{{ item.title }}"
@@ -448,6 +421,95 @@
                         </div>
                         {% endif %}
                         
+                        <!-- Description Tab -->
+                        <div class="tab-pane fade" id="description" role="tabpanel">
+                            <h5 class="mb-3">Profile Description</h5>
+                            
+                            {% if profile.description %}
+                                <div class="p-3 bg-light rounded">
+                                    <p class="mb-0">{{ profile.description }}</p>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Description Available</h5>
+                                    <p class="text-muted">This profile doesn't have a description yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Reviews Tab -->
+                        <div class="tab-pane fade" id="reviews" role="tabpanel">
+                            <h5 class="mb-3">Reviews ({{ reviews|length }})</h5>
+                            
+                            <!-- Review Form: Only visible to logged-in users not owning the profile -->
+                            {% if current_user.is_authenticated and not is_owner %}
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white">
+                                    <h6 class="card-title mb-0">Add a Review</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('profiles.add_profile_review', slug=profile.slug) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <div class="mb-3">
+                                            <label for="rating" class="form-label">Rating</label>
+                                            <div class="rating-stars" id="ratingStars">
+                                                <i class="far fa-star" data-rating="1"></i>
+                                                <i class="far fa-star" data-rating="2"></i>
+                                                <i class="far fa-star" data-rating="3"></i>
+                                                <i class="far fa-star" data-rating="4"></i>
+                                                <i class="far fa-star" data-rating="5"></i>
+                                                <input type="hidden" name="rating" id="ratingInput" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="comment" class="form-label">Comment</label>
+                                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" name="is_hidden" id="review-hidden" value="1">
+                                            <label class="form-check-label" for="review-hidden">
+                                                <i class="fas fa-eye-slash me-1"></i>Make this review hidden (only visible to admins and users with permission)
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Reviews List -->
+                            {% if reviews %}
+                                {% for review in reviews %}
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-0">{{ review.reviewer.first_name }} {{ review.reviewer.last_name }}</h6>
+                                            <div class="text-warning">
+                                                {% for i in range(review.rating) %}
+                                                <i class="fas fa-star"></i>
+                                                {% endfor %}
+                                                {% for i in range(5 - review.rating) %}
+                                                <i class="far fa-star"></i>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <p class="text-muted small mb-2">{{ review.created_at.strftime('%B %d, %Y') }}</p>
+                                        {% if review.comment %}
+                                        <p class="mb-0">{{ review.comment }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No Reviews Yet</h5>
+                                    <p class="text-muted">Be the first to review this profile!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
                         <!-- About Tab -->
                         {% if can_view_about %}
                         <div class="tab-pane fade" id="about" role="tabpanel">
@@ -496,25 +558,24 @@
                                         {% if profile.phone %}
                                         <tr>
                                             <td><strong>Phone:</strong></td>
-                                            <td>{{ profile.phone }}</td>
+                                            <td>
+                                                {% if profile.phone.startswith('+') %}
+                                                    {{ profile.phone }}
+                                                {% else %}
+                                                    +971 {{ profile.phone }}
+                                                {% endif %}
+                                            </td>
                                         </tr>
                                         {% endif %}
                                         {% if profile.website %}
                                         <tr>
                                             <td><strong>Website:</strong></td>
-                                            <td><a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a></td>
+                                            <td><a href="{{ profile.website if profile.website.startswith('http') else 'https://' + profile.website }}" target="_blank" rel="noopener noreferrer">{{ profile.website }}</a></td>
                                         </tr>
                                         {% endif %}
                                     </table>
                                 </div>
                             </div>
-                            
-                            {% if profile.description %}
-                            <div class="mt-4">
-                                <h6>Description</h6>
-                                <p class="text-muted">{{ profile.description }}</p>
-                            </div>
-                            {% endif %}
                         </div>
                         {% endif %}
                     </div>
@@ -754,6 +815,53 @@ document.addEventListener('DOMContentLoaded', function() {
             card.setAttribute('data-item-id', itemId);
         }
     });
+});
+
+// Star rating for reviews
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('#ratingStars i');
+    const ratingInput = document.getElementById('ratingInput');
+    
+    if (stars.length > 0 && ratingInput) {
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                ratingInput.value = rating;
+                
+                stars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas');
+                        s.style.color = '#ffc107';
+                    } else {
+                        s.classList.remove('fas');
+                        s.classList.add('far');
+                        s.style.color = '#e4e5e9';
+                    }
+                });
+            });
+            
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.getAttribute('data-rating'));
+                stars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.style.color = '#ffc107';
+                    }
+                });
+            });
+        });
+        
+        document.getElementById('ratingStars').addEventListener('mouseleave', function() {
+            const currentRating = parseInt(ratingInput.value) || 0;
+            stars.forEach((s, index) => {
+                if (index < currentRating) {
+                    s.style.color = '#ffc107';
+                } else {
+                    s.style.color = '#e4e5e9';
+                }
+            });
+        });
+    }
 });
 </script>
 {% endblock %}

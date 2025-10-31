@@ -264,6 +264,7 @@
                             <label class="form-label small">Question Type</label>
                             <select class="form-select form-select-sm question-classification" onchange="updateQuestionDisplay(this)">
                                 <option value="essential">Essential</option>
+                                <option value="essential_custom">Essential Custom</option>
                                 <option value="additional">Additional</option>
                             </select>
                         </div>
@@ -293,6 +294,10 @@
                                 <option value="website">Website</option>
                                 <option value="social_media">Social Media</option>
                             </select>
+                        </div>
+                        <div class="mt-2 question-custom-field-mapping" style="display: none;">
+                            <label class="form-label small">Column Name</label>
+                            <input type="text" class="form-control form-control-sm question-custom-column-name" placeholder="Enter column name (e.g., deadline, event_type)" onkeyup="validateCustomColumn(this)">
                         </div>
                     </div>
                     <div class="col-md-4">

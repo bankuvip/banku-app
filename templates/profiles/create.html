@@ -63,40 +63,38 @@
                             <!-- Hidden field for selected profile type -->
                             <input type="hidden" id="selectedProfileType" name="profile_type" value="">
                             
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        {{ form.name.label(class="form-label") }}
-                                        {{ form.name(class="form-control") }}
-                                        {% if form.name.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.name.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
+                            <!-- Profile Photo -->
+                            <div class="mb-3">
+                                {{ form.photo.label(class="form-label") }}
+                                {{ form.photo(class="form-control") }}
+                                {% if form.photo.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.photo.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        {{ form.location.label(class="form-label") }}
-                                        {{ form.location(class="form-control") }}
-                                        {% if form.location.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.location.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                                {% endif %}
                             </div>
                             
+                            <!-- Profile Name -->
+                            <div class="mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control " + ("is-invalid" if form.name.errors else "")) }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Description -->
                             <div class="mb-3">
                                 {{ form.description.label(class="form-label") }}
-                                {{ form.description(class="form-control", rows="4") }}
+                                {{ form.description(class="form-control " + ("is-invalid" if form.description.errors else ""), rows="4") }}
                                 {% if form.description.errors %}
-                                    <div class="text-danger">
+                                    <div class="invalid-feedback d-block">
                                         {% for error in form.description.errors %}
                                             <small>{{ error }}</small>
                                         {% endfor %}
@@ -104,35 +102,7 @@
                                 {% endif %}
                             </div>
                             
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        {{ form.website.label(class="form-label") }}
-                                        {{ form.website(class="form-control") }}
-                                        {% if form.website.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.website.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        {{ form.photo.label(class="form-label") }}
-                                        {{ form.photo(class="form-control") }}
-                                        {% if form.photo.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.photo.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            
+                            <!-- Phone Number -->
                             <div class="mb-3">
                                 {{ form.phone.label(class="form-label") }}
                                 <div class="input-group">
@@ -330,12 +300,41 @@
                                 </div>
                             </div>
                             
+                            <!-- Location -->
                             <div class="mb-3">
-                                <div class="form-check">
-                                    {{ form.is_public(class="form-check-input") }}
-                                    {{ form.is_public.label(class="form-check-label") }}
-                                    <div class="form-text">{{ form.is_public.description }}</div>
-                                </div>
+                                {{ form.location.label(class="form-label") }}
+                                <input type="text" class="form-control {% if form.location.errors %}is-invalid{% endif %}" id="location" name="location" value="{{ form.location.data or '' }}">
+                                {% if form.location.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.location.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Website -->
+                            <div class="mb-3">
+                                {{ form.website.label(class="form-label") }}
+                                <input type="text" class="form-control {% if form.website.errors %}is-invalid{% endif %}" id="website" name="website" value="{{ form.website.data or '' }}" placeholder="www.example.com or https://www.example.com">
+                                <div class="form-text">Enter a valid URL (e.g., www.example.com or https://www.example.com)</div>
+                                {% if form.website.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.website.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Public/Private Dropdown -->
+                            <div class="mb-3">
+                                <label class="form-label">Profile Visibility</label>
+                                <select class="form-select" name="is_public" id="is_public">
+                                    <option value="true" {% if form.is_public.data %}selected{% endif %}>Public</option>
+                                    <option value="false" {% if not form.is_public.data %}selected{% endif %}>Private</option>
+                                </select>
+                                <div class="form-text">Public profiles appear in searches and can be discovered by others. Private profiles are only visible to you.</div>
                             </div>
                             
                             <div class="d-flex justify-content-between mt-4">

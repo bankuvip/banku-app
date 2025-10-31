@@ -22,6 +22,66 @@
 
     <div class="row">
         <div class="col-lg-8">
+            <!-- Logo Upload Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-image me-2"></i>Organization Logo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <!-- Current Logo Display -->
+                            <div class="current-logo mb-3">
+                                {% if organization.logo %}
+                                    <div class="logo-preview">
+                                        <img src="{{ organization.logo }}?v={{ organization.updated_at.strftime('%Y%m%d%H%M%S') if organization.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="Current Logo" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                                        <div class="mt-2">
+                                            <small class="text-muted">Current logo</small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="no-logo text-center p-4 border rounded bg-light">
+                                        <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                        <div class="text-muted">No logo uploaded</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Logo Upload Form -->
+                            <form method="POST" action="{{ url_for('organizations.upload_logo', slug=organization.slug) }}" enctype="multipart/form-data" id="logoUploadForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <div class="mb-3">
+                                    <label for="logo" class="form-label">Upload New Logo</label>
+                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*" onchange="previewLogo(this)">
+                                    <div class="form-text">
+                                        Supported formats: JPG, PNG, GIF. Max size: 5MB. Recommended: 200x200px
+                                    </div>
+                                </div>
+                                <div class="logo-preview-new mb-3" id="logoPreview" style="display: none;">
+                                    <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                                    <div class="mt-2">
+                                        <small class="text-muted">Preview</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm" id="uploadBtn" disabled>
+                                        <i class="fas fa-upload me-1"></i>Upload Logo
+                                    </button>
+                                    {% if organization.logo %}
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeLogo()">
+                                            <i class="fas fa-trash me-1"></i>Remove Logo
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- General Settings -->
             <div class="card mb-4">
                 <div class="card-header">
@@ -56,8 +116,8 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="website" class="form-label">Website</label>
-                                        <input type="url" class="form-control" id="website" name="website" value="{{ organization.website or '' }}" placeholder="https://www.example.com">
-                                        <div class="form-text">Your organization's website URL</div>
+                                        <input type="text" class="form-control" id="website" name="website" value="{{ organization.website or '' }}" placeholder="www.example.com or https://www.example.com">
+                                        <div class="form-text">Enter your website URL (www.example.com or https://www.example.com)</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -275,7 +335,7 @@
                                         <label for="linkedin_url" class="form-label">
                                             <i class="fab fa-linkedin text-primary me-1"></i>LinkedIn
                                         </label>
-                                        <input type="url" class="form-control" id="linkedin_url" name="linkedin_url" value="{{ organization.linkedin_url or '' }}" placeholder="https://linkedin.com/company/your-company">
+                                        <input type="text" class="form-control" id="linkedin_url" name="linkedin_url" value="{{ organization.linkedin_url or '' }}" placeholder="linkedin.com/company/your-company or https://linkedin.com/company/your-company">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -283,7 +343,7 @@
                                         <label for="youtube_url" class="form-label">
                                             <i class="fab fa-youtube text-danger me-1"></i>YouTube
                                         </label>
-                                        <input type="url" class="form-control" id="youtube_url" name="youtube_url" value="{{ organization.youtube_url or '' }}" placeholder="https://youtube.com/c/your-channel">
+                                        <input type="text" class="form-control" id="youtube_url" name="youtube_url" value="{{ organization.youtube_url or '' }}" placeholder="youtube.com/c/your-channel or https://youtube.com/c/your-channel">
                                     </div>
                                 </div>
                             </div>
@@ -293,7 +353,7 @@
                                         <label for="facebook_url" class="form-label">
                                             <i class="fab fa-facebook text-primary me-1"></i>Facebook
                                         </label>
-                                        <input type="url" class="form-control" id="facebook_url" name="facebook_url" value="{{ organization.facebook_url or '' }}" placeholder="https://facebook.com/your-page">
+                                        <input type="text" class="form-control" id="facebook_url" name="facebook_url" value="{{ organization.facebook_url or '' }}" placeholder="facebook.com/your-page or https://facebook.com/your-page">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -301,7 +361,7 @@
                                         <label for="instagram_url" class="form-label">
                                             <i class="fab fa-instagram text-warning me-1"></i>Instagram
                                         </label>
-                                        <input type="url" class="form-control" id="instagram_url" name="instagram_url" value="{{ organization.instagram_url or '' }}" placeholder="https://instagram.com/your-profile">
+                                        <input type="text" class="form-control" id="instagram_url" name="instagram_url" value="{{ organization.instagram_url or '' }}" placeholder="instagram.com/your-profile or https://instagram.com/your-profile">
                                     </div>
                                 </div>
                             </div>
@@ -311,7 +371,7 @@
                                         <label for="tiktok_url" class="form-label">
                                             <i class="fab fa-tiktok me-1"></i>TikTok
                                         </label>
-                                        <input type="url" class="form-control" id="tiktok_url" name="tiktok_url" value="{{ organization.tiktok_url or '' }}" placeholder="https://tiktok.com/@your-profile">
+                                        <input type="text" class="form-control" id="tiktok_url" name="tiktok_url" value="{{ organization.tiktok_url or '' }}" placeholder="tiktok.com/@your-profile or https://tiktok.com/@your-profile">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -319,7 +379,7 @@
                                         <label for="x_url" class="form-label">
                                             <i class="fab fa-x-twitter text-dark me-1"></i>X (Twitter)
                                         </label>
-                                        <input type="url" class="form-control" id="x_url" name="x_url" value="{{ organization.x_url or '' }}" placeholder="https://x.com/your-profile">
+                                        <input type="text" class="form-control" id="x_url" name="x_url" value="{{ organization.x_url or '' }}" placeholder="x.com/your-profile or https://x.com/your-profile">
                                     </div>
                                 </div>
                             </div>
@@ -351,66 +411,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
-
-            <!-- Logo Upload Section -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-image me-2"></i>Organization Logo
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <!-- Current Logo Display -->
-                            <div class="current-logo mb-3">
-                                {% if organization.logo %}
-                                    <div class="logo-preview">
-                                        <img src="{{ organization.logo }}?v={{ organization.updated_at.strftime('%Y%m%d%H%M%S') if organization.updated_at else '1' }}&r={{ range(1000, 9999) | random }}" alt="Current Logo" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
-                                        <div class="mt-2">
-                                            <small class="text-muted">Current logo</small>
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div class="no-logo text-center p-4 border rounded bg-light">
-                                        <i class="fas fa-image fa-3x text-muted mb-2"></i>
-                                        <div class="text-muted">No logo uploaded</div>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <!-- Logo Upload Form -->
-                            <form method="POST" action="{{ url_for('organizations.upload_logo', slug=organization.slug) }}" enctype="multipart/form-data" id="logoUploadForm">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <div class="mb-3">
-                                    <label for="logo" class="form-label">Upload New Logo</label>
-                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*" onchange="previewLogo(this)">
-                                    <div class="form-text">
-                                        Supported formats: JPG, PNG, GIF. Max size: 5MB. Recommended: 200x200px
-                                    </div>
-                                </div>
-                                <div class="logo-preview-new mb-3" id="logoPreview" style="display: none;">
-                                    <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
-                                    <div class="mt-2">
-                                        <small class="text-muted">Preview</small>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success btn-sm" id="uploadBtn" disabled>
-                                        <i class="fas fa-upload me-1"></i>Upload Logo
-                                    </button>
-                                    {% if organization.logo %}
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeLogo()">
-                                            <i class="fas fa-trash me-1"></i>Remove Logo
-                                        </button>
-                                    {% endif %}
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -592,23 +592,37 @@ function previewLogo(input) {
 
 function removeLogo() {
     if (confirm('Are you sure you want to remove the organization logo?')) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                         document.querySelector('input[name="csrf_token"]')?.value ||
+                         '';
+        
         fetch('{{ url_for("organizations.remove_logo", slug=organization.slug) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({})
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to remove logo');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                alert('Error: ' + (data.message || 'Failed to remove logo'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while removing the logo.');
+            alert('An error occurred while removing the logo: ' + error.message);
         });
     }
 }
